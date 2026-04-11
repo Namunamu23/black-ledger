@@ -10,6 +10,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import InfoCard from "@/components/ui/InfoCard";
 import Reveal from "@/components/ui/Reveal";
 import { siteConfig } from "@/data/site";
+import WaitlistForm from "@/components/forms/WaitlistForm";
 
 export default function HomePage() {
   const { featuredCase, home } = siteConfig;
@@ -173,42 +174,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <Reveal>
-            <div className="rounded-[2rem] border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8 sm:p-10">
-              <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-                    Start With Case 001
-                  </div>
-                  <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                    A premium foundation for the Black Ledger archive.
-                  </h2>
-                  <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-300">
-                    Begin with the first file and follow the brand as future reviews, continuity threads, and new bureau cases expand over time.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-4 lg:justify-end">
-                  <Link
-                    href={featuredCase.href}
-                    className="inline-flex items-center rounded-2xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300"
-                  >
-                    Shop Case 001
-                  </Link>
-                  <Link
-                    href="/about"
-                    className="inline-flex items-center rounded-2xl border border-zinc-700 px-6 py-3 font-semibold text-white transition hover:bg-zinc-900"
-                  >
-                    Learn About Black Ledger
-                  </Link>
-                </div>
-              </div>
+     <section className="py-20">
+  <div className="mx-auto max-w-6xl px-6">
+    <Reveal>
+      <div className="rounded-[2rem] border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-8 sm:p-10">
+        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div>
+            <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
+              Join the Archive
             </div>
-          </Reveal>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              Get launch updates and future case announcements.
+            </h2>
+            <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-300">
+              Join the Black Ledger waitlist to hear about release timing, case updates, and future bureau files.
+            </p>
+          </div>
+
+          <div className="lg:justify-self-end">
+            <WaitlistForm />
+          </div>
         </div>
-      </section>
+      </div>
+    </Reveal>
+  </div>
+</section>
     </main>
   );
 }

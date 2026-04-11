@@ -1,5 +1,6 @@
 import SectionHeader from "@/components/ui/SectionHeader";
 import { siteConfig } from "@/data/site";
+import SupportForm from "@/components/forms/SupportForm";
 
 export default function SupportPage() {
   return (
@@ -29,27 +30,11 @@ export default function SupportPage() {
                 Contact support
               </h2>
               <p className="mt-4 text-sm leading-8 text-zinc-300">
-                For now, this is a styled support form shell. Backend handling can be added later without redesigning the page.
+                Send a message directly from the site. This now validates input and stores submissions in your database.
               </p>
 
-              <div className="mt-8 grid gap-4">
-                <input
-                  type="text"
-                  placeholder="Your name"
-                  className="rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
-                />
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  className="rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
-                />
-                <textarea
-                  placeholder="How can we help?"
-                  className="min-h-[140px] rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
-                />
-                <button className="rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200">
-                  Send Message
-                </button>
+              <div className="mt-8">
+                <SupportForm />
               </div>
             </div>
           </div>
