@@ -1,10 +1,12 @@
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import type { Metadata } from "next";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import { siteConfig } from "@/data/site";
 
-export const metadata = {
-  title: "Black Ledger",
-  description: "Premium physical case files with digital bureau access.",
+export const metadata: Metadata = {
+  title: siteConfig.brand.name,
+  description: siteConfig.brand.description,
 };
 
 export default function RootLayout({
@@ -15,9 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-zinc-950 text-white antialiased">
-        <Navbar />
-        {children}
-        <Footer />
+        <div className="min-h-screen flex flex-col">
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </div>
       </body>
     </html>
   );
