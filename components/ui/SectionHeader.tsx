@@ -14,7 +14,7 @@ export default function SectionHeader({
       <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
         {eyebrow}
       </div>
-      <h2 className="mt-4 text-3xl font-semibold text-white sm:text-4xl">
+      <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
         {title}
       </h2>
       {text ? (

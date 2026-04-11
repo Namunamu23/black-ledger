@@ -1,29 +1,34 @@
+import SectionHeader from "@/components/ui/SectionHeader";
+import { siteConfig } from "@/data/site";
+
 export default function FAQPage() {
   return (
-    <main className="min-h-screen bg-zinc-950 text-white">
-      <div className="mx-auto max-w-5xl px-6 py-24">
-        <div className="text-xs uppercase tracking-[0.3em] text-zinc-400">
-          FAQ
-        </div>
-        <h1 className="mt-4 text-4xl font-semibold">Common questions</h1>
+    <main className="bg-zinc-950 text-white">
+      <section className="py-20">
+        <div className="mx-auto max-w-5xl px-6">
+          <SectionHeader
+            eyebrow="FAQ"
+            title="Common questions"
+            text="Clear answers reduce friction, improve trust, and make the product easier to understand before purchase."
+          />
 
-        <div className="mt-10 space-y-4">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-            <h2 className="text-xl font-semibold">Do I need internet access?</h2>
-            <p className="mt-3 leading-7 text-zinc-300">
-              Yes. The physical file is the core experience, and the digital portal
-              adds records, hints, and final review submission.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-            <h2 className="text-xl font-semibold">Can I play alone?</h2>
-            <p className="mt-3 leading-7 text-zinc-300">
-              Yes. The case is designed for solo investigators as well as groups.
-            </p>
+          <div className="mt-10 space-y-4">
+            {siteConfig.faq.map((item) => (
+              <div
+                key={item.question}
+                className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6"
+              >
+                <h2 className="text-xl font-semibold text-white">
+                  {item.question}
+                </h2>
+                <p className="mt-4 text-sm leading-8 text-zinc-300">
+                  {item.answer}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
