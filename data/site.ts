@@ -61,6 +61,31 @@ export const siteConfig = {
     ],
   },
 
+  portal: {
+    eyebrow: "Bureau",
+    title: "A serious digital review layer designed to support the file",
+    text:
+      "The bureau is where records, review tools, guided hints, and final theory submission come together. It should feel like a genuine internal system, not just an answer checker.",
+    modules: [
+      {
+        title: "Active Reviews",
+        text: "Track open files, case status, and current review progress.",
+      },
+      {
+        title: "People Database",
+        text: "Search subjects, relationships, and linked records.",
+      },
+      {
+        title: "Records Access",
+        text: "Review statements, logs, images, and supporting material.",
+      },
+      {
+        title: "Theory Submission",
+        text: "Submit responsible party, motive, and evidence in a structured conclusion flow.",
+      },
+    ],
+  },
+
   faq: [
     {
       question: "Do I need internet access?",

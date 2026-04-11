@@ -21,25 +21,34 @@ export default function Navbar() {
           {siteConfig.brand.name}
         </Link>
 
-        <nav className="hidden items-center gap-2 md:flex">
-          {siteConfig.navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={clsx(
-                  "rounded-full px-3 py-2 text-sm transition",
-                  isActive
-                    ? "bg-zinc-800 text-white"
-                    : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="hidden items-center gap-3 md:flex">
+          <nav className="flex items-center gap-2">
+            {siteConfig.navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={clsx(
+                    "rounded-full px-3 py-2 text-sm transition",
+                    isActive
+                      ? "bg-zinc-800 text-white"
+                      : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <Link
+            href="/bureau"
+            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200"
+          >
+            Access Bureau
+          </Link>
+        </div>
 
         <button
           type="button"
@@ -72,6 +81,14 @@ export default function Navbar() {
                 </Link>
               );
             })}
+
+            <Link
+              href="/bureau"
+              onClick={() => setOpen(false)}
+              className="mt-3 rounded-xl bg-white px-4 py-3 text-center text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200"
+            >
+              Access Bureau
+            </Link>
           </div>
         </div>
       )}
