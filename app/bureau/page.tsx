@@ -1,9 +1,16 @@
 import Link from "next/link";
+import { auth } from "@/auth";
 import SectionHeader from "@/components/ui/SectionHeader";
 import Reveal from "@/components/ui/Reveal";
+import SignOutButton from "@/components/auth/SignOutButton";
 import { siteConfig } from "@/data/site";
 
-export default function BureauPage() {
+export default async function BureauPage() {
+  const session = await auth();
+  const userEmail = session?.user?.email ?? "Unknown user";
+  const userRole =
+    (session?.user as { role?: string } | undefined)?.role ?? "INVESTIGATOR";
+
   return (
     <main className="bg-zinc-950 text-white">
       <section className="relative overflow-hidden border-b border-zinc-900 py-20">
@@ -11,10 +18,36 @@ export default function BureauPage() {
         <div className="relative mx-auto max-w-6xl px-6">
           <Reveal>
             <SectionHeader
-              eyebrow={siteConfig.portal.eyebrow}
-              title={siteConfig.portal.title}
-              text={siteConfig.portal.text}
+              eyebrow="Bureau"
+              title="Protected review access"
+              text="This area now requires authentication. It is the foundation for future case activation, account-specific file access, and protected review tools."
             />
+          </Reveal>
+
+          <Reveal delay={0.08}>
+            <div className="mt-10 rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
+              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                <div>
+                  <div className="text-sm text-zinc-400">Signed in as</div>
+                  <div className="mt-2 text-2xl font-semibold text-white">
+                    {userEmail}
+                  </div>
+                  <div className="mt-2 text-sm uppercase tracking-[0.2em] text-amber-300">
+                    {userRole}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-4 lg:justify-end">
+                  <Link
+                    href={siteConfig.featuredCase.href}
+                    className="inline-flex items-center rounded-2xl bg-white px-6 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
+                  >
+                    View Case 001
+                  </Link>
+                  <SignOutButton />
+                </div>
+              </div>
+            </div>
           </Reveal>
 
           <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -29,36 +62,6 @@ export default function BureauPage() {
               </Reveal>
             ))}
           </div>
-
-          <Reveal delay={0.2}>
-            <div className="mt-10 rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
-              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-                <div>
-                  <h3 className="text-2xl font-semibold text-white">
-                    Built as a long-term product layer
-                  </h3>
-                  <p className="mt-4 max-w-2xl text-base leading-8 text-zinc-300">
-                    The bureau is one of the core differentiators of the product. It gives the physical case a digital system for review, structure, and future continuity without turning the experience into a generic app.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-4 lg:justify-end">
-                  <Link
-                    href="/login"
-                    className="inline-flex items-center rounded-2xl bg-white px-6 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
-                  >
-                    Log In
-                  </Link>
-                  <Link
-                    href={siteConfig.featuredCase.href}
-                    className="inline-flex items-center rounded-2xl border border-zinc-700 px-6 py-3 font-semibold text-white transition hover:bg-zinc-900"
-                  >
-                    View Case 001
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </Reveal>
         </div>
       </section>
     </main>

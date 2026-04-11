@@ -17,3 +17,10 @@ export const supportSchema = z.object({
     .min(10, "Message must be at least 10 characters.")
     .max(2000, "Message is too long."),
 });
+
+export const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Please enter a valid email address."),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters."),
+});
