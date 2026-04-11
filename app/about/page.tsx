@@ -5,7 +5,9 @@ export default function AboutPage() {
         <div className="text-xs uppercase tracking-[0.3em] text-zinc-400">
           About
         </div>
-        <h1 className="mt-4 text-4xl font-semibold">Built around realism and immersion</h1>
+        <h1 className="mt-4 text-4xl font-semibold">
+          Built around realism and immersion
+        </h1>
         <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-300">
           Black Ledger creates premium investigative experiences designed to feel
           deliberate, believable, and worth returning to.

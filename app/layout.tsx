@@ -1,9 +1,10 @@
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 export const metadata = {
   title: "Black Ledger",
-  description: "Premium investigative entertainment",
+  description: "Premium physical case files with digital bureau access.",
 };
 
 export default function RootLayout({
@@ -13,9 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-zinc-950 text-white">
+      <body className="bg-zinc-950 text-white antialiased">
         <Navbar />
         {children}
+        <Footer />
       </body>
     </html>
   );
