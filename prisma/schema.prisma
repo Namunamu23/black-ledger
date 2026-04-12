@@ -21,27 +21,31 @@ model User {
 }
 
 model CaseFile {
-  id                  Int                 @id @default(autoincrement())
-  slug                String              @unique
-  title               String
-  summary             String
-  players             String
-  duration            String
-  difficulty          String
-  maxStage            Int                 @default(3)
-  solutionSuspect     String              @default("")
-  solutionMotive      String              @default("")
-  solutionEvidence    String              @default("")
-  isActive            Boolean             @default(true)
-  createdAt           DateTime            @default(now())
-  activationCodes     ActivationCode[]
-  owners              UserCase[]
-  people              CasePerson[]
-  records             CaseRecord[]
-  hints               CaseHint[]
-  checkpoints         CaseCheckpoint[]
-  theorySubmissions   TheorySubmission[]
-  checkpointAttempts  CheckpointAttempt[]
+  id                   Int                 @id @default(autoincrement())
+  slug                 String              @unique
+  title                String
+  summary              String
+  players              String
+  duration             String
+  difficulty           String
+  maxStage             Int                 @default(3)
+  solutionSuspect      String              @default("")
+  solutionMotive       String              @default("")
+  solutionEvidence     String              @default("")
+  debriefOverview      String              @default("")
+  debriefWhatHappened  String              @default("")
+  debriefWhyItWorked   String              @default("")
+  debriefClosing       String              @default("")
+  isActive             Boolean             @default(true)
+  createdAt            DateTime            @default(now())
+  activationCodes      ActivationCode[]
+  owners               UserCase[]
+  people               CasePerson[]
+  records              CaseRecord[]
+  hints                CaseHint[]
+  checkpoints          CaseCheckpoint[]
+  theorySubmissions    TheorySubmission[]
+  checkpointAttempts   CheckpointAttempt[]
 }
 
 model ActivationCode {

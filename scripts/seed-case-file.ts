@@ -20,6 +20,14 @@ async function main() {
         "to stop elena from exposing the certification fraud|to stop elena from exposing the fraud|cover up the fraud|to cover up the fraud",
       solutionEvidence:
         "badge access log and procurement spreadsheet extract|access log and procurement spreadsheet extract|badge access log|procurement spreadsheet extract",
+      debriefOverview:
+        "Your review determined that the original robbery theory was incomplete and ultimately misleading.",
+      debriefWhatHappened:
+        "Elena Voss uncovered irregularities in the certification chain and moved closer to exposing a broader internal problem. Leah Morn, tied more directly to the record trail than originally understood, became involved in the fatal confrontation. After the death, the scene and interpretation of evidence were shaped to support a simpler robbery explanation.",
+      debriefWhyItWorked:
+        "The original case drifted toward the robbery narrative because the missing phone and scene framing offered an easy explanation. But when badge access records, witness timing, and internal procurement evidence were compared together, the professional motive and the overlooked participant became much harder to ignore.",
+      debriefClosing:
+        "The case was not solved by finding one dramatic twist. It was solved by recognizing that several smaller inconsistencies formed one coherent pattern. That is what the original investigation missed.",
       isActive: true,
     },
     create: {
@@ -36,6 +44,14 @@ async function main() {
         "to stop elena from exposing the certification fraud|to stop elena from exposing the fraud|cover up the fraud|to cover up the fraud",
       solutionEvidence:
         "badge access log and procurement spreadsheet extract|access log and procurement spreadsheet extract|badge access log|procurement spreadsheet extract",
+      debriefOverview:
+        "Your review determined that the original robbery theory was incomplete and ultimately misleading.",
+      debriefWhatHappened:
+        "Elena Voss uncovered irregularities in the certification chain and moved closer to exposing a broader internal problem. Leah Morn, tied more directly to the record trail than originally understood, became involved in the fatal confrontation. After the death, the scene and interpretation of evidence were shaped to support a simpler robbery explanation.",
+      debriefWhyItWorked:
+        "The original case drifted toward the robbery narrative because the missing phone and scene framing offered an easy explanation. But when badge access records, witness timing, and internal procurement evidence were compared together, the professional motive and the overlooked participant became much harder to ignore.",
+      debriefClosing:
+        "The case was not solved by finding one dramatic twist. It was solved by recognizing that several smaller inconsistencies formed one coherent pattern. That is what the original investigation missed.",
       isActive: true,
     },
   });

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
@@ -111,6 +112,29 @@ export default async function BureauCasePage({ params }: PageProps) {
               </span>
             </div>
           </Reveal>
+
+          {status === "SOLVED" ? (
+            <Reveal delay={0.06}>
+              <div className="mt-8 rounded-[2rem] border border-emerald-500/30 bg-emerald-500/10 p-8">
+                <div className="text-xs uppercase tracking-[0.3em] text-emerald-400">
+                  Solved
+                </div>
+                <h2 className="mt-4 text-3xl font-semibold text-white">
+                  Case resolved successfully
+                </h2>
+                <p className="mt-4 max-w-2xl text-base leading-8 text-zinc-300">
+                  Your final theory matched the expected suspect, motive, and evidence strongly enough to resolve the case.
+                </p>
+
+                <Link
+                  href={`/bureau/cases/${slug}/debrief`}
+                  className="mt-6 inline-flex rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
+                >
+                  Open Debrief
+                </Link>
+              </div>
+            </Reveal>
+          ) : null}
 
           <Reveal delay={0.08}>
             <div className="mt-8 rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
@@ -276,7 +300,7 @@ export default async function BureauCasePage({ params }: PageProps) {
               {theoryUnlocked ? (
                 <>
                   <p className="mt-4 text-sm leading-8 text-zinc-300">
-                    Final-stage review is unlocked. Your submission will now be scored and given structured feedback.
+                    Final-stage review is unlocked. Your submission will now be scored and receive structured feedback.
                   </p>
                   <div className="mt-8">
                     <TheorySubmissionForm slug={slug} />
