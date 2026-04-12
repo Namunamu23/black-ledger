@@ -19,13 +19,13 @@ export const siteConfig = {
   },
 
   navItems: [
-    { href: "/cases/alder-street-review", label: "Case 001" },
-    { href: "/how-it-works", label: "How It Works" },
-    { href: "/about", label: "About" },
-    { href: "/faq", label: "FAQ" },
-    { href: "/support", label: "Support" },
-    { href: "/login", label: "Login" },
-  ],
+  { href: "/cases", label: "Cases" },
+  { href: "/how-it-works", label: "How It Works" },
+  { href: "/about", label: "About" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/support", label: "Support" },
+  { href: "/login", label: "Login" },
+],
 
   home: {
     heroTitle: "Open the file. Enter the bureau. Solve what they missed.",

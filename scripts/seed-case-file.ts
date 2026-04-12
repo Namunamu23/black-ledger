@@ -4,91 +4,78 @@ import { prisma } from "../lib/prisma";
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
-async function main() {
-  const caseFile = await prisma.caseFile.upsert({
-    where: { slug: "alder-street-review" },
-    update: {
-      title: "The Alder Street Review",
-      summary:
-        "A city compliance investigator dies near a municipal parking structure. The original case drifted toward a simple robbery narrative. Your review suggests the evidence tells another story.",
-      players: "1–4",
-      duration: "90–150 min",
-      difficulty: "Moderate",
-      maxStage: 3,
-      solutionSuspect: "leah morn|leah",
-      solutionMotive:
-        "to stop elena from exposing the certification fraud|to stop elena from exposing the fraud|cover up the fraud|to cover up the fraud",
-      solutionEvidence:
-        "badge access log and procurement spreadsheet extract|access log and procurement spreadsheet extract|badge access log|procurement spreadsheet extract",
-      debriefOverview:
-        "Your review determined that the original robbery theory was incomplete and ultimately misleading.",
-      debriefWhatHappened:
-        "Elena Voss uncovered irregularities in the certification chain and moved closer to exposing a broader internal problem. Leah Morn, tied more directly to the record trail than originally understood, became involved in the fatal confrontation. After the death, the scene and interpretation of evidence were shaped to support a simpler robbery explanation.",
-      debriefWhyItWorked:
-        "The original case drifted toward the robbery narrative because the missing phone and scene framing offered an easy explanation. But when badge access records, witness timing, and internal procurement evidence were compared together, the professional motive and the overlooked participant became much harder to ignore.",
-      debriefClosing:
-        "The case was not solved by finding one dramatic twist. It was solved by recognizing that several smaller inconsistencies formed one coherent pattern. That is what the original investigation missed.",
-      isActive: true,
-    },
-    create: {
-      slug: "alder-street-review",
-      title: "The Alder Street Review",
-      summary:
-        "A city compliance investigator dies near a municipal parking structure. The original case drifted toward a simple robbery narrative. Your review suggests the evidence tells another story.",
-      players: "1–4",
-      duration: "90–150 min",
-      difficulty: "Moderate",
-      maxStage: 3,
-      solutionSuspect: "leah morn|leah",
-      solutionMotive:
-        "to stop elena from exposing the certification fraud|to stop elena from exposing the fraud|cover up the fraud|to cover up the fraud",
-      solutionEvidence:
-        "badge access log and procurement spreadsheet extract|access log and procurement spreadsheet extract|badge access log|procurement spreadsheet extract",
-      debriefOverview:
-        "Your review determined that the original robbery theory was incomplete and ultimately misleading.",
-      debriefWhatHappened:
-        "Elena Voss uncovered irregularities in the certification chain and moved closer to exposing a broader internal problem. Leah Morn, tied more directly to the record trail than originally understood, became involved in the fatal confrontation. After the death, the scene and interpretation of evidence were shaped to support a simpler robbery explanation.",
-      debriefWhyItWorked:
-        "The original case drifted toward the robbery narrative because the missing phone and scene framing offered an easy explanation. But when badge access records, witness timing, and internal procurement evidence were compared together, the professional motive and the overlooked participant became much harder to ignore.",
-      debriefClosing:
-        "The case was not solved by finding one dramatic twist. It was solved by recognizing that several smaller inconsistencies formed one coherent pattern. That is what the original investigation missed.",
-      isActive: true,
-    },
-  });
+type SeedCase = {
+  slug: string;
+  title: string;
+  summary: string;
+  players: string;
+  duration: string;
+  difficulty: string;
+  maxStage: number;
+  activationCode: string;
+  solutionSuspect: string;
+  solutionMotive: string;
+  solutionEvidence: string;
+  debriefOverview: string;
+  debriefWhatHappened: string;
+  debriefWhyItWorked: string;
+  debriefClosing: string;
+  people: {
+    name: string;
+    role: string;
+    summary: string;
+    unlockStage: number;
+    sortOrder: number;
+  }[];
+  records: {
+    title: string;
+    category: string;
+    summary: string;
+    body: string;
+    unlockStage: number;
+    sortOrder: number;
+  }[];
+  hints: {
+    level: number;
+    title: string;
+    content: string;
+    unlockStage: number;
+    sortOrder: number;
+  }[];
+  checkpoints: {
+    stage: number;
+    prompt: string;
+    acceptedAnswers: string;
+    successMessage: string;
+  }[];
+};
 
-  const existingCode = await prisma.activationCode.findUnique({
-    where: { code: "ALDER-001-DEMO" },
-  });
-
-  if (!existingCode) {
-    await prisma.activationCode.create({
-      data: {
-        code: "ALDER-001-DEMO",
-        caseFileId: caseFile.id,
-      },
-    });
-  }
-
-  await prisma.casePerson.deleteMany({
-    where: { caseFileId: caseFile.id },
-  });
-
-  await prisma.caseRecord.deleteMany({
-    where: { caseFileId: caseFile.id },
-  });
-
-  await prisma.caseHint.deleteMany({
-    where: { caseFileId: caseFile.id },
-  });
-
-  await prisma.caseCheckpoint.deleteMany({
-    where: { caseFileId: caseFile.id },
-  });
-
-  await prisma.casePerson.createMany({
-    data: [
+const cases: SeedCase[] = [
+  {
+    slug: "alder-street-review",
+    title: "The Alder Street Review",
+    summary:
+      "A city compliance investigator dies near a municipal parking structure. The original case drifted toward a simple robbery narrative. Your review suggests the evidence tells another story.",
+    players: "1–4",
+    duration: "90–150 min",
+    difficulty: "Moderate",
+    maxStage: 3,
+    activationCode: "ALDER-001-DEMO",
+    solutionSuspect: "leah morn|leah",
+    solutionMotive:
+      "to stop elena from exposing the certification fraud|to stop elena from exposing the fraud|cover up the fraud|to cover up the fraud",
+    solutionEvidence:
+      "badge access log and procurement spreadsheet extract|access log and procurement spreadsheet extract|badge access log|procurement spreadsheet extract",
+    debriefOverview:
+      "Your review determined that the original robbery theory was incomplete and ultimately misleading.",
+    debriefWhatHappened:
+      "Elena Voss uncovered irregularities in the certification chain and moved closer to exposing a broader internal problem. Leah Morn, tied more directly to the record trail than originally understood, became involved in the fatal confrontation. After the death, the scene and interpretation of evidence were shaped to support a simpler robbery explanation.",
+    debriefWhyItWorked:
+      "The original case drifted toward the robbery narrative because the missing phone and scene framing offered an easy explanation. But when badge access records, witness timing, and internal procurement evidence were compared together, the professional motive and the overlooked participant became much harder to ignore.",
+    debriefClosing:
+      "The case was not solved by finding one dramatic twist. It was solved by recognizing that several smaller inconsistencies formed one coherent pattern. That is what the original investigation missed.",
+    people: [
       {
-        caseFileId: caseFile.id,
         name: "Elena Voss",
         role: "Victim",
         summary:
@@ -97,7 +84,6 @@ async function main() {
         sortOrder: 1,
       },
       {
-        caseFileId: caseFile.id,
         name: "Daniel Reeve",
         role: "Contractor Supervisor",
         summary:
@@ -106,7 +92,6 @@ async function main() {
         sortOrder: 2,
       },
       {
-        caseFileId: caseFile.id,
         name: "Mara Kessler",
         role: "Department Supervisor",
         summary:
@@ -115,7 +100,6 @@ async function main() {
         sortOrder: 3,
       },
       {
-        caseFileId: caseFile.id,
         name: "Owen Vale",
         role: "Vendor Relations Manager",
         summary:
@@ -124,7 +108,6 @@ async function main() {
         sortOrder: 4,
       },
       {
-        caseFileId: caseFile.id,
         name: "Leah Morn",
         role: "Records Clerk",
         summary:
@@ -133,12 +116,8 @@ async function main() {
         sortOrder: 5,
       },
     ],
-  });
-
-  await prisma.caseRecord.createMany({
-    data: [
+    records: [
       {
-        caseFileId: caseFile.id,
         title: "Original Incident Report",
         category: "Report",
         summary:
@@ -149,7 +128,6 @@ async function main() {
         sortOrder: 1,
       },
       {
-        caseFileId: caseFile.id,
         title: "Garage Attendant Statement",
         category: "Witness Statement",
         summary:
@@ -160,7 +138,6 @@ async function main() {
         sortOrder: 2,
       },
       {
-        caseFileId: caseFile.id,
         title: "Badge Access Log",
         category: "Access Log",
         summary:
@@ -171,7 +148,6 @@ async function main() {
         sortOrder: 3,
       },
       {
-        caseFileId: caseFile.id,
         title: "Procurement Spreadsheet Extract",
         category: "Internal Record",
         summary:
@@ -182,12 +158,8 @@ async function main() {
         sortOrder: 4,
       },
     ],
-  });
-
-  await prisma.caseHint.createMany({
-    data: [
+    hints: [
       {
-        caseFileId: caseFile.id,
         level: 1,
         title: "Start with the timeline",
         content:
@@ -196,7 +168,6 @@ async function main() {
         sortOrder: 1,
       },
       {
-        caseFileId: caseFile.id,
         level: 2,
         title: "Compare motive fields",
         content:
@@ -205,7 +176,6 @@ async function main() {
         sortOrder: 2,
       },
       {
-        caseFileId: caseFile.id,
         level: 3,
         title: "Look past the obvious suspect",
         content:
@@ -214,12 +184,8 @@ async function main() {
         sortOrder: 3,
       },
     ],
-  });
-
-  await prisma.caseCheckpoint.createMany({
-    data: [
+    checkpoints: [
       {
-        caseFileId: caseFile.id,
         stage: 1,
         prompt:
           "Which record should you compare next if you want to challenge the official timeline?",
@@ -227,7 +193,6 @@ async function main() {
         successMessage: "Stage 2 unlocked. New records and people are now available.",
       },
       {
-        caseFileId: caseFile.id,
         stage: 2,
         prompt:
           "Which overlooked person becomes much more important once the internal record trail is considered?",
@@ -235,10 +200,251 @@ async function main() {
         successMessage: "Final review stage unlocked. Theory submission is now available.",
       },
     ],
+  },
+  {
+    slug: "riverglass-affair",
+    title: "The Riverglass Affair",
+    summary:
+      "A museum acquisitions coordinator dies after raising concerns about forged provenance documents tied to a donor-backed exhibit. The official story suggests an isolated dispute. Your review suggests the paperwork tells a deeper story.",
+    players: "1–4",
+    duration: "100–160 min",
+    difficulty: "Moderate+",
+    maxStage: 3,
+    activationCode: "RIVER-002-DEMO",
+    solutionSuspect: "nina vale|nina",
+    solutionMotive:
+      "to stop arin from exposing the forged provenance|to cover up the forged provenance|cover up the forgery",
+    solutionEvidence:
+      "storage room key log and restoration invoice|key log and restoration invoice|storage room key log|restoration invoice",
+    debriefOverview:
+      "Your review showed that the exhibit controversy was not just administrative noise. The provenance issue created direct personal and institutional risk.",
+    debriefWhatHappened:
+      "Arin Dace moved closer to exposing forged provenance paperwork attached to a donor-backed acquisition. Nina Vale, who appeared peripheral at first, was more entangled in the documentation chain than expected. The fatal confrontation emerged from the need to stop disclosure before the paperwork trail became undeniable.",
+    debriefWhyItWorked:
+      "The original explanation focused on interpersonal conflict and donor pressure, which made the case feel messy but shallow. Once the key log and restoration documentation were compared, the movements and document trail aligned around a more direct concealment motive.",
+    debriefClosing:
+      "This case reinforces the same lesson in a different setting: institutional narratives often survive because they are easier to accept than document-driven contradictions.",
+    people: [
+      {
+        name: "Arin Dace",
+        role: "Victim",
+        summary:
+          "Museum acquisitions coordinator who raised serious concerns about provenance paperwork.",
+        unlockStage: 1,
+        sortOrder: 1,
+      },
+      {
+        name: "Tomas Venn",
+        role: "Donor Liaison",
+        summary:
+          "Visible public pressure around the exhibit made Tomas seem central from the start.",
+        unlockStage: 1,
+        sortOrder: 2,
+      },
+      {
+        name: "Celia Hart",
+        role: "Restoration Lead",
+        summary:
+          "Handled parts of the exhibit preparation and knew more about the object chain than she first admitted.",
+        unlockStage: 2,
+        sortOrder: 3,
+      },
+      {
+        name: "Mira Quill",
+        role: "Records Assistant",
+        summary:
+          "Handled archival paperwork and helped expose inconsistencies in internal handling.",
+        unlockStage: 2,
+        sortOrder: 4,
+      },
+      {
+        name: "Nina Vale",
+        role: "Collections Administrator",
+        summary:
+          "Appears procedural and low-visibility until the documentation chain is examined closely.",
+        unlockStage: 3,
+        sortOrder: 5,
+      },
+    ],
+    records: [
+      {
+        title: "Initial Museum Security Summary",
+        category: "Report",
+        summary:
+          "Frames the case as a late-night argument linked to exhibit pressure.",
+        body:
+          "The security summary focuses on interpersonal tension and a donor-sensitive timeline but leaves the provenance dispute underdeveloped.",
+        unlockStage: 1,
+        sortOrder: 1,
+      },
+      {
+        title: "Courier Statement",
+        category: "Witness Statement",
+        summary:
+          "A logistics account that becomes more useful once the document timeline is rechecked.",
+        body:
+          "The courier remembers an unusual delay and a document handoff that did not match the official chain described later.",
+        unlockStage: 1,
+        sortOrder: 2,
+      },
+      {
+        title: "Storage Room Key Log",
+        category: "Access Log",
+        summary:
+          "A key-control record that weakens one of the most important assumptions in the original story.",
+        body:
+          "The storage-room access history shows that an internal key movement occurred at a time that conflicts with the expected restoration workflow.",
+        unlockStage: 2,
+        sortOrder: 3,
+      },
+      {
+        title: "Restoration Invoice",
+        category: "Internal Record",
+        summary:
+          "A billing document whose detail level reveals more than it seems to at first glance.",
+        body:
+          "The restoration invoice references handling activity that does not match the formal provenance record, creating a bridge between internal procedure and forgery risk.",
+        unlockStage: 3,
+        sortOrder: 4,
+      },
+    ],
+    hints: [
+      {
+        level: 1,
+        title: "Follow the document chain",
+        content:
+          "Look beyond visible conflict and compare the document trail to who had reason to fear exposure.",
+        unlockStage: 1,
+        sortOrder: 1,
+      },
+      {
+        level: 2,
+        title: "Access matters",
+        content:
+          "A quiet administrative movement can matter more than a loud public dispute.",
+        unlockStage: 2,
+        sortOrder: 2,
+      },
+      {
+        level: 3,
+        title: "The overlooked role is the point",
+        content:
+          "The case turns once you stop assuming the most visible pressure source is the final answer.",
+        unlockStage: 3,
+        sortOrder: 3,
+      },
+    ],
+    checkpoints: [
+      {
+        stage: 1,
+        prompt:
+          "Which record should you compare next if you want to test the official movement timeline around the restoration wing?",
+        acceptedAnswers: "storage room key log|key log|storage log",
+        successMessage: "Stage 2 unlocked. The internal access trail is now clearer.",
+      },
+      {
+        stage: 2,
+        prompt:
+          "Which quieter staff member becomes much more important once the provenance handling trail is examined closely?",
+        acceptedAnswers: "nina vale|nina",
+        successMessage: "Final review stage unlocked. Theory submission is now available.",
+      },
+    ],
+  },
+];
+
+async function seedCase(data: SeedCase) {
+  const caseFile = await prisma.caseFile.upsert({
+    where: { slug: data.slug },
+    update: {
+      title: data.title,
+      summary: data.summary,
+      players: data.players,
+      duration: data.duration,
+      difficulty: data.difficulty,
+      maxStage: data.maxStage,
+      solutionSuspect: data.solutionSuspect,
+      solutionMotive: data.solutionMotive,
+      solutionEvidence: data.solutionEvidence,
+      debriefOverview: data.debriefOverview,
+      debriefWhatHappened: data.debriefWhatHappened,
+      debriefWhyItWorked: data.debriefWhyItWorked,
+      debriefClosing: data.debriefClosing,
+      isActive: true,
+    },
+    create: {
+      slug: data.slug,
+      title: data.title,
+      summary: data.summary,
+      players: data.players,
+      duration: data.duration,
+      difficulty: data.difficulty,
+      maxStage: data.maxStage,
+      solutionSuspect: data.solutionSuspect,
+      solutionMotive: data.solutionMotive,
+      solutionEvidence: data.solutionEvidence,
+      debriefOverview: data.debriefOverview,
+      debriefWhatHappened: data.debriefWhatHappened,
+      debriefWhyItWorked: data.debriefWhyItWorked,
+      debriefClosing: data.debriefClosing,
+      isActive: true,
+    },
   });
 
-  console.log("Case file ready.");
-  console.log("Demo activation code: ALDER-001-DEMO");
+  const existingCode = await prisma.activationCode.findUnique({
+    where: { code: data.activationCode },
+  });
+
+  if (!existingCode) {
+    await prisma.activationCode.create({
+      data: {
+        code: data.activationCode,
+        caseFileId: caseFile.id,
+      },
+    });
+  }
+
+  await prisma.casePerson.deleteMany({ where: { caseFileId: caseFile.id } });
+  await prisma.caseRecord.deleteMany({ where: { caseFileId: caseFile.id } });
+  await prisma.caseHint.deleteMany({ where: { caseFileId: caseFile.id } });
+  await prisma.caseCheckpoint.deleteMany({ where: { caseFileId: caseFile.id } });
+
+  await prisma.casePerson.createMany({
+    data: data.people.map((item) => ({
+      caseFileId: caseFile.id,
+      ...item,
+    })),
+  });
+
+  await prisma.caseRecord.createMany({
+    data: data.records.map((item) => ({
+      caseFileId: caseFile.id,
+      ...item,
+    })),
+  });
+
+  await prisma.caseHint.createMany({
+    data: data.hints.map((item) => ({
+      caseFileId: caseFile.id,
+      ...item,
+    })),
+  });
+
+  await prisma.caseCheckpoint.createMany({
+    data: data.checkpoints.map((item) => ({
+      caseFileId: caseFile.id,
+      ...item,
+    })),
+  });
+
+  console.log(`Seeded case: ${data.title}`);
+  console.log(`Activation code: ${data.activationCode}`);
+}
+
+async function main() {
+  for (const caseData of cases) {
+    await seedCase(caseData);
+  }
 }
 
 main()

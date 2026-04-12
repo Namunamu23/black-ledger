@@ -42,11 +42,11 @@ export default function HomePage() {
                   Shop Case 001
                 </Link>
                 <Link
-                  href="/bureau"
-                  className="inline-flex items-center rounded-2xl border border-zinc-700 px-6 py-3 font-semibold text-white transition hover:bg-zinc-900"
-                >
-                  View Bureau System
-                </Link>
+  href="/cases"
+  className="inline-flex items-center rounded-2xl border border-zinc-700 px-6 py-3 font-semibold text-white transition hover:bg-zinc-900"
+>
+  View All Cases
+</Link>
               </div>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-3">
