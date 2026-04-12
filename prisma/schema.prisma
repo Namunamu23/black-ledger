@@ -8,12 +8,107 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  name         String?
-  passwordHash String
-  role         String   @default("INVESTIGATOR")
-  createdAt    DateTime @default(now())
+  id                     Int                @id @default(autoincrement())
+  email                  String             @unique
+  name                   String?
+  passwordHash           String
+  role                   String             @default("INVESTIGATOR")
+  createdAt              DateTime           @default(now())
+  ownedCases             UserCase[]
+  claimedActivationCodes ActivationCode[]   @relation("ClaimedCodes")
+  theorySubmissions      TheorySubmission[]
+}
+
+model CaseFile {
+  id                Int                @id @default(autoincrement())
+  slug              String             @unique
+  title             String
+  summary           String
+  players           String
+  duration          String
+  difficulty        String
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  activationCodes   ActivationCode[]
+  owners            UserCase[]
+  people            CasePerson[]
+  records           CaseRecord[]
+  hints             CaseHint[]
+  theorySubmissions TheorySubmission[]
+}
+
+model ActivationCode {
+  id              Int       @id @default(autoincrement())
+  code            String    @unique
+  caseFileId      Int
+  claimedByUserId Int?
+  claimedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  caseFile        CaseFile  @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  claimedByUser   User?     @relation("ClaimedCodes", fields: [claimedByUserId], references: [id])
+}
+
+model UserCase {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  caseFileId  Int
+  activatedAt DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseFile    CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, caseFileId])
+}
+
+model CasePerson {
+  id         Int      @id @default(autoincrement())
+  caseFileId Int
+  name       String
+  role       String
+  summary    String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+}
+
+model CaseRecord {
+  id         Int      @id @default(autoincrement())
+  caseFileId Int
+  title      String
+  category   String
+  summary    String
+  body       String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+}
+
+model CaseHint {
+  id         Int      @id @default(autoincrement())
+  caseFileId Int
+  level      Int
+  title      String
+  content    String
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  caseFile   CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+}
+
+model TheorySubmission {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  caseFileId      Int
+  suspectName     String
+  motive          String
+  evidenceSummary String
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseFile        CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 }
 
 model WaitlistEntry {

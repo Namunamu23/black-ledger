@@ -1,0 +1,109 @@
+"use client";
+
+import { useState } from "react";
+
+type TheorySubmissionFormProps = {
+  slug: string;
+};
+
+export default function TheorySubmissionForm({
+  slug,
+}: TheorySubmissionFormProps) {
+  const [form, setForm] = useState({
+    suspectName: "",
+    motive: "",
+    evidenceSummary: "",
+  });
+
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/cases/${slug}/theory`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const data = (await response.json()) as { message?: string };
+
+      if (!response.ok) {
+        setStatus("error");
+        setMessage(data.message ?? "Submission failed.");
+        return;
+      }
+
+      setStatus("success");
+      setMessage(data.message ?? "Theory submitted.");
+      setForm({
+        suspectName: "",
+        motive: "",
+        evidenceSummary: "",
+      });
+    } catch {
+      setStatus("error");
+      setMessage("Something went wrong. Please try again.");
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      <input
+        type="text"
+        placeholder="Primary suspect"
+        value={form.suspectName}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, suspectName: e.target.value }))
+        }
+        className="rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
+        required
+      />
+
+      <textarea
+        placeholder="What do you believe the motive was?"
+        value={form.motive}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, motive: e.target.value }))
+        }
+        className="min-h-[120px] rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
+        required
+      />
+
+      <textarea
+        placeholder="Summarize the strongest evidence supporting your theory."
+        value={form.evidenceSummary}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, evidenceSummary: e.target.value }))
+        }
+        className="min-h-[140px] rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
+        required
+      />
+
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className="rounded-2xl bg-amber-400 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {status === "loading" ? "Submitting..." : "Submit Theory"}
+      </button>
+
+      {message ? (
+        <p
+          className={`text-sm ${
+            status === "success" ? "text-emerald-400" : "text-red-400"
+          }`}
+        >
+          {message}
+        </p>
+      ) : null}
+    </form>
+  );
+}

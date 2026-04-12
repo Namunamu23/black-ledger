@@ -20,7 +20,32 @@ export const supportSchema = z.object({
 
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email("Please enter a valid email address."),
-  password: z
+  password: z.string().min(8, "Password must be at least 8 characters."),
+});
+
+export const activationCodeSchema = z.object({
+  code: z
     .string()
-    .min(8, "Password must be at least 8 characters."),
+    .trim()
+    .toUpperCase()
+    .min(6, "Please enter a valid activation code.")
+    .max(64, "Activation code is too long."),
+});
+
+export const theorySubmissionSchema = z.object({
+  suspectName: z
+    .string()
+    .trim()
+    .min(2, "Suspect name is required.")
+    .max(120, "Suspect name is too long."),
+  motive: z
+    .string()
+    .trim()
+    .min(10, "Motive must be at least 10 characters.")
+    .max(1000, "Motive is too long."),
+  evidenceSummary: z
+    .string()
+    .trim()
+    .min(10, "Evidence summary must be at least 10 characters.")
+    .max(2000, "Evidence summary is too long."),
 });
