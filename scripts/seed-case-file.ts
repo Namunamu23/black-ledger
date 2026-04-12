@@ -14,6 +14,12 @@ async function main() {
       players: "1–4",
       duration: "90–150 min",
       difficulty: "Moderate",
+      maxStage: 3,
+      solutionSuspect: "leah morn|leah",
+      solutionMotive:
+        "to stop elena from exposing the certification fraud|to stop elena from exposing the fraud|cover up the fraud|to cover up the fraud",
+      solutionEvidence:
+        "badge access log and procurement spreadsheet extract|access log and procurement spreadsheet extract|badge access log|procurement spreadsheet extract",
       isActive: true,
     },
     create: {
@@ -24,6 +30,12 @@ async function main() {
       players: "1–4",
       duration: "90–150 min",
       difficulty: "Moderate",
+      maxStage: 3,
+      solutionSuspect: "leah morn|leah",
+      solutionMotive:
+        "to stop elena from exposing the certification fraud|to stop elena from exposing the fraud|cover up the fraud|to cover up the fraud",
+      solutionEvidence:
+        "badge access log and procurement spreadsheet extract|access log and procurement spreadsheet extract|badge access log|procurement spreadsheet extract",
       isActive: true,
     },
   });
@@ -53,6 +65,10 @@ async function main() {
     where: { caseFileId: caseFile.id },
   });
 
+  await prisma.caseCheckpoint.deleteMany({
+    where: { caseFileId: caseFile.id },
+  });
+
   await prisma.casePerson.createMany({
     data: [
       {
@@ -61,6 +77,7 @@ async function main() {
         role: "Victim",
         summary:
           "Senior compliance investigator whose death triggered the Alder Street review.",
+        unlockStage: 1,
         sortOrder: 1,
       },
       {
@@ -69,6 +86,7 @@ async function main() {
         role: "Contractor Supervisor",
         summary:
           "Had a visible conflict with Elena and looks suspicious early, but is not the killer.",
+        unlockStage: 1,
         sortOrder: 2,
       },
       {
@@ -77,6 +95,7 @@ async function main() {
         role: "Department Supervisor",
         summary:
           "Downplayed Elena’s concerns and concealed damaging department details after the death.",
+        unlockStage: 2,
         sortOrder: 3,
       },
       {
@@ -85,6 +104,7 @@ async function main() {
         role: "Vendor Relations Manager",
         summary:
           "Tied to the pressure and concealment surrounding the case.",
+        unlockStage: 2,
         sortOrder: 4,
       },
       {
@@ -93,6 +113,7 @@ async function main() {
         role: "Records Clerk",
         summary:
           "Easy to overlook in the original file, but directly connected to the fatal confrontation.",
+        unlockStage: 3,
         sortOrder: 5,
       },
     ],
@@ -108,27 +129,8 @@ async function main() {
           "The original police summary that frames the case as a likely robbery.",
         body:
           "Initial responding officers noted the missing phone and treated the death as a likely robbery-related incident. The report focuses heavily on the location and missing property rather than Elena’s professional work.",
+        unlockStage: 1,
         sortOrder: 1,
-      },
-      {
-        caseFileId: caseFile.id,
-        title: "Badge Access Log",
-        category: "Access Log",
-        summary:
-          "A timeline of building access events tied to staff and contractors.",
-        body:
-          "The access data introduces a timing inconsistency that undermines one of the stated alibis. When compared carefully against witness timing, it suggests the original reconstruction was incomplete.",
-        sortOrder: 2,
-      },
-      {
-        caseFileId: caseFile.id,
-        title: "Procurement Spreadsheet Extract",
-        category: "Internal Record",
-        summary:
-          "A narrow extract of records tied to the certification chain under review.",
-        body:
-          "The extract shows unusual repetition in approvals and vendor relationships, suggesting that Elena’s review had exposed something more serious than a random confrontation.",
-        sortOrder: 3,
       },
       {
         caseFileId: caseFile.id,
@@ -138,6 +140,29 @@ async function main() {
           "A witness account that appears ordinary until compared with the movement timeline.",
         body:
           "The attendant recalls seeing Elena in the area and hearing a raised exchange, but the timing detail becomes much more important when checked against access records and known movements.",
+        unlockStage: 1,
+        sortOrder: 2,
+      },
+      {
+        caseFileId: caseFile.id,
+        title: "Badge Access Log",
+        category: "Access Log",
+        summary:
+          "A timeline of building access events tied to staff and contractors.",
+        body:
+          "The access data introduces a timing inconsistency that undermines one of the stated alibis. When compared carefully against witness timing, it suggests the original reconstruction was incomplete.",
+        unlockStage: 2,
+        sortOrder: 3,
+      },
+      {
+        caseFileId: caseFile.id,
+        title: "Procurement Spreadsheet Extract",
+        category: "Internal Record",
+        summary:
+          "A narrow extract of records tied to the certification chain under review.",
+        body:
+          "The extract shows unusual repetition in approvals and vendor relationships, suggesting that Elena’s review had exposed something more serious than a random confrontation.",
+        unlockStage: 3,
         sortOrder: 4,
       },
     ],
@@ -151,6 +176,7 @@ async function main() {
         title: "Start with the timeline",
         content:
           "Look for contradictions between the official incident framing and the movements implied by access and witness data.",
+        unlockStage: 1,
         sortOrder: 1,
       },
       {
@@ -159,6 +185,7 @@ async function main() {
         title: "Compare motive fields",
         content:
           "Do not focus only on the street-level explanation. Review how Elena’s professional work could create motive.",
+        unlockStage: 2,
         sortOrder: 2,
       },
       {
@@ -167,7 +194,29 @@ async function main() {
         title: "Look past the obvious suspect",
         content:
           "One of the earliest suspicious figures is real pressure, but not the final answer. Re-examine who was overlooked.",
+        unlockStage: 3,
         sortOrder: 3,
+      },
+    ],
+  });
+
+  await prisma.caseCheckpoint.createMany({
+    data: [
+      {
+        caseFileId: caseFile.id,
+        stage: 1,
+        prompt:
+          "Which record should you compare next if you want to challenge the official timeline?",
+        acceptedAnswers: "badge access log|access log|badge log",
+        successMessage: "Stage 2 unlocked. New records and people are now available.",
+      },
+      {
+        caseFileId: caseFile.id,
+        stage: 2,
+        prompt:
+          "Which overlooked person becomes much more important once the internal record trail is considered?",
+        acceptedAnswers: "leah morn|leah",
+        successMessage: "Final review stage unlocked. Theory submission is now available.",
       },
     ],
   });

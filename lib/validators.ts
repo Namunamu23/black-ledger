@@ -49,3 +49,11 @@ export const theorySubmissionSchema = z.object({
     .min(10, "Evidence summary must be at least 10 characters.")
     .max(2000, "Evidence summary is too long."),
 });
+
+export const checkpointAnswerSchema = z.object({
+  answer: z
+    .string()
+    .trim()
+    .min(1, "Please enter an answer.")
+    .max(200, "Answer is too long."),
+});

@@ -31,7 +31,7 @@ export default async function BureauPage() {
             <SectionHeader
               eyebrow="Bureau"
               title="Protected review access"
-              text="Your bureau is now account-aware. Activated cases appear below and can be opened as protected workspaces."
+              text="Your bureau is now account-aware. Activated cases appear below with visible progression status and protected workspaces."
             />
           </Reveal>
 
@@ -93,40 +93,63 @@ export default async function BureauPage() {
               </Reveal>
             ) : (
               <div className="mt-6 grid gap-4 md:grid-cols-2">
-                {ownedCases.map((entry, index) => (
-                  <Reveal key={entry.id} delay={index * 0.06}>
-                    <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6">
-                      <div className="text-xs uppercase tracking-[0.28em] text-zinc-500">
-                        Case File
-                      </div>
-                      <h3 className="mt-4 text-2xl font-semibold text-white">
-                        {entry.caseFile.title}
-                      </h3>
-                      <p className="mt-4 text-sm leading-7 text-zinc-300">
-                        {entry.caseFile.summary}
-                      </p>
+                {ownedCases.map((entry, index) => {
+                  const progressPercent = Math.round(
+                    (entry.currentStage / entry.caseFile.maxStage) * 100
+                  );
 
-                      <div className="mt-6 flex flex-wrap gap-3">
-                        <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-                          {entry.caseFile.players}
-                        </span>
-                        <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-                          {entry.caseFile.duration}
-                        </span>
-                        <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-                          {entry.caseFile.difficulty}
-                        </span>
-                      </div>
+                  return (
+                    <Reveal key={entry.id} delay={index * 0.06}>
+                      <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="text-xs uppercase tracking-[0.28em] text-zinc-500">
+                            Case File
+                          </div>
+                          <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+                            Stage {entry.currentStage}/{entry.caseFile.maxStage}
+                          </span>
+                        </div>
 
-                      <Link
-                        href={`/bureau/cases/${entry.caseFile.slug}`}
-                        className="mt-6 inline-flex rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
-                      >
-                        Open Workspace
-                      </Link>
-                    </div>
-                  </Reveal>
-                ))}
+                        <h3 className="mt-4 text-2xl font-semibold text-white">
+                          {entry.caseFile.title}
+                        </h3>
+                        <p className="mt-4 text-sm leading-7 text-zinc-300">
+                          {entry.caseFile.summary}
+                        </p>
+
+                        <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+                          <div
+                            className="h-full rounded-full bg-amber-400"
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+
+                        <div className="mt-3 text-sm text-zinc-400">
+                          {progressPercent}% of review stages unlocked
+                        </div>
+
+                        <div className="mt-6 flex flex-wrap gap-3">
+                          <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+                            {entry.caseFile.players}
+                          </span>
+                          <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+                            {entry.caseFile.duration}
+                          </span>
+                          <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+                            {entry.caseFile.difficulty}
+                          </span>
+                        </div>
+
+                        <Link
+                          href={`/bureau/cases/${entry.caseFile.slug}`}
+                          className="mt-6 inline-flex rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
+                        >
+                          Open Workspace
+                        </Link>
+                      </div>
+                    </Reveal>
+                  );
+                })}
               </div>
             )}
           </div>

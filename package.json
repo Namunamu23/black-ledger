@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "tsx scripts/create-admin.ts",
-    "seed:case": "tsx scripts/seed-case-file.ts"
+    "seed:case": "tsx scripts/seed-case-file.ts",
+    "reset:case": "tsx scripts/reset-case-progress.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.7.0",

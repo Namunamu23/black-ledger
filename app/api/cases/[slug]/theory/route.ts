@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { theorySubmissionSchema } from "@/lib/validators";
+import { evaluateTheorySubmission } from "@/lib/case-evaluation";
 
 export async function POST(
   request: Request,
@@ -47,6 +48,22 @@ export async function POST(
       );
     }
 
+    if (ownedCase.currentStage < ownedCase.caseFile.maxStage) {
+      return NextResponse.json(
+        { message: "Theory submission unlocks only at the final stage." },
+        { status: 400 }
+      );
+    }
+
+    const evaluation = evaluateTheorySubmission({
+      suspectName: parsed.data.suspectName,
+      motive: parsed.data.motive,
+      evidenceSummary: parsed.data.evidenceSummary,
+      solutionSuspect: ownedCase.caseFile.solutionSuspect,
+      solutionMotive: ownedCase.caseFile.solutionMotive,
+      solutionEvidence: ownedCase.caseFile.solutionEvidence,
+    });
+
     await prisma.theorySubmission.create({
       data: {
         userId,
@@ -54,11 +71,34 @@ export async function POST(
         suspectName: parsed.data.suspectName,
         motive: parsed.data.motive,
         evidenceSummary: parsed.data.evidenceSummary,
+        suspectCorrect: evaluation.suspectCorrect,
+        motiveCorrect: evaluation.motiveCorrect,
+        evidenceCorrect: evaluation.evidenceCorrect,
+        score: evaluation.score,
+        resultLabel: evaluation.resultLabel,
+        feedback: evaluation.feedback,
+      },
+    });
+
+    await prisma.userCase.update({
+      where: { id: ownedCase.id },
+      data: {
+        status: evaluation.resultLabel === "CORRECT" ? "SOLVED" : "FINAL_REVIEW",
+        completedAt:
+          evaluation.resultLabel === "CORRECT"
+            ? ownedCase.completedAt ?? new Date()
+            : ownedCase.completedAt,
+        lastViewedAt: new Date(),
       },
     });
 
     return NextResponse.json(
-      { message: "Theory submitted successfully." },
+      {
+        message: "Theory submitted successfully.",
+        resultLabel: evaluation.resultLabel,
+        feedback: evaluation.feedback,
+        score: evaluation.score,
+      },
       { status: 201 }
     );
   } catch (error) {

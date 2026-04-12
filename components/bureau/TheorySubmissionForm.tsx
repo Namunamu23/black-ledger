@@ -17,12 +17,16 @@ export default function TheorySubmissionForm({
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [resultLabel, setResultLabel] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setStatus("loading");
     setMessage("");
+    setFeedback("");
+    setResultLabel("");
 
     try {
       const response = await fetch(`/api/cases/${slug}/theory`, {
@@ -33,7 +37,12 @@ export default function TheorySubmissionForm({
         body: JSON.stringify(form),
       });
 
-      const data = (await response.json()) as { message?: string };
+      const data = (await response.json()) as {
+        message?: string;
+        resultLabel?: string;
+        feedback?: string;
+        score?: number;
+      };
 
       if (!response.ok) {
         setStatus("error");
@@ -43,6 +52,8 @@ export default function TheorySubmissionForm({
 
       setStatus("success");
       setMessage(data.message ?? "Theory submitted.");
+      setFeedback(data.feedback ?? "");
+      setResultLabel(data.resultLabel ?? "");
       setForm({
         suspectName: "",
         motive: "",
@@ -53,6 +64,13 @@ export default function TheorySubmissionForm({
       setMessage("Something went wrong. Please try again.");
     }
   }
+
+  const resultColor =
+    resultLabel === "CORRECT"
+      ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+      : resultLabel === "PARTIAL"
+      ? "text-amber-300 border-amber-500/30 bg-amber-500/10"
+      : "text-red-400 border-red-500/30 bg-red-500/10";
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
@@ -103,6 +121,15 @@ export default function TheorySubmissionForm({
         >
           {message}
         </p>
+      ) : null}
+
+      {feedback ? (
+        <div className={`rounded-2xl border p-4 text-sm leading-7 ${resultColor}`}>
+          <div className="text-xs uppercase tracking-[0.2em]">
+            {resultLabel}
+          </div>
+          <div className="mt-2">{feedback}</div>
+        </div>
       ) : null}
     </form>
   );
