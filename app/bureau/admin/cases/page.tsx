@@ -89,12 +89,20 @@ export default async function AdminCasesPage() {
                       </div>
 
                       <div className="flex flex-wrap gap-3 lg:justify-end">
-                        <GenerateActivationCodeButton caseId={caseFile.id} />
-                        <ToggleCaseStatusButton
-                          caseId={caseFile.id}
-                          isActive={caseFile.isActive}
-                        />
-                      </div>
+  <a
+    href={`/bureau/admin/cases/${caseFile.id}/edit`}
+    className="rounded-2xl border border-zinc-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-950"
+  >
+    Edit Content
+  </a>
+
+  <GenerateActivationCodeButton caseId={caseFile.id} />
+
+  <ToggleCaseStatusButton
+    caseId={caseFile.id}
+    isActive={caseFile.isActive}
+  />
+</div>
                     </div>
                   </div>
                 </Reveal>
