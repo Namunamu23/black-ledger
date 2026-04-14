@@ -57,3 +57,28 @@ export const checkpointAnswerSchema = z.object({
     .min(1, "Please enter an answer.")
     .max(200, "Answer is too long."),
 });
+
+
+export const adminCaseSchema = z.object({
+  title: z.string().trim().min(3).max(120),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens.")
+    .min(3)
+    .max(80),
+  summary: z.string().trim().min(20).max(500),
+  players: z.string().trim().min(1).max(40),
+  duration: z.string().trim().min(1).max(40),
+  difficulty: z.string().trim().min(1).max(40),
+  maxStage: z.coerce.number().int().min(1).max(10),
+  solutionSuspect: z.string().trim().min(1).max(300),
+  solutionMotive: z.string().trim().min(1).max(500),
+  solutionEvidence: z.string().trim().min(1).max(500),
+  debriefOverview: z.string().trim().min(1).max(1000),
+  debriefWhatHappened: z.string().trim().min(1).max(3000),
+  debriefWhyItWorked: z.string().trim().min(1).max(3000),
+  debriefClosing: z.string().trim().min(1).max(2000),
+  initialActivationCode: z.string().trim().toUpperCase().min(4).max(64).optional().or(z.literal("")),
+});

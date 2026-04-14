@@ -68,14 +68,24 @@ export default async function BureauPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-4 lg:justify-end">
-                  <Link
-                    href="/bureau/archive"
-                    className="rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
-                  >
-                    Open Archive
-                  </Link>
-                  <SignOutButton />
-                </div>
+  {userRole === "ADMIN" ? (
+    <Link
+      href="/bureau/admin/cases"
+      className="rounded-2xl border border-zinc-700 px-5 py-3 font-semibold text-white transition hover:bg-zinc-950"
+    >
+      Admin Cases
+    </Link>
+  ) : null}
+
+  <Link
+    href="/bureau/archive"
+    className="rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
+  >
+    Open Archive
+  </Link>
+
+  <SignOutButton />
+</div>
               </div>
             </div>
           </Reveal>
