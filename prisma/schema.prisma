@@ -36,6 +36,8 @@ model CaseFile {
   debriefWhatHappened  String              @default("")
   debriefWhyItWorked   String              @default("")
   debriefClosing       String              @default("")
+  workflowStatus       String              @default("DRAFT")
+  publishedAt          DateTime?
   isActive             Boolean             @default(true)
   createdAt            DateTime            @default(now())
   activationCodes      ActivationCode[]

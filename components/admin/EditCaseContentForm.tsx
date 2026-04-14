@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
+import CaseReadinessPanel from "@/components/admin/CaseReadinessPanel";
 
 type PersonItem = {
   name: string;
@@ -194,8 +196,35 @@ export default function EditCaseContentForm({
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-8">
+
+
+<div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+  <CaseReadinessPanel data={form} />
+
+  <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6">
+    <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
+      Preview
+    </div>
+    <h2 className="mt-4 text-2xl font-semibold text-white">
+      Public case preview
+    </h2>
+    <p className="mt-4 text-sm leading-7 text-zinc-300">
+      Review how this case will appear publicly before you publish it.
+    </p>
+
+    <Link
+      href={`/bureau/admin/cases/${caseId}/preview`}
+      className="mt-6 inline-flex rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
+    >
+      Open Preview
+    </Link>
+  </div>
+</div>
+
       <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6">
         <h2 className="text-2xl font-semibold text-white">Core Metadata</h2>
+
+
 
         <div className="mt-6 grid gap-4">
           <input

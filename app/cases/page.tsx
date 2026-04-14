@@ -5,9 +5,12 @@ import Reveal from "@/components/ui/Reveal";
 
 export default async function CasesPage() {
   const cases = await prisma.caseFile.findMany({
-    where: { isActive: true },
-    orderBy: { createdAt: "asc" },
-  });
+  where: {
+    isActive: true,
+    workflowStatus: "PUBLISHED",
+  },
+  orderBy: { createdAt: "asc" },
+});
 
   return (
     <main className="bg-zinc-950 text-white">

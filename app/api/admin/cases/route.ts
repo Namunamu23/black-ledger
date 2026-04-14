@@ -39,24 +39,26 @@ export async function POST(request: Request) {
     }
 
     const createdCase = await prisma.caseFile.create({
-      data: {
-        slug: data.slug,
-        title: data.title,
-        summary: data.summary,
-        players: data.players,
-        duration: data.duration,
-        difficulty: data.difficulty,
-        maxStage: data.maxStage,
-        solutionSuspect: data.solutionSuspect,
-        solutionMotive: data.solutionMotive,
-        solutionEvidence: data.solutionEvidence,
-        debriefOverview: data.debriefOverview,
-        debriefWhatHappened: data.debriefWhatHappened,
-        debriefWhyItWorked: data.debriefWhyItWorked,
-        debriefClosing: data.debriefClosing,
-        isActive: true,
-      },
-    });
+  data: {
+    slug: data.slug,
+    title: data.title,
+    summary: data.summary,
+    players: data.players,
+    duration: data.duration,
+    difficulty: data.difficulty,
+    maxStage: data.maxStage,
+    solutionSuspect: data.solutionSuspect,
+    solutionMotive: data.solutionMotive,
+    solutionEvidence: data.solutionEvidence,
+    debriefOverview: data.debriefOverview,
+    debriefWhatHappened: data.debriefWhatHappened,
+    debriefWhyItWorked: data.debriefWhyItWorked,
+    debriefClosing: data.debriefClosing,
+    workflowStatus: "DRAFT",
+    publishedAt: null,
+    isActive: true,
+  },
+});
 
     if (data.initialActivationCode) {
       await prisma.activationCode.create({
