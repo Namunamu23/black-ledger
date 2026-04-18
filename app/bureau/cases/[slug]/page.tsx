@@ -84,34 +84,52 @@ export default async function BureauCasePage({ params }: PageProps) {
       <section className="border-b border-zinc-900 py-20">
         <div className="mx-auto max-w-6xl px-6">
           <Reveal>
-            <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-              Case Workspace
-            </div>
-            <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-              {caseFile.title}
-            </h1>
-            <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-300">
-              {caseFile.summary}
-            </p>
+  <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
+    Case Workspace
+  </div>
+  <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+    {caseFile.title}
+  </h1>
+  <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-300">
+    {caseFile.summary}
+  </p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-                Stage {currentStage}/{caseFile.maxStage}
-              </span>
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-                {status}
-              </span>
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-                {caseFile.players}
-              </span>
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-                {caseFile.duration}
-              </span>
-              <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-                {caseFile.difficulty}
-              </span>
-            </div>
-          </Reveal>
+  <div className="mt-8 flex flex-wrap gap-3">
+    <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+      Stage {currentStage}/{caseFile.maxStage}
+    </span>
+    <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+      {status}
+    </span>
+    <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+      {caseFile.players}
+    </span>
+    <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+      {caseFile.duration}
+    </span>
+    <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+      {caseFile.difficulty}
+    </span>
+  </div>
+
+  <div className="mt-8 flex flex-wrap gap-4">
+    <Link
+      href={`/bureau/cases/${slug}/database`}
+      className="rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
+    >
+      Open Bureau Database
+    </Link>
+
+    {status === "SOLVED" ? (
+      <Link
+        href={`/bureau/cases/${slug}/debrief`}
+        className="rounded-2xl border border-emerald-500/30 px-5 py-3 font-semibold text-emerald-400 transition hover:bg-emerald-500/10"
+      >
+        Open Debrief
+      </Link>
+    ) : null}
+  </div>
+</Reveal>
 
           {status === "SOLVED" ? (
             <Reveal delay={0.06}>
@@ -232,19 +250,27 @@ export default async function BureauCasePage({ params }: PageProps) {
             {visibleRecords.map((record, index) => (
               <Reveal key={record.id} delay={index * 0.05}>
                 <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6">
-                  <div className="text-sm uppercase tracking-[0.2em] text-zinc-500">
-                    {record.category}
-                  </div>
-                  <h2 className="mt-3 text-2xl font-semibold text-white">
-                    {record.title}
-                  </h2>
-                  <p className="mt-4 text-sm leading-7 text-zinc-300">
-                    {record.summary}
-                  </p>
-                  <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-7 text-zinc-400">
-                    {record.body}
-                  </div>
-                </div>
+  <div className="text-sm uppercase tracking-[0.2em] text-zinc-500">
+    {record.category}
+  </div>
+  <h2 className="mt-3 text-2xl font-semibold text-white">
+    {record.title}
+  </h2>
+  <p className="mt-4 text-sm leading-7 text-zinc-300">
+    {record.summary}
+  </p>
+
+  <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-7 text-zinc-400">
+    {record.body}
+  </div>
+
+  <Link
+    href={`/bureau/cases/${slug}/records/${record.id}`}
+    className="mt-5 inline-flex rounded-2xl border border-zinc-700 px-5 py-3 font-semibold text-white transition hover:bg-zinc-950"
+  >
+    Open Record Detail
+  </Link>
+</div>
               </Reveal>
             ))}
           </div>

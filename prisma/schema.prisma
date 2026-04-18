@@ -80,16 +80,18 @@ model UserCase {
 }
 
 model CasePerson {
-  id          Int      @id @default(autoincrement())
-  caseFileId  Int
-  name        String
-  role        String
-  summary     String
-  unlockStage Int      @default(1)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
+  id             Int           @id @default(autoincrement())
+  caseFileId     Int
+  globalPersonId Int?
+  name           String
+  role           String
+  summary        String
+  unlockStage    Int           @default(1)
+  sortOrder      Int           @default(0)
+  createdAt      DateTime      @default(now())
 
-  caseFile    CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  caseFile       CaseFile      @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  globalPerson   GlobalPerson? @relation(fields: [globalPersonId], references: [id])
 }
 
 model CaseRecord {
@@ -177,4 +179,54 @@ model SupportMessage {
   email     String
   message   String
   createdAt DateTime @default(now())
+}
+
+model GlobalPerson {
+  id                Int                @id @default(autoincrement())
+  bureauId          String             @unique
+  firstName         String
+  lastName          String
+  fullName          String
+  dateOfBirth       String?
+  knownLocation     String?
+  status            String             @default("UNKNOWN")
+  personType        String             @default("PERSON_OF_INTEREST")
+  classification    String             @default("STANDARD")
+  riskLevel         String             @default("LOW")
+  relevanceLevel    String             @default("UNASSESSED")
+  profileSummary    String             @default("")
+  internalNotes     String             @default("")
+  lastUpdatedLabel  String             @default("Recently reviewed")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  aliases           PersonAlias[]
+  caseAppearances   CasePerson[]
+  sourceConnections PersonConnection[] @relation("SourcePersonConnections")
+  targetConnections PersonConnection[] @relation("TargetPersonConnections")
+}
+
+model PersonAlias {
+  id             Int          @id @default(autoincrement())
+  globalPersonId Int
+  alias          String
+  aliasType      String       @default("KNOWN_ALIAS")
+  createdAt      DateTime     @default(now())
+
+  globalPerson   GlobalPerson @relation(fields: [globalPersonId], references: [id], onDelete: Cascade)
+
+  @@unique([globalPersonId, alias])
+}
+
+model PersonConnection {
+  id             Int          @id @default(autoincrement())
+  sourcePersonId Int
+  targetPersonId Int
+  connectionType String
+  summary        String       @default("")
+  visibility     String       @default("STANDARD")
+  createdAt      DateTime     @default(now())
+
+  sourcePerson   GlobalPerson @relation("SourcePersonConnections", fields: [sourcePersonId], references: [id], onDelete: Cascade)
+  targetPerson   GlobalPerson @relation("TargetPersonConnections", fields: [targetPersonId], references: [id], onDelete: Cascade)
 }

@@ -45,6 +45,7 @@ export default async function BureauPage() {
     <main className="bg-zinc-950 text-white">
       <section className="relative overflow-hidden border-b border-zinc-900 py-20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(251,191,36,0.12),transparent_30%)]" />
+
         <div className="relative mx-auto max-w-6xl px-6">
           <Reveal>
             <SectionHeader
@@ -78,6 +79,13 @@ export default async function BureauPage() {
   ) : null}
 
   <Link
+    href="/bureau/database"
+    className="rounded-2xl border border-zinc-700 px-5 py-3 font-semibold text-white transition hover:bg-zinc-950"
+  >
+    Global Database
+  </Link>
+
+  <Link
     href="/bureau/archive"
     className="rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
   >
@@ -98,6 +106,7 @@ export default async function BureauPage() {
                 helper="All activated case files linked to your account."
               />
             </Reveal>
+
             <Reveal delay={0.05}>
               <ArchiveStatCard
                 label="Solved cases"
@@ -105,6 +114,7 @@ export default async function BureauPage() {
                 helper="Cases you have fully resolved."
               />
             </Reveal>
+
             <Reveal delay={0.1}>
               <ArchiveStatCard
                 label="Theory submissions"
@@ -119,9 +129,11 @@ export default async function BureauPage() {
               <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
                 Activate a case
               </div>
+
               <h2 className="mt-4 text-3xl font-semibold text-white">
                 Add a case to your archive
               </h2>
+
               <p className="mt-4 max-w-2xl text-base leading-8 text-zinc-300">
                 Enter a valid activation code to link a case to your account.
               </p>
@@ -137,6 +149,7 @@ export default async function BureauPage() {
               <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
                 Active Reviews
               </div>
+
               <h2 className="mt-4 text-3xl font-semibold text-white">
                 Continue investigating
               </h2>
@@ -170,6 +183,7 @@ export default async function BureauPage() {
                         <h3 className="mt-4 text-2xl font-semibold text-white">
                           {entry.caseFile.title}
                         </h3>
+
                         <p className="mt-4 text-sm leading-7 text-zinc-300">
                           {entry.caseFile.summary}
                         </p>
@@ -185,12 +199,21 @@ export default async function BureauPage() {
                           Stage {entry.currentStage}/{entry.caseFile.maxStage}
                         </div>
 
-                        <Link
-                          href={`/bureau/cases/${entry.caseFile.slug}`}
-                          className="mt-6 inline-flex rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
-                        >
-                          Open Workspace
-                        </Link>
+                        <div className="mt-6 flex flex-wrap gap-3">
+                          <Link
+                            href={`/bureau/cases/${entry.caseFile.slug}`}
+                            className="rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
+                          >
+                            Open Workspace
+                          </Link>
+
+                          <Link
+                            href={`/bureau/cases/${entry.caseFile.slug}/database`}
+                            className="rounded-2xl border border-zinc-700 px-5 py-3 font-semibold text-white transition hover:bg-zinc-950"
+                          >
+                            Database
+                          </Link>
+                        </div>
                       </div>
                     </Reveal>
                   );
@@ -204,6 +227,7 @@ export default async function BureauPage() {
               <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
                 Solved Cases
               </div>
+
               <h2 className="mt-4 text-3xl font-semibold text-white">
                 Completed archive
               </h2>
@@ -232,22 +256,31 @@ export default async function BureauPage() {
                       <h3 className="mt-4 text-2xl font-semibold text-white">
                         {entry.caseFile.title}
                       </h3>
+
                       <p className="mt-4 text-sm leading-7 text-zinc-300">
                         {entry.caseFile.summary}
                       </p>
 
-                      <div className="mt-6 flex flex-wrap gap-4">
+                      <div className="mt-6 flex flex-wrap gap-3">
                         <Link
                           href={`/bureau/cases/${entry.caseFile.slug}`}
                           className="rounded-2xl border border-zinc-700 px-5 py-3 font-semibold text-white transition hover:bg-zinc-950"
                         >
                           Workspace
                         </Link>
+
                         <Link
                           href={`/bureau/cases/${entry.caseFile.slug}/debrief`}
                           className="rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-emerald-400"
                         >
                           Open Debrief
+                        </Link>
+
+                        <Link
+                          href={`/bureau/cases/${entry.caseFile.slug}/database`}
+                          className="rounded-2xl border border-zinc-700 px-5 py-3 font-semibold text-white transition hover:bg-zinc-950"
+                        >
+                          Database
                         </Link>
                       </div>
                     </div>
@@ -263,19 +296,30 @@ export default async function BureauPage() {
                 <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
                   Latest solved
                 </div>
+
                 <h2 className="mt-4 text-3xl font-semibold text-white">
                   {latestSolved.caseFile.title}
                 </h2>
+
                 <p className="mt-4 max-w-2xl text-base leading-8 text-zinc-300">
                   Your most recently completed case is now archived and ready for debrief review.
                 </p>
 
-                <Link
-                  href={`/bureau/cases/${latestSolved.caseFile.slug}/debrief`}
-                  className="mt-6 inline-flex rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
-                >
-                  View Latest Debrief
-                </Link>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    href={`/bureau/cases/${latestSolved.caseFile.slug}/debrief`}
+                    className="rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
+                  >
+                    View Latest Debrief
+                  </Link>
+
+                  <Link
+                    href={`/bureau/cases/${latestSolved.caseFile.slug}/database`}
+                    className="rounded-2xl border border-zinc-700 px-5 py-3 font-semibold text-white transition hover:bg-zinc-950"
+                  >
+                    Database
+                  </Link>
+                </div>
               </div>
             </Reveal>
           ) : null}
