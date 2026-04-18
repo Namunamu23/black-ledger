@@ -21,33 +21,33 @@ model User {
 }
 
 model CaseFile {
-  id                   Int                 @id @default(autoincrement())
-  slug                 String              @unique
-  title                String
-  summary              String
-  players              String
-  duration             String
-  difficulty           String
-  maxStage             Int                 @default(3)
-  solutionSuspect      String              @default("")
-  solutionMotive       String              @default("")
-  solutionEvidence     String              @default("")
-  debriefOverview      String              @default("")
-  debriefWhatHappened  String              @default("")
-  debriefWhyItWorked   String              @default("")
-  debriefClosing       String              @default("")
-  workflowStatus       String              @default("DRAFT")
-  publishedAt          DateTime?
-  isActive             Boolean             @default(true)
-  createdAt            DateTime            @default(now())
-  activationCodes      ActivationCode[]
-  owners               UserCase[]
-  people               CasePerson[]
-  records              CaseRecord[]
-  hints                CaseHint[]
-  checkpoints          CaseCheckpoint[]
-  theorySubmissions    TheorySubmission[]
-  checkpointAttempts   CheckpointAttempt[]
+  id                  Int                 @id @default(autoincrement())
+  slug                String              @unique
+  title               String
+  summary             String
+  players             String
+  duration            String
+  difficulty          String
+  maxStage            Int                 @default(3)
+  solutionSuspect     String              @default("")
+  solutionMotive      String              @default("")
+  solutionEvidence    String              @default("")
+  debriefOverview     String              @default("")
+  debriefWhatHappened String              @default("")
+  debriefWhyItWorked  String              @default("")
+  debriefClosing      String              @default("")
+  workflowStatus      String              @default("DRAFT")
+  publishedAt         DateTime?
+  isActive            Boolean             @default(true)
+  createdAt           DateTime            @default(now())
+  activationCodes     ActivationCode[]
+  owners              UserCase[]
+  people              CasePerson[]
+  records             CaseRecord[]
+  hints               CaseHint[]
+  checkpoints         CaseCheckpoint[]
+  theorySubmissions   TheorySubmission[]
+  checkpointAttempts  CheckpointAttempt[]
 }
 
 model ActivationCode {
@@ -58,40 +58,40 @@ model ActivationCode {
   claimedAt       DateTime?
   createdAt       DateTime  @default(now())
 
-  caseFile        CaseFile  @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
-  claimedByUser   User?     @relation("ClaimedCodes", fields: [claimedByUserId], references: [id])
+  caseFile      CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  claimedByUser User?    @relation("ClaimedCodes", fields: [claimedByUserId], references: [id])
 }
 
 model UserCase {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   userId        Int
   caseFileId    Int
-  currentStage  Int      @default(1)
-  status        String   @default("ACTIVE")
-  activatedAt   DateTime @default(now())
+  currentStage  Int       @default(1)
+  status        String    @default("ACTIVE")
+  activatedAt   DateTime  @default(now())
   firstOpenedAt DateTime?
   lastViewedAt  DateTime?
   completedAt   DateTime?
 
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  caseFile      CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 
   @@unique([userId, caseFileId])
 }
 
 model CasePerson {
-  id             Int           @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   caseFileId     Int
   globalPersonId Int?
   name           String
   role           String
   summary        String
-  unlockStage    Int           @default(1)
-  sortOrder      Int           @default(0)
-  createdAt      DateTime      @default(now())
+  unlockStage    Int      @default(1)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
 
-  caseFile       CaseFile      @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
-  globalPerson   GlobalPerson? @relation(fields: [globalPersonId], references: [id])
+  caseFile     CaseFile      @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  globalPerson GlobalPerson? @relation(fields: [globalPersonId], references: [id])
 }
 
 model CaseRecord {
@@ -105,7 +105,7 @@ model CaseRecord {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
 
-  caseFile    CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 }
 
 model CaseHint {
@@ -118,7 +118,7 @@ model CaseHint {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
 
-  caseFile    CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 }
 
 model CaseCheckpoint {
@@ -130,41 +130,41 @@ model CaseCheckpoint {
   successMessage  String
   createdAt       DateTime @default(now())
 
-  caseFile        CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 
   @@unique([caseFileId, stage])
 }
 
 model CheckpointAttempt {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  caseFileId  Int
-  stage       Int
-  answer      String
-  isCorrect   Boolean
-  createdAt   DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  caseFileId Int
+  stage      Int
+  answer     String
+  isCorrect  Boolean
+  createdAt  DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  caseFile    CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 }
 
 model TheorySubmission {
-  id               Int      @id @default(autoincrement())
-  userId           Int
-  caseFileId       Int
-  suspectName      String
-  motive           String
-  evidenceSummary  String
-  suspectCorrect   Boolean  @default(false)
-  motiveCorrect    Boolean  @default(false)
-  evidenceCorrect  Boolean  @default(false)
-  score            Int      @default(0)
-  resultLabel      String   @default("UNSCORED")
-  feedback         String   @default("")
-  createdAt        DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  caseFileId      Int
+  suspectName     String
+  motive          String
+  evidenceSummary String
+  suspectCorrect  Boolean  @default(false)
+  motiveCorrect   Boolean  @default(false)
+  evidenceCorrect Boolean  @default(false)
+  score           Int      @default(0)
+  resultLabel     String   @default("UNSCORED")
+  feedback        String   @default("")
+  createdAt       DateTime @default(now())
 
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  caseFile         CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 }
 
 model WaitlistEntry {
@@ -182,23 +182,34 @@ model SupportMessage {
 }
 
 model GlobalPerson {
-  id                Int                @id @default(autoincrement())
-  bureauId          String             @unique
+  id                Int      @id @default(autoincrement())
+  bureauId          String   @unique
   firstName         String
   lastName          String
   fullName          String
   dateOfBirth       String?
   knownLocation     String?
-  status            String             @default("UNKNOWN")
-  personType        String             @default("PERSON_OF_INTEREST")
-  classification    String             @default("STANDARD")
-  riskLevel         String             @default("LOW")
-  relevanceLevel    String             @default("UNASSESSED")
-  profileSummary    String             @default("")
-  internalNotes     String             @default("")
-  lastUpdatedLabel  String             @default("Recently reviewed")
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  status            String   @default("UNKNOWN")
+  personType        String   @default("PERSON_OF_INTEREST")
+  classification    String   @default("STANDARD")
+  riskLevel         String   @default("LOW")
+  relevanceLevel    String   @default("UNASSESSED")
+  profileSummary    String   @default("")
+  internalNotes     String   @default("")
+  lastUpdatedLabel  String   @default("Recently reviewed")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  gender            String?
+  accessLevel       String   @default("STANDARD")
+  sourceReliability String   @default("UNVERIFIED")
+  confidenceLevel   String   @default("MEDIUM")
+  watchlistFlag     String   @default("NONE")
+
+  behavioralProfile PersonBehavioralProfile?
+  digitalTraces     PersonDigitalTrace[]
+  timelineEvents    PersonTimelineEvent[]
+  evidenceLinks     PersonEvidenceLink[]
+  analystNotes      PersonAnalystNote[]
 
   aliases           PersonAlias[]
   caseAppearances   CasePerson[]
@@ -207,26 +218,103 @@ model GlobalPerson {
 }
 
 model PersonAlias {
-  id             Int          @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   globalPersonId Int
   alias          String
-  aliasType      String       @default("KNOWN_ALIAS")
-  createdAt      DateTime     @default(now())
+  aliasType      String   @default("KNOWN_ALIAS")
+  createdAt      DateTime @default(now())
 
-  globalPerson   GlobalPerson @relation(fields: [globalPersonId], references: [id], onDelete: Cascade)
+  globalPerson GlobalPerson @relation(fields: [globalPersonId], references: [id], onDelete: Cascade)
 
   @@unique([globalPersonId, alias])
 }
 
 model PersonConnection {
-  id             Int          @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   sourcePersonId Int
   targetPersonId Int
   connectionType String
-  summary        String       @default("")
-  visibility     String       @default("STANDARD")
-  createdAt      DateTime     @default(now())
+  summary        String   @default("")
+  visibility     String   @default("STANDARD")
+  createdAt      DateTime @default(now())
 
-  sourcePerson   GlobalPerson @relation("SourcePersonConnections", fields: [sourcePersonId], references: [id], onDelete: Cascade)
-  targetPerson   GlobalPerson @relation("TargetPersonConnections", fields: [targetPersonId], references: [id], onDelete: Cascade)
+  sourcePerson GlobalPerson @relation("SourcePersonConnections", fields: [sourcePersonId], references: [id], onDelete: Cascade)
+  targetPerson GlobalPerson @relation("TargetPersonConnections", fields: [targetPersonId], references: [id], onDelete: Cascade)
+}
+
+model PersonBehavioralProfile {
+  id                   Int      @id @default(autoincrement())
+  globalPersonId       Int      @unique
+  behavioralRead       String   @default("")
+  observedPatterns     String   @default("")
+  stressIndicators     String   @default("")
+  communicationStyle   String   @default("")
+  socialBehavior       String   @default("")
+  conflictHistory      String   @default("")
+  motiveThreads        String   @default("")
+  escalationIndicators String   @default("")
+  analystAssessment    String   @default("")
+  analystConfidence    String   @default("UNASSESSED")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  globalPerson GlobalPerson @relation(fields: [globalPersonId], references: [id], onDelete: Cascade)
+}
+
+model PersonDigitalTrace {
+  id             Int      @id @default(autoincrement())
+  globalPersonId Int
+  category       String
+  label          String
+  value          String
+  confidence     String   @default("UNASSESSED")
+  notes          String   @default("")
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  globalPerson GlobalPerson @relation(fields: [globalPersonId], references: [id], onDelete: Cascade)
+}
+
+model PersonTimelineEvent {
+  id              Int      @id @default(autoincrement())
+  globalPersonId  Int
+  dateLabel       String
+  category        String
+  title           String
+  summary         String
+  confidence      String   @default("UNASSESSED")
+  relatedCaseSlug String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  globalPerson GlobalPerson @relation(fields: [globalPersonId], references: [id], onDelete: Cascade)
+}
+
+model PersonEvidenceLink {
+  id               Int      @id @default(autoincrement())
+  globalPersonId   Int
+  evidenceType     String
+  title            String
+  summary          String
+  confidence       String   @default("UNASSESSED")
+  relatedCaseSlug  String?
+  relatedCaseTitle String?
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  globalPerson GlobalPerson @relation(fields: [globalPersonId], references: [id], onDelete: Cascade)
+}
+
+model PersonAnalystNote {
+  id             Int      @id @default(autoincrement())
+  globalPersonId Int
+  category       String
+  title          String
+  content        String
+  severity       String   @default("INFO")
+  visibility     String   @default("INTERNAL")
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  globalPerson GlobalPerson @relation(fields: [globalPersonId], references: [id], onDelete: Cascade)
 }

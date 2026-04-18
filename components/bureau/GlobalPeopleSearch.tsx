@@ -17,6 +17,11 @@ type PersonSearchItem = {
   riskLevel: string;
   relevanceLevel: string;
   profileSummary: string;
+  gender: string | null;
+  accessLevel: string;
+  sourceReliability: string;
+  confidenceLevel: string;
+  watchlistFlag: string;
   aliases: { alias: string }[];
   caseAppearances: {
     role: string;
@@ -388,6 +393,7 @@ function SubjectFileCard({
             </span>
             <Tag label={person.classification} className={classificationTone(person.classification)} />
             <Tag label={`Risk ${person.riskLevel}`} className={riskTone(person.riskLevel)} />
+            <Tag label={person.watchlistFlag} className="border-cyan-500/30 bg-cyan-500/10 text-cyan-200" />
           </div>
 
           <h3 className="mt-4 text-3xl font-semibold tracking-tight text-zinc-50 group-hover:text-amber-100">
@@ -399,12 +405,16 @@ function SubjectFileCard({
               "No profile summary has been indexed for this identity record."}
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Tag label={person.status} />
-            <Tag label={person.personType} />
-            <Tag label={person.relevanceLevel} />
-            {person.knownLocation ? <Tag label={person.knownLocation} /> : null}
-          </div>
+<div className="mt-5 flex flex-wrap gap-2">
+  <Tag label={person.status} />
+  <Tag label={person.personType} />
+  <Tag label={person.relevanceLevel} />
+  {person.knownLocation ? <Tag label={person.knownLocation} /> : null}
+
+{person.accessLevel && <Tag label={`Access ${person.accessLevel}`} />}
+{person.sourceReliability && <Tag label={`Reliability ${person.sourceReliability}`} />}
+{person.confidenceLevel && <Tag label={`Confidence ${person.confidenceLevel}`} />}
+</div>
 
           {person.aliases.length > 0 ? (
             <div className="mt-5 border-t border-zinc-800 pt-4">
