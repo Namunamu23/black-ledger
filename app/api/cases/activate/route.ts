@@ -72,21 +72,20 @@ export async function POST(request: Request) {
       );
     }
 
-    await prisma.$transaction([
-      prisma.userCase.create({
-        data: {
-          userId,
-          caseFileId: activation.caseFileId,
-        },
-      }),
-      prisma.activationCode.update({
-        where: { id: activation.id },
-        data: {
-          claimedByUserId: userId,
-          claimedAt: new Date(),
-        },
-      }),
-    ]);
+    await prisma.$transaction(async (tx) => {
+      const claimed = await tx.activationCode.updateMany({
+        where: { id: activation.id, claimedByUserId: null },
+        data: { claimedByUserId: userId, claimedAt: new Date() },
+      });
+
+      if (claimed.count === 0) {
+        throw new Error("ALREADY_CLAIMED");
+      }
+
+      await tx.userCase.create({
+        data: { userId, caseFileId: activation.caseFileId },
+      });
+    });
 
     return NextResponse.json(
       {
@@ -96,6 +95,13 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
+    if (error instanceof Error && error.message === "ALREADY_CLAIMED") {
+      return NextResponse.json(
+        { message: "This activation code has already been used." },
+        { status: 409 }
+      );
+    }
+
     console.error("Activation route error:", error);
 
     return NextResponse.json(

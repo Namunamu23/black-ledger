@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -8,7 +9,7 @@ function generateCode(prefix: string) {
     .slice(0, 6)
     .toUpperCase();
 
-  const randomPart = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const randomPart = randomBytes(4).toString("hex").toUpperCase();
 
   return `${cleanPrefix}-${randomPart}`;
 }

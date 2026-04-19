@@ -41,7 +41,7 @@ export async function POST(
         await prisma.userCase.update({
           where: { id: userCase.id },
           data: {
-            status: "COMPLETE",
+            status: "FINAL_REVIEW",
             completedAt: new Date(),
             lastViewedAt: new Date(),
           },
@@ -65,7 +65,7 @@ export async function POST(
       where: { id: userCase.id },
       data: {
         currentStage: nextStage,
-        status: isComplete ? "COMPLETE" : "ACTIVE",
+        status: isComplete ? "FINAL_REVIEW" : "ACTIVE",
         firstOpenedAt: userCase.firstOpenedAt ?? new Date(),
         lastViewedAt: new Date(),
         completedAt: isComplete ? new Date() : userCase.completedAt,
