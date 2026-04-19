@@ -50,3 +50,9 @@ next-env.d.ts
 *.sqlite3
 prisma/*.db
 prisma/*.sqlite
+
+# Claude Code session/memory data
+.claude/
+
+# Audit scratch files
+.audit-chunk-*.md
