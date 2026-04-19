@@ -3,6 +3,11 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { theorySubmissionSchema } from "@/lib/validators";
 import { evaluateTheorySubmission } from "@/lib/case-evaluation";
+import {
+  nextUserCaseStatus,
+  type TheoryResultLabel,
+  type UserCaseStatus,
+} from "@/lib/user-case-state";
 
 export async function POST(
   request: Request,
@@ -64,32 +69,43 @@ export async function POST(
       solutionEvidence: ownedCase.caseFile.solutionEvidence,
     });
 
-    await prisma.theorySubmission.create({
-      data: {
-        userId,
-        caseFileId: ownedCase.caseFileId,
-        suspectName: parsed.data.suspectName,
-        motive: parsed.data.motive,
-        evidenceSummary: parsed.data.evidenceSummary,
-        suspectCorrect: evaluation.suspectCorrect,
-        motiveCorrect: evaluation.motiveCorrect,
-        evidenceCorrect: evaluation.evidenceCorrect,
-        score: evaluation.score,
-        resultLabel: evaluation.resultLabel,
-        feedback: evaluation.feedback,
-      },
-    });
+    const currentStatus = ownedCase.status as UserCaseStatus;
+    const newStatus = nextUserCaseStatus(
+      currentStatus,
+      evaluation.resultLabel as TheoryResultLabel
+    );
 
-    await prisma.userCase.update({
-      where: { id: ownedCase.id },
-      data: {
-        status: evaluation.resultLabel === "CORRECT" ? "SOLVED" : "FINAL_REVIEW",
-        completedAt:
-          evaluation.resultLabel === "CORRECT"
-            ? ownedCase.completedAt ?? new Date()
-            : ownedCase.completedAt,
-        lastViewedAt: new Date(),
-      },
+    const becameSolvedNow =
+      newStatus === "SOLVED" && currentStatus !== "SOLVED";
+    const completedAt = becameSolvedNow
+      ? ownedCase.completedAt ?? new Date()
+      : ownedCase.completedAt;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.theorySubmission.create({
+        data: {
+          userId,
+          caseFileId: ownedCase.caseFileId,
+          suspectName: parsed.data.suspectName,
+          motive: parsed.data.motive,
+          evidenceSummary: parsed.data.evidenceSummary,
+          suspectCorrect: evaluation.suspectCorrect,
+          motiveCorrect: evaluation.motiveCorrect,
+          evidenceCorrect: evaluation.evidenceCorrect,
+          score: evaluation.score,
+          resultLabel: evaluation.resultLabel,
+          feedback: evaluation.feedback,
+        },
+      });
+
+      await tx.userCase.update({
+        where: { id: ownedCase.id },
+        data: {
+          status: newStatus,
+          completedAt,
+          lastViewedAt: new Date(),
+        },
+      });
     });
 
     return NextResponse.json(
