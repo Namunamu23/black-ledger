@@ -5,6 +5,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import Reveal from "@/components/ui/Reveal";
 import StatusBadge from "@/components/bureau/StatusBadge";
 import ArchiveStatCard from "@/components/bureau/ArchiveStatCard";
+import { THEORY_RESULT_LABEL } from "@/lib/labels";
 
 export default async function BureauArchivePage() {
   const session = await auth();
@@ -154,7 +155,7 @@ export default async function BureauArchivePage() {
                           </div>
 
                           <span className={`rounded-full border px-3 py-1 text-xs ${badgeColor}`}>
-                            {submission.resultLabel}
+                            {THEORY_RESULT_LABEL[submission.resultLabel]}
                           </span>
                         </div>
 

@@ -7,12 +7,37 @@ datasource db {
   provider = "sqlite"
 }
 
+enum UserRole {
+  INVESTIGATOR
+  ADMIN
+}
+
+enum UserCaseStatus {
+  NOT_STARTED
+  ACTIVE
+  FINAL_REVIEW
+  SOLVED
+}
+
+enum CaseWorkflowStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TheoryResultLabel {
+  CORRECT
+  PARTIAL
+  INCORRECT
+}
+
 model User {
   id                     Int                 @id @default(autoincrement())
   email                  String              @unique
   name                   String?
   passwordHash           String
-  role                   String              @default("INVESTIGATOR")
+  role                   UserRole            @default(INVESTIGATOR)
   createdAt              DateTime            @default(now())
   ownedCases             UserCase[]
   claimedActivationCodes ActivationCode[]    @relation("ClaimedCodes")
@@ -36,7 +61,7 @@ model CaseFile {
   debriefWhatHappened String              @default("")
   debriefWhyItWorked  String              @default("")
   debriefClosing      String              @default("")
-  workflowStatus      String              @default("DRAFT")
+  workflowStatus      CaseWorkflowStatus  @default(DRAFT)
   publishedAt         DateTime?
   isActive            Boolean             @default(true)
   createdAt           DateTime            @default(now())
@@ -67,7 +92,7 @@ model UserCase {
   userId        Int
   caseFileId    Int
   currentStage  Int       @default(1)
-  status        String    @default("ACTIVE")
+  status        UserCaseStatus @default(ACTIVE)
   activatedAt   DateTime  @default(now())
   firstOpenedAt DateTime?
   lastViewedAt  DateTime?
@@ -159,7 +184,7 @@ model TheorySubmission {
   motiveCorrect   Boolean  @default(false)
   evidenceCorrect Boolean  @default(false)
   score           Int      @default(0)
-  resultLabel     String   @default("UNSCORED")
+  resultLabel     TheoryResultLabel
   feedback        String   @default("")
   createdAt       DateTime @default(now())
 

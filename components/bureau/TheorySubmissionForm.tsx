@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { TheoryResultLabel } from "@/generated/prisma/client";
+import { THEORY_RESULT_LABEL } from "@/lib/labels";
 
 type TheorySubmissionFormProps = {
   slug: string;
@@ -18,7 +20,7 @@ export default function TheorySubmissionForm({
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState("");
-  const [resultLabel, setResultLabel] = useState("");
+  const [resultLabel, setResultLabel] = useState<TheoryResultLabel | "">("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,7 +41,7 @@ export default function TheorySubmissionForm({
 
       const data = (await response.json()) as {
         message?: string;
-        resultLabel?: string;
+        resultLabel?: TheoryResultLabel;
         feedback?: string;
         score?: number;
       };
@@ -66,9 +68,9 @@ export default function TheorySubmissionForm({
   }
 
   const resultColor =
-    resultLabel === "CORRECT"
+    resultLabel === TheoryResultLabel.CORRECT
       ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
-      : resultLabel === "PARTIAL"
+      : resultLabel === TheoryResultLabel.PARTIAL
       ? "text-amber-300 border-amber-500/30 bg-amber-500/10"
       : "text-red-400 border-red-500/30 bg-red-500/10";
 
@@ -126,7 +128,7 @@ export default function TheorySubmissionForm({
       {feedback ? (
         <div className={`rounded-2xl border p-4 text-sm leading-7 ${resultColor}`}>
           <div className="text-xs uppercase tracking-[0.2em]">
-            {resultLabel}
+            {resultLabel ? THEORY_RESULT_LABEL[resultLabel] : ""}
           </div>
           <div className="mt-2">{feedback}</div>
         </div>

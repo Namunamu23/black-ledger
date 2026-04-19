@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Reveal from "@/components/ui/Reveal";
 import TheorySubmissionForm from "@/components/bureau/TheorySubmissionForm";
 import CheckpointForm from "@/components/bureau/CheckpointForm";
+import { CASE_STATUS_LABEL, THEORY_RESULT_LABEL } from "@/lib/labels";
 
 type PageProps = {
   params: Promise<{
@@ -99,7 +100,7 @@ export default async function BureauCasePage({ params }: PageProps) {
       Stage {currentStage}/{caseFile.maxStage}
     </span>
     <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-      {status}
+      {CASE_STATUS_LABEL[status]}
     </span>
     <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
       {caseFile.players}
@@ -371,7 +372,7 @@ export default async function BureauCasePage({ params }: PageProps) {
                         <div className="flex items-center justify-between gap-4">
                           <div className="text-sm text-zinc-400">Suspect</div>
                           <span className={`rounded-full border px-3 py-1 text-xs ${badgeColor}`}>
-                            {submission.resultLabel}
+                            {THEORY_RESULT_LABEL[submission.resultLabel]}
                           </span>
                         </div>
 

@@ -6,7 +6,6 @@ import { evaluateTheorySubmission } from "@/lib/case-evaluation";
 import {
   nextUserCaseStatus,
   type TheoryResultLabel,
-  type UserCaseStatus,
 } from "@/lib/user-case-state";
 
 export async function POST(
@@ -69,7 +68,7 @@ export async function POST(
       solutionEvidence: ownedCase.caseFile.solutionEvidence,
     });
 
-    const currentStatus = ownedCase.status as UserCaseStatus;
+    const currentStatus = ownedCase.status;
     const newStatus = nextUserCaseStatus(
       currentStatus,
       evaluation.resultLabel as TheoryResultLabel

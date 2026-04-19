@@ -1,21 +1,22 @@
 /**
- * Canonical UserCase status values. The order of this union is the order of
- * the state machine — every status to the right is "later" than every status
- * to its left, and the machine is monotonically upward: a UserCase never
- * moves backwards.
+ * Canonical UserCase status values are sourced from the Prisma schema enum
+ * UserCaseStatus, re-exported here so the rest of the codebase has a single
+ * import location for state-machine types.
  *
+ * The state machine is monotonically upward:
  *   NOT_STARTED → ACTIVE → FINAL_REVIEW → SOLVED  (terminal)
+ *
+ * TheoryResultLabel comes from the Prisma TheoryResultLabel enum.
  */
-export type UserCaseStatus =
-  | "NOT_STARTED"
-  | "ACTIVE"
-  | "FINAL_REVIEW"
-  | "SOLVED";
+export {
+  UserCaseStatus,
+  TheoryResultLabel,
+} from "@/generated/prisma/client";
 
-/**
- * Result label produced by `evaluateTheorySubmission` for a single theory.
- */
-export type TheoryResultLabel = "CORRECT" | "PARTIAL" | "INCORRECT";
+import type {
+  UserCaseStatus,
+  TheoryResultLabel,
+} from "@/generated/prisma/client";
 
 const STATUS_ORDER: Record<UserCaseStatus, number> = {
   NOT_STARTED: 0,

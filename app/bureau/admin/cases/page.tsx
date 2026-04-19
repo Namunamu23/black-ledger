@@ -6,6 +6,8 @@ import GenerateActivationCodeButton from "@/components/admin/GenerateActivationC
 import ToggleCaseStatusButton from "@/components/admin/ToggleCaseStatusButton";
 import PublishCaseButton from "@/components/admin/PublishCaseButton";
 import { evaluateCaseReadiness } from "@/lib/case-quality";
+import { WORKFLOW_STATUS_LABEL } from "@/lib/labels";
+import { CaseWorkflowStatus } from "@/generated/prisma/client";
 
 export default async function AdminCasesPage() {
   const cases = await prisma.caseFile.findMany({
@@ -103,12 +105,12 @@ export default async function AdminCasesPage() {
                           <div className="mt-4">
                             <span
                               className={`rounded-full border px-3 py-1 text-xs ${
-                                caseFile.workflowStatus === "PUBLISHED"
+                                caseFile.workflowStatus === CaseWorkflowStatus.PUBLISHED
                                   ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                                   : "border-amber-500/30 bg-amber-500/10 text-amber-300"
                               }`}
                             >
-                              {caseFile.workflowStatus}
+                              {WORKFLOW_STATUS_LABEL[caseFile.workflowStatus]}
                             </span>
 
                             <div className="mt-3 text-sm text-zinc-400">

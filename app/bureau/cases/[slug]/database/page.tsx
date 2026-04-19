@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/ui/Reveal";
 import CaseDatabaseSearch from "@/components/bureau/CaseDatabaseSearch";
+import { CASE_STATUS_LABEL } from "@/lib/labels";
 
 type PageProps = {
   params: Promise<{
@@ -81,7 +82,7 @@ export default async function CaseDatabasePage({ params }: PageProps) {
               </span>
 
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-                {status}
+                {CASE_STATUS_LABEL[status]}
               </span>
 
               <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">

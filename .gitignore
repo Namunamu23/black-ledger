@@ -50,6 +50,7 @@ next-env.d.ts
 *.sqlite3
 prisma/*.db
 prisma/*.sqlite
+dev.db.backup-*
 
 # Claude Code session/memory data
 .claude/
