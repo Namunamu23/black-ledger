@@ -20,6 +20,8 @@ type SeedCase = {
   debriefWhatHappened: string;
   debriefWhyItWorked: string;
   debriefClosing: string;
+  debriefSectionTitle: string | null;
+  debriefIntro: string | null;
   people: {
     name: string;
     role: string;
@@ -74,6 +76,8 @@ const cases: SeedCase[] = [
       "The original case drifted toward the robbery narrative because the missing phone and scene framing offered an easy explanation. But when badge access records, witness timing, and internal procurement evidence were compared together, the professional motive and the overlooked participant became much harder to ignore.",
     debriefClosing:
       "The case was not solved by finding one dramatic twist. It was solved by recognizing that several smaller inconsistencies formed one coherent pattern. That is what the original investigation missed.",
+    debriefSectionTitle: "Why the robbery theory failed",
+    debriefIntro: null,
     people: [
       {
         name: "Elena Voss",
@@ -224,6 +228,8 @@ const cases: SeedCase[] = [
       "The original explanation focused on interpersonal conflict and donor pressure, which made the case feel messy but shallow. Once the key log and restoration documentation were compared, the movements and document trail aligned around a more direct concealment motive.",
     debriefClosing:
       "This case reinforces the same lesson in a different setting: institutional narratives often survive because they are easier to accept than document-driven contradictions.",
+    debriefSectionTitle: "Why the donor pressure theory failed",
+    debriefIntro: null,
     people: [
       {
         name: "Arin Dace",
@@ -370,6 +376,8 @@ async function seedCase(data: SeedCase) {
       debriefWhatHappened: data.debriefWhatHappened,
       debriefWhyItWorked: data.debriefWhyItWorked,
       debriefClosing: data.debriefClosing,
+      debriefSectionTitle: data.debriefSectionTitle,
+      debriefIntro: data.debriefIntro,
       isActive: true,
     },
     create: {
@@ -387,6 +395,8 @@ async function seedCase(data: SeedCase) {
       debriefWhatHappened: data.debriefWhatHappened,
       debriefWhyItWorked: data.debriefWhyItWorked,
       debriefClosing: data.debriefClosing,
+      debriefSectionTitle: data.debriefSectionTitle,
+      debriefIntro: data.debriefIntro,
       isActive: true,
     },
   });

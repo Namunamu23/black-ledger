@@ -54,6 +54,8 @@ type EditCaseContentFormProps = {
     debriefWhatHappened: string;
     debriefWhyItWorked: string;
     debriefClosing: string;
+    debriefSectionTitle: string | null;
+    debriefIntro: string | null;
     isActive: boolean;
     people: PersonItem[];
     records: RecordItem[];
@@ -331,6 +333,24 @@ export default function EditCaseContentForm({
             onChange={(e) => updateField("debriefWhyItWorked", e.target.value)}
             placeholder="Debrief: why it worked"
             className="min-h-[140px] rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none"
+          />
+
+          <input
+            value={form.debriefSectionTitle ?? ""}
+            onChange={(e) =>
+              updateField("debriefSectionTitle", e.target.value || null)
+            }
+            placeholder='Debrief section title (defaults to "Why your theory was incomplete" if blank)'
+            className="rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none"
+          />
+
+          <textarea
+            value={form.debriefIntro ?? ""}
+            onChange={(e) =>
+              updateField("debriefIntro", e.target.value || null)
+            }
+            placeholder="Debrief intro paragraph (optional, appears above the breakdown)"
+            className="min-h-[100px] rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none"
           />
 
           <textarea

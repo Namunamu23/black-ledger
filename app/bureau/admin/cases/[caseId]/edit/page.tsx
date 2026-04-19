@@ -63,6 +63,8 @@ export default async function EditAdminCasePage({ params }: PageProps) {
                   debriefWhatHappened: caseFile.debriefWhatHappened,
                   debriefWhyItWorked: caseFile.debriefWhyItWorked,
                   debriefClosing: caseFile.debriefClosing,
+                  debriefSectionTitle: caseFile.debriefSectionTitle,
+                  debriefIntro: caseFile.debriefIntro,
                   isActive: caseFile.isActive,
                   people: caseFile.people.map((item) => ({
                     name: item.name,

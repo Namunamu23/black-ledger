@@ -125,6 +125,8 @@ export async function PUT(
           debriefWhatHappened: data.debriefWhatHappened,
           debriefWhyItWorked: data.debriefWhyItWorked,
           debriefClosing: data.debriefClosing,
+          debriefSectionTitle: data.debriefSectionTitle?.trim() || null,
+          debriefIntro: data.debriefIntro?.trim() || null,
           isActive: data.isActive,
         },
       }),

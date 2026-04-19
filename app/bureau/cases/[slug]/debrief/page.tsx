@@ -55,6 +55,14 @@ export default async function CaseDebriefPage({ params }: PageProps) {
 
       <section className="py-16">
         <div className="mx-auto grid max-w-5xl gap-6 px-6">
+          {caseFile.debriefIntro ? (
+            <Reveal>
+              <p className="text-base leading-8 text-zinc-300">
+                {caseFile.debriefIntro}
+              </p>
+            </Reveal>
+          ) : null}
+
           <Reveal>
             <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
               <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
@@ -69,7 +77,7 @@ export default async function CaseDebriefPage({ params }: PageProps) {
           <Reveal delay={0.06}>
             <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
               <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-                Why the robbery theory failed
+                {caseFile.debriefSectionTitle ?? "Why your theory was incomplete"}
               </div>
               <p className="mt-4 text-base leading-8 text-zinc-300">
                 {caseFile.debriefWhyItWorked}

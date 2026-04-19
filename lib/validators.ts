@@ -136,6 +136,8 @@ export const adminCaseContentSchema = z.object({
   debriefWhatHappened: z.string().trim().min(1).max(5000),
   debriefWhyItWorked: z.string().trim().min(1).max(5000),
   debriefClosing: z.string().trim().min(1).max(3000),
+  debriefSectionTitle: z.string().trim().max(160).nullable().optional(),
+  debriefIntro: z.string().trim().max(2000).nullable().optional(),
   isActive: z.boolean(),
   people: z.array(adminPersonSchema),
   records: z.array(adminRecordSchema),
