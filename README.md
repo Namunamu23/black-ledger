@@ -18,6 +18,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Development
+
+Run the unit test suite with `npm test` (or `npm run test:watch` while iterating, `npm run test:ui` for the Vitest UI, `npm run test:coverage` for an HTML coverage report under `coverage/`).
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
