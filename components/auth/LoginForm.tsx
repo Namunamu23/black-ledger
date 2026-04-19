@@ -2,11 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-
 export default function LoginForm() {
-  const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -32,8 +28,7 @@ export default function LoginForm() {
       return;
     }
 
-    router.push("/bureau");
-    router.refresh();
+    window.location.assign("/bureau");
   }
 
   return (
