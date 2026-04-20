@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 function generateCode(prefix: string) {
   const cleanPrefix = prefix
@@ -18,15 +18,8 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
-  const session = await auth();
-  const role = (session?.user as { role?: string } | undefined)?.role;
-
-  if (!session?.user || role !== "ADMIN") {
-    return NextResponse.json(
-      { message: "Unauthorized." },
-      { status: 403 }
-    );
-  }
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   const { caseId } = await params;
   const parsedCaseId = Number(caseId);

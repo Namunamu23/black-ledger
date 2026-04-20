@@ -1,16 +1,11 @@
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import { requireSession } from "@/lib/auth-helpers";
 
 export default async function BureauLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
-
-  if (!session?.user) {
-    redirect("/login");
-  }
+  await requireSession();
 
   return <>{children}</>;
 }

@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { adminCaseContentSchema } from "@/lib/validators";
-import { UserRole } from "@/generated/prisma/client";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
-  const session = await auth();
-  const role = session?.user?.role;
-
-  if (!session?.user || role !== UserRole.ADMIN) {
-    return NextResponse.json({ message: "Unauthorized." }, { status: 403 });
-  }
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   const { caseId } = await params;
   const parsedCaseId = Number(caseId);
@@ -45,11 +40,11 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
-  const session = await auth();
-  const role = session?.user?.role;
-  const userId = Number(session?.user?.id);
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
+  const userId = Number(guard.user.id);
 
-  if (!session?.user || role !== UserRole.ADMIN || !Number.isInteger(userId)) {
+  if (!Number.isInteger(userId)) {
     return NextResponse.json({ message: "Unauthorized." }, { status: 403 });
   }
 

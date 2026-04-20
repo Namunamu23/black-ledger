@@ -1,19 +1,15 @@
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { requireSession } from "@/lib/auth-helpers";
+import { UserRole } from "@/lib/enums";
 
 export default async function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
-  const role = (session?.user as { role?: string } | undefined)?.role;
+  const session = await requireSession();
 
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  if (role !== "ADMIN") {
+  if (session.user.role !== UserRole.ADMIN) {
     redirect("/bureau");
   }
 

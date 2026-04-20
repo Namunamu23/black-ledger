@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/auth";
+import { getOptionalSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import SectionHeader from "@/components/ui/SectionHeader";
 import Reveal from "@/components/ui/Reveal";
@@ -8,8 +8,8 @@ import ArchiveStatCard from "@/components/bureau/ArchiveStatCard";
 import { THEORY_RESULT_LABEL } from "@/lib/labels";
 
 export default async function BureauArchivePage() {
-  const session = await auth();
-  const userId = Number((session?.user as { id?: string } | undefined)?.id);
+  const session = await getOptionalSession();
+  const userId = Number(session?.user?.id);
 
   const ownedCases = Number.isInteger(userId)
     ? await prisma.userCase.findMany({

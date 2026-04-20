@@ -14,6 +14,12 @@
  * If you add a Prisma enum or change a value, update this file in lockstep.
  */
 
+export const UserRole = {
+  INVESTIGATOR: "INVESTIGATOR",
+  ADMIN: "ADMIN",
+} as const;
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
 export const TheoryResultLabel = {
   CORRECT: "CORRECT",
   PARTIAL: "PARTIAL",

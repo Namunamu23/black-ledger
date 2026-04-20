@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { adminCaseSchema } from "@/lib/validators";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export async function POST(request: Request) {
-  const session = await auth();
-  const role = (session?.user as { role?: string } | undefined)?.role;
-
-  if (!session?.user || role !== "ADMIN") {
-    return NextResponse.json(
-      { message: "Unauthorized." },
-      { status: 403 }
-    );
-  }
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const body = await request.json();
