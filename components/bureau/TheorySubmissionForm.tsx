@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TheoryResultLabel } from "@/generated/prisma/client";
+import { TheoryResultLabel } from "@/lib/enums";
 import { THEORY_RESULT_LABEL } from "@/lib/labels";
 
 type TheorySubmissionFormProps = {

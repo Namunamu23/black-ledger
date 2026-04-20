@@ -2,7 +2,7 @@ import {
   UserCaseStatus,
   CaseWorkflowStatus,
   TheoryResultLabel,
-} from "@/generated/prisma/client";
+} from "@/lib/enums";
 
 export const CASE_STATUS_LABEL: Record<UserCaseStatus, string> = {
   [UserCaseStatus.NOT_STARTED]: "Not Started",
