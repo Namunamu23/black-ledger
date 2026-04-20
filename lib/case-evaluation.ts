@@ -1,44 +1,6 @@
-const STOPWORDS = new Set([
-  "the",
-  "and",
-  "of",
-  "for",
-  "with",
-  "was",
-  "were",
-  "has",
-  "have",
-  "been",
-  "that",
-  "this",
-  "from",
-  "into",
-  "onto",
-  "but",
-  "not",
-]);
+import { normalizeIdentity, tokenize } from "@/lib/text-utils";
 
-const MIN_TOKEN_LENGTH = 4;
 const JACCARD_THRESHOLD = 0.34;
-
-function normalizeIdentity(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function tokenize(value: string): Set<string> {
-  const tokens = value
-    .toLowerCase()
-    .split(/[\s\p{P}]+/u)
-    .filter(
-      (token) => token.length >= MIN_TOKEN_LENGTH && !STOPWORDS.has(token)
-    );
-
-  return new Set(tokens);
-}
 
 function splitPipe(value: string): string[] {
   return value
