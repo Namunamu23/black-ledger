@@ -1,3 +1,4 @@
+// DEPRECATED — replaced by tabbed editor in app/bureau/admin/cases/[caseId]/edit/_components/. Remove after Week 3 QA.
 "use client";
 
 import { useRouter } from "next/navigation";

@@ -83,7 +83,7 @@ export const adminCaseSchema = z.object({
   initialActivationCode: z.string().trim().toUpperCase().min(4).max(64).optional().or(z.literal("")),
 });
 
-const adminPersonSchema = z.object({
+export const adminPersonSchema = z.object({
   id: z.coerce.number().int().positive().optional(),
   globalPersonId: z.coerce.number().int().positive().nullable().optional(),
   name: z.string().trim().min(1).max(120),
@@ -93,7 +93,7 @@ const adminPersonSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).max(999),
 });
 
-const adminRecordSchema = z.object({
+export const adminRecordSchema = z.object({
   id: z.coerce.number().int().positive().optional(),
   title: z.string().trim().min(1).max(160),
   category: z.string().trim().min(1).max(80),
@@ -103,7 +103,7 @@ const adminRecordSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).max(999),
 });
 
-const adminHintSchema = z.object({
+export const adminHintSchema = z.object({
   id: z.coerce.number().int().positive().optional(),
   level: z.coerce.number().int().min(1).max(20),
   title: z.string().trim().min(1).max(160),
@@ -112,7 +112,7 @@ const adminHintSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).max(999),
 });
 
-const adminCheckpointSchema = z.object({
+export const adminCheckpointSchema = z.object({
   id: z.coerce.number().int().positive().optional(),
   stage: z.coerce.number().int().min(1).max(10),
   prompt: z.string().trim().min(1).max(1000),
@@ -148,4 +148,57 @@ export const adminCaseContentSchema = z.object({
   records: z.array(adminRecordSchema),
   hints: z.array(adminHintSchema),
   checkpoints: z.array(adminCheckpointSchema),
+});
+
+// ---- Per-section PATCH schemas (admin tabbed editor) ----
+//
+// Overview and Solution accept partial bodies — admins can save just the
+// fields they touched. Collection sections wrap the existing entity
+// schemas. Bounds match adminCaseContentSchema so the per-section saves
+// and the legacy aggregate save accept the same data.
+
+export const overviewPatchSchema = z.object({
+  title: z.string().trim().min(3).max(120).optional(),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens.")
+    .min(3)
+    .max(80)
+    .optional(),
+  summary: z.string().trim().min(20).max(500).optional(),
+  players: z.string().trim().min(1).max(40).optional(),
+  duration: z.string().trim().min(1).max(40).optional(),
+  difficulty: z.string().trim().min(1).max(40).optional(),
+  maxStage: z.coerce.number().int().min(1).max(10).optional(),
+  isActive: z.boolean().optional(),
+});
+
+export const peoplePatchSchema = z.object({
+  people: z.array(adminPersonSchema),
+});
+
+export const recordsPatchSchema = z.object({
+  records: z.array(adminRecordSchema),
+});
+
+export const hintsPatchSchema = z.object({
+  hints: z.array(adminHintSchema),
+});
+
+export const checkpointsPatchSchema = z.object({
+  checkpoints: z.array(adminCheckpointSchema),
+});
+
+export const solutionPatchSchema = z.object({
+  solutionSuspect: z.string().trim().min(1).max(300).optional(),
+  solutionMotive: z.string().trim().min(1).max(500).optional(),
+  solutionEvidence: z.string().trim().min(1).max(500).optional(),
+  debriefOverview: z.string().trim().min(1).max(1500).optional(),
+  debriefWhatHappened: z.string().trim().min(1).max(5000).optional(),
+  debriefWhyItWorked: z.string().trim().min(1).max(5000).optional(),
+  debriefClosing: z.string().trim().min(1).max(3000).optional(),
+  debriefSectionTitle: z.string().trim().max(160).nullable().optional(),
+  debriefIntro: z.string().trim().max(2000).nullable().optional(),
 });
