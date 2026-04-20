@@ -6,6 +6,8 @@ import Link from "next/link";
 import CaseReadinessPanel from "@/components/admin/CaseReadinessPanel";
 
 type PersonItem = {
+  id?: number;
+  globalPersonId: number | null;
   name: string;
   role: string;
   summary: string;
@@ -14,6 +16,7 @@ type PersonItem = {
 };
 
 type RecordItem = {
+  id?: number;
   title: string;
   category: string;
   summary: string;
@@ -23,6 +26,7 @@ type RecordItem = {
 };
 
 type HintItem = {
+  id?: number;
   level: number;
   title: string;
   content: string;
@@ -31,6 +35,7 @@ type HintItem = {
 };
 
 type CheckpointItem = {
+  id?: number;
   stage: number;
   prompt: string;
   acceptedAnswers: string;
@@ -96,6 +101,7 @@ export default function EditCaseContentForm({
       people: [
         ...prev.people,
         {
+          globalPersonId: null,
           name: "",
           role: "",
           summary: "",

@@ -84,6 +84,8 @@ export const adminCaseSchema = z.object({
 });
 
 const adminPersonSchema = z.object({
+  id: z.coerce.number().int().positive().optional(),
+  globalPersonId: z.coerce.number().int().positive().nullable().optional(),
   name: z.string().trim().min(1).max(120),
   role: z.string().trim().min(1).max(120),
   summary: z.string().trim().min(1).max(1000),
@@ -92,6 +94,7 @@ const adminPersonSchema = z.object({
 });
 
 const adminRecordSchema = z.object({
+  id: z.coerce.number().int().positive().optional(),
   title: z.string().trim().min(1).max(160),
   category: z.string().trim().min(1).max(80),
   summary: z.string().trim().min(1).max(1000),
@@ -101,6 +104,7 @@ const adminRecordSchema = z.object({
 });
 
 const adminHintSchema = z.object({
+  id: z.coerce.number().int().positive().optional(),
   level: z.coerce.number().int().min(1).max(20),
   title: z.string().trim().min(1).max(160),
   content: z.string().trim().min(1).max(2000),
@@ -109,6 +113,7 @@ const adminHintSchema = z.object({
 });
 
 const adminCheckpointSchema = z.object({
+  id: z.coerce.number().int().positive().optional(),
   stage: z.coerce.number().int().min(1).max(10),
   prompt: z.string().trim().min(1).max(1000),
   acceptedAnswers: z.string().trim().min(1).max(1000),

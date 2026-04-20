@@ -43,6 +43,7 @@ model User {
   claimedActivationCodes ActivationCode[]    @relation("ClaimedCodes")
   theorySubmissions      TheorySubmission[]
   checkpointAttempts     CheckpointAttempt[]
+  caseAudits             CaseAudit[]
 }
 
 model CaseFile {
@@ -75,6 +76,19 @@ model CaseFile {
   checkpoints         CaseCheckpoint[]
   theorySubmissions   TheorySubmission[]
   checkpointAttempts  CheckpointAttempt[]
+  audits              CaseAudit[]
+}
+
+model CaseAudit {
+  id         Int      @id @default(autoincrement())
+  caseFileId Int
+  userId     Int
+  action     String
+  diff       Json
+  createdAt  DateTime @default(now())
+
+  caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
 }
 
 model ActivationCode {

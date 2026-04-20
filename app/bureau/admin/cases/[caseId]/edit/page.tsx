@@ -67,6 +67,8 @@ export default async function EditAdminCasePage({ params }: PageProps) {
                   debriefIntro: caseFile.debriefIntro,
                   isActive: caseFile.isActive,
                   people: caseFile.people.map((item) => ({
+                    id: item.id,
+                    globalPersonId: item.globalPersonId,
                     name: item.name,
                     role: item.role,
                     summary: item.summary,
@@ -74,6 +76,7 @@ export default async function EditAdminCasePage({ params }: PageProps) {
                     sortOrder: item.sortOrder,
                   })),
                   records: caseFile.records.map((item) => ({
+                    id: item.id,
                     title: item.title,
                     category: item.category,
                     summary: item.summary,
@@ -82,6 +85,7 @@ export default async function EditAdminCasePage({ params }: PageProps) {
                     sortOrder: item.sortOrder,
                   })),
                   hints: caseFile.hints.map((item) => ({
+                    id: item.id,
                     level: item.level,
                     title: item.title,
                     content: item.content,
@@ -89,6 +93,7 @@ export default async function EditAdminCasePage({ params }: PageProps) {
                     sortOrder: item.sortOrder,
                   })),
                   checkpoints: caseFile.checkpoints.map((item) => ({
+                    id: item.id,
                     stage: item.stage,
                     prompt: item.prompt,
                     acceptedAnswers: item.acceptedAnswers,
