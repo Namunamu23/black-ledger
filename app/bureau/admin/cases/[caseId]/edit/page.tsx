@@ -47,6 +47,7 @@ export default async function EditAdminCasePage({ params }: PageProps) {
     difficulty: caseFile.difficulty,
     maxStage: caseFile.maxStage,
     isActive: caseFile.isActive,
+    heroImageUrl: caseFile.heroImageUrl,
   };
 
   const peopleSlice = caseFile.people.map((p) => ({
@@ -55,6 +56,7 @@ export default async function EditAdminCasePage({ params }: PageProps) {
     name: p.name,
     role: p.role,
     summary: p.summary,
+    portraitUrl: p.portraitUrl,
     unlockStage: p.unlockStage,
     sortOrder: p.sortOrder,
   }));

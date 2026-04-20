@@ -17,11 +17,14 @@
     "seed:people": "tsx scripts/seed-global-people.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1032.0",
+    "@aws-sdk/s3-request-presigner": "^3.1032.0",
     "@prisma/adapter-better-sqlite3": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "bcryptjs": "^3.0.3",
+    "blurhash": "^2.0.5",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.1",
     "framer-motion": "^12.38.0",
@@ -30,6 +33,7 @@
     "next-auth": "^5.0.0-beta.30",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "sharp": "^0.34.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {

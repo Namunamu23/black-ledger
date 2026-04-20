@@ -64,6 +64,7 @@ model CaseFile {
   debriefClosing      String              @default("")
   debriefSectionTitle String?
   debriefIntro        String?
+  heroImageUrl        String?
   workflowStatus      CaseWorkflowStatus  @default(DRAFT)
   publishedAt         DateTime?
   isActive            Boolean             @default(true)
@@ -129,6 +130,7 @@ model CasePerson {
   name           String
   role           String
   summary        String
+  portraitUrl    String?
   unlockStage    Int      @default(1)
   sortOrder      Int      @default(0)
   createdAt      DateTime @default(now())

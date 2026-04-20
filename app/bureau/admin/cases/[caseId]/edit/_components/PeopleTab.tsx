@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ImageUploader from "@/components/admin/ImageUploader";
 
 export type PersonItem = {
   id?: number;
@@ -9,6 +10,7 @@ export type PersonItem = {
   name: string;
   role: string;
   summary: string;
+  portraitUrl: string | null;
   unlockStage: number;
   sortOrder: number;
 };
@@ -47,6 +49,7 @@ export default function PeopleTab({ caseId, data }: Props) {
         name: "",
         role: "",
         summary: "",
+        portraitUrl: null,
         unlockStage: 1,
         sortOrder: prev.length + 1,
       },
@@ -148,6 +151,16 @@ export default function PeopleTab({ caseId, data }: Props) {
                   on save)
                 </p>
               ) : null}
+
+              <ImageUploader
+                context="portrait"
+                label="Portrait"
+                value={person.portraitUrl ?? ""}
+                onChange={(url) =>
+                  update(index, "portraitUrl", url || null)
+                }
+              />
+
               <button
                 type="button"
                 onClick={() => remove(index)}

@@ -50,6 +50,7 @@ export async function PATCH(
     name: string;
     role: string;
     summary: string;
+    portraitUrl: string | null;
     unlockStage: number;
     sortOrder: number;
   }> = [];
@@ -79,6 +80,12 @@ export async function PATCH(
         update.globalPersonId = submittedGpid;
       }
 
+      const submittedPortrait = sub.portraitUrl ?? null;
+      const existingPortrait = ex.portraitUrl ?? null;
+      if (submittedPortrait !== existingPortrait) {
+        update.portraitUrl = submittedPortrait;
+      }
+
       if (Object.keys(update).length > 0) {
         toUpdate.push({ id: sub.id, data: update });
       }
@@ -89,6 +96,7 @@ export async function PATCH(
         name: sub.name,
         role: sub.role,
         summary: sub.summary,
+        portraitUrl: sub.portraitUrl ?? null,
         unlockStage: sub.unlockStage,
         sortOrder: sub.sortOrder,
       });

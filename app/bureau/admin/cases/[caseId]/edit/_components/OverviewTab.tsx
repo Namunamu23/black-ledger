@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import ImageUploader from "@/components/admin/ImageUploader";
 
 export type OverviewTabData = {
   title: string;
@@ -12,6 +13,7 @@ export type OverviewTabData = {
   difficulty: string;
   maxStage: number;
   isActive: boolean;
+  heroImageUrl: string | null;
 };
 
 type Props = {
@@ -120,6 +122,13 @@ export default function OverviewTab({ caseId, data }: Props) {
           />
           Case is active
         </label>
+
+        <ImageUploader
+          context="hero"
+          label="Hero Image"
+          value={form.heroImageUrl ?? ""}
+          onChange={(url) => update("heroImageUrl", url || null)}
+        />
       </div>
 
       <SaveBar status={status} error={error} onSave={save} label="Overview" />

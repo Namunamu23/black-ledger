@@ -89,6 +89,7 @@ export const adminPersonSchema = z.object({
   name: z.string().trim().min(1).max(120),
   role: z.string().trim().min(1).max(120),
   summary: z.string().trim().min(1).max(1000),
+  portraitUrl: z.string().trim().url().max(2000).nullable().optional(),
   unlockStage: z.coerce.number().int().min(1).max(10),
   sortOrder: z.coerce.number().int().min(0).max(999),
 });
@@ -173,6 +174,23 @@ export const overviewPatchSchema = z.object({
   difficulty: z.string().trim().min(1).max(40).optional(),
   maxStage: z.coerce.number().int().min(1).max(10).optional(),
   isActive: z.boolean().optional(),
+  heroImageUrl: z.string().trim().url().max(2000).nullable().optional(),
+});
+
+// ---- Image upload (R2 presigned URL + best-effort blurhash) ----
+
+export const uploadSignSchema = z.object({
+  filename: z.string().trim().min(1).max(200),
+  contentType: z
+    .string()
+    .trim()
+    .startsWith("image/", "Only image uploads are allowed.")
+    .max(120),
+  context: z.enum(["hero", "portrait", "record"]),
+});
+
+export const blurhashRequestSchema = z.object({
+  publicUrl: z.string().trim().url().max(2000),
 });
 
 export const peoplePatchSchema = z.object({
