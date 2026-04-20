@@ -3,7 +3,6 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import Reveal from "@/components/ui/Reveal";
 import CreateCaseForm from "@/components/admin/CreateCaseForm";
 import GenerateActivationCodeButton from "@/components/admin/GenerateActivationCodeButton";
-import ToggleCaseStatusButton from "@/components/admin/ToggleCaseStatusButton";
 import PublishCaseButton from "@/components/admin/PublishCaseButton";
 import { evaluateCaseReadiness } from "@/lib/case-quality";
 import { WORKFLOW_STATUS_LABEL } from "@/lib/labels";
@@ -142,11 +141,6 @@ export default async function AdminCasesPage() {
   />
 
   <GenerateActivationCodeButton caseId={caseFile.id} />
-
-  <ToggleCaseStatusButton
-    caseId={caseFile.id}
-    isActive={caseFile.isActive}
-  />
 </div>
                       </div>
                     </div>
