@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { checkpointAnswerSchema } from "@/lib/validators";
 import { normalizeIdentity, tokenize } from "@/lib/text-utils";
+import { rateLimit } from "@/lib/rate-limit";
 
 const CHECKPOINT_JACCARD_THRESHOLD = 0.45;
 const MIN_NORMALIZED_LENGTH = 3;
@@ -57,6 +58,17 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  const limit = await rateLimit(request, { limit: 20, windowMs: 60_000 });
+  if (!limit.success) {
+    return NextResponse.json(
+      { message: "Too many requests." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) },
+      }
+    );
+  }
+
   const { slug } = await params;
 
   const session = await auth();
