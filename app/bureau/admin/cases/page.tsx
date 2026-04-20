@@ -135,6 +135,13 @@ export default async function AdminCasesPage() {
     Preview
   </a>
 
+  <a
+    href={`/bureau/admin/cases/${caseFile.id}/codes`}
+    className="rounded-2xl border border-zinc-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-950"
+  >
+    Manage Codes
+  </a>
+
   <PublishCaseButton
     caseId={caseFile.id}
     workflowStatus={caseFile.workflowStatus}

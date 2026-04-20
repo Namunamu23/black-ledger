@@ -191,6 +191,17 @@ export const checkpointsPatchSchema = z.object({
   checkpoints: z.array(adminCheckpointSchema),
 });
 
+// ---- Activation code admin (batch generate + revoke) ----
+
+export const generateCodesBatchSchema = z.object({
+  count: z.coerce.number().int().min(1).max(100),
+  kitSerialPrefix: z.string().trim().max(40).optional().or(z.literal("")),
+});
+
+export const revokeCodeSchema = z.object({
+  revokedAt: z.string().datetime(),
+});
+
 export const solutionPatchSchema = z.object({
   solutionSuspect: z.string().trim().min(1).max(300).optional(),
   solutionMotive: z.string().trim().min(1).max(500).optional(),

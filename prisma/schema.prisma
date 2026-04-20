@@ -94,9 +94,11 @@ model CaseAudit {
 model ActivationCode {
   id              Int       @id @default(autoincrement())
   code            String    @unique
+  kitSerial       String?
   caseFileId      Int
   claimedByUserId Int?
   claimedAt       DateTime?
+  revokedAt       DateTime?
   createdAt       DateTime  @default(now())
 
   caseFile      CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
