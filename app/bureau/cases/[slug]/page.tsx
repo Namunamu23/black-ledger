@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Reveal from "@/components/ui/Reveal";
 import TheorySubmissionForm from "@/components/bureau/TheorySubmissionForm";
 import CheckpointForm from "@/components/bureau/CheckpointForm";
@@ -44,6 +44,17 @@ export default async function BureauCasePage({ params }: PageProps) {
   });
 
   if (!ownedCase) {
+    // Slug may be a retired oldSlug from a renamed case. If so, redirect
+    // to the case's current slug. Visiting the new URL re-runs ownership
+    // resolution so users who don't own the case still see notFound from
+    // the next render.
+    const historyRow = await prisma.caseSlugHistory.findUnique({
+      where: { oldSlug: slug },
+      include: { caseFile: { select: { slug: true } } },
+    });
+    if (historyRow) {
+      redirect(`/bureau/cases/${historyRow.caseFile.slug}`);
+    }
     notFound();
   }
 

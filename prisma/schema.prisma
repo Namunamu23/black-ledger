@@ -84,6 +84,16 @@ model CaseFile {
   theorySubmissions   TheorySubmission[]
   checkpointAttempts  CheckpointAttempt[]
   audits              CaseAudit[]
+  slugHistory         CaseSlugHistory[]
+}
+
+model CaseSlugHistory {
+  id         Int      @id @default(autoincrement())
+  caseFileId Int
+  oldSlug    String   @unique
+  createdAt  DateTime @default(now())
+
+  caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
 }
 
 model CaseAudit {
