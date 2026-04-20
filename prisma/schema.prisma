@@ -32,6 +32,12 @@ enum TheoryResultLabel {
   INCORRECT
 }
 
+enum SupportMessageStatus {
+  NEW
+  HANDLED
+  SPAM
+}
+
 model User {
   id                     Int                 @id @default(autoincrement())
   email                  String              @unique
@@ -219,11 +225,12 @@ model WaitlistEntry {
 }
 
 model SupportMessage {
-  id        Int      @id @default(autoincrement())
+  id        Int                  @id @default(autoincrement())
   name      String
   email     String
   message   String
-  createdAt DateTime @default(now())
+  status    SupportMessageStatus @default(NEW)
+  createdAt DateTime             @default(now())
 }
 
 model GlobalPerson {

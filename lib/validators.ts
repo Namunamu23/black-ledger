@@ -193,6 +193,16 @@ export const blurhashRequestSchema = z.object({
   publicUrl: z.string().trim().url().max(2000),
 });
 
+// ---- Support inbox admin (status filter + reply) ----
+
+export const supportStatusPatchSchema = z.object({
+  status: z.enum(["NEW", "HANDLED", "SPAM"]),
+});
+
+export const supportReplySchema = z.object({
+  body: z.string().trim().min(1).max(5000),
+});
+
 export const peoplePatchSchema = z.object({
   people: z.array(adminPersonSchema),
 });
