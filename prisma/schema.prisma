@@ -38,6 +38,21 @@ enum SupportMessageStatus {
   SPAM
 }
 
+enum AccessCodeKind {
+  BUREAU_REF
+  ARTIFACT_QR
+  WITNESS_TIP
+  AUDIO_FILE
+}
+
+enum HiddenEvidenceKind {
+  RECORD
+  PERSON_DETAIL
+  TIMELINE_EVENT
+  HINT
+  AUDIO
+}
+
 model User {
   id                     Int                 @id @default(autoincrement())
   email                  String              @unique
@@ -50,6 +65,7 @@ model User {
   theorySubmissions      TheorySubmission[]
   checkpointAttempts     CheckpointAttempt[]
   caseAudits             CaseAudit[]
+  accessCodeRedemptions  AccessCodeRedemption[]
 }
 
 model CaseFile {
@@ -85,6 +101,9 @@ model CaseFile {
   checkpointAttempts  CheckpointAttempt[]
   audits              CaseAudit[]
   slugHistory         CaseSlugHistory[]
+  accessCodes         AccessCode[]           @relation("CaseAccessCodes")
+  redemptions         AccessCodeRedemption[] @relation("CaseRedemptions")
+  hiddenEvidence      HiddenEvidence[]       @relation("CaseHiddenEvidence")
 }
 
 model CaseSlugHistory {
@@ -379,4 +398,42 @@ model PersonAnalystNote {
   createdAt      DateTime @default(now())
 
   globalPerson GlobalPerson @relation(fields: [globalPersonId], references: [id], onDelete: Cascade)
+}
+
+model AccessCode {
+  id             Int       @id @default(autoincrement())
+  code           String    @unique
+  kind           AccessCodeKind
+  caseFileId     Int
+  caseFile       CaseFile  @relation("CaseAccessCodes", fields: [caseFileId], references: [id], onDelete: Cascade)
+  unlocksTarget  Json
+  requiresStage  Int?
+  oneTimePerUser Boolean   @default(false)
+  retiredAt      DateTime?
+  createdAt      DateTime  @default(now())
+  redemptions    AccessCodeRedemption[]
+}
+
+model AccessCodeRedemption {
+  id           Int        @id @default(autoincrement())
+  accessCodeId Int
+  userId       Int
+  caseFileId   Int
+  redeemedAt   DateTime   @default(now())
+  accessCode   AccessCode @relation(fields: [accessCodeId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  caseFile     CaseFile   @relation("CaseRedemptions", fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  @@unique([accessCodeId, userId])
+}
+
+model HiddenEvidence {
+  id          Int                @id @default(autoincrement())
+  caseFileId  Int
+  caseFile    CaseFile           @relation("CaseHiddenEvidence", fields: [caseFileId], references: [id], onDelete: Cascade)
+  title       String
+  kind        HiddenEvidenceKind
+  body        String
+  revealOrder Int
+  createdAt   DateTime           @default(now())
 }
