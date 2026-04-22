@@ -6,6 +6,52 @@ import Reveal from "@/components/ui/Reveal";
 import TheorySubmissionForm from "@/components/bureau/TheorySubmissionForm";
 import CheckpointForm from "@/components/bureau/CheckpointForm";
 import { CASE_STATUS_LABEL, THEORY_RESULT_LABEL } from "@/lib/labels";
+import RevealedEvidence, {
+  type ResolvedEvidence,
+} from "./_components/RevealedEvidence";
+
+type UnlocksTarget = { type: string; id: number };
+
+async function resolveEvidence(
+  unlocksTarget: unknown
+): Promise<ResolvedEvidence | null> {
+  const target = unlocksTarget as UnlocksTarget;
+
+  if (target?.type === "record") {
+    const record = await prisma.caseRecord.findUnique({
+      where: { id: target.id },
+    });
+    if (!record) return null;
+    return {
+      type: "record",
+      record: { id: record.id, title: record.title, body: record.body },
+    };
+  }
+
+  if (target?.type === "person") {
+    const person = await prisma.casePerson.findUnique({
+      where: { id: target.id },
+    });
+    if (!person) return null;
+    return {
+      type: "person",
+      person: { id: person.id, name: person.name, summary: person.summary },
+    };
+  }
+
+  if (target?.type === "hint") {
+    const hint = await prisma.caseHint.findUnique({
+      where: { id: target.id },
+    });
+    if (!hint) return null;
+    return {
+      type: "hint",
+      hint: { id: hint.id, title: hint.title, content: hint.content },
+    };
+  }
+
+  return null;
+}
 
 type PageProps = {
   params: Promise<{
@@ -66,6 +112,21 @@ export default async function BureauCasePage({ params }: PageProps) {
     orderBy: { createdAt: "desc" },
     take: 3,
   });
+
+  const redemptions = await prisma.accessCodeRedemption.findMany({
+    where: { userId, caseFileId: ownedCase.caseFileId },
+    include: { accessCode: true },
+    orderBy: { redeemedAt: "asc" },
+  });
+
+  // Resolve each redemption to its actual content. Drop nulls (unknown
+  // unlocksTarget types or deleted target rows) so the UI never has to
+  // render placeholders for missing evidence.
+  const revealedEvidence: ResolvedEvidence[] = (
+    await Promise.all(
+      redemptions.map((r) => resolveEvidence(r.accessCode.unlocksTarget))
+    )
+  ).filter((item): item is ResolvedEvidence => item !== null);
 
   const { caseFile, currentStage, status } = ownedCase;
 
@@ -209,6 +270,8 @@ export default async function BureauCasePage({ params }: PageProps) {
           </div>
         </section>
       ) : null}
+
+      <RevealedEvidence items={revealedEvidence} />
 
       <section className="border-b border-zinc-900 py-16">
         <div className="mx-auto max-w-6xl px-6">
