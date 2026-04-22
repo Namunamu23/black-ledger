@@ -1,7 +1,7 @@
 ## Black Ledger — Project State (updated 2026-04-20)
 
 ### Current status
-Week 3 COMPLETE / Week 4 IN PROGRESS — 22 commits on origin/main. 66 Vitest tests passing. Build clean.
+Week 3 COMPLETE / Week 4 IN PROGRESS — 24 commits on origin/main. 66 Vitest tests passing. Build clean.
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -73,8 +73,9 @@ Notable changes:
 - SupportMessageStatus to lib/enums.ts + lib/labels.ts when transport lands
 - Subject column on SupportMessage + public SupportForm — separate prompt
 - CSP img-src to add R2 public origin when CSP flips from report-only to enforced
-- Delete components/admin/EditCaseContentForm.tsx after Week 3 QA sign-off
 - Public /cases/[slug] page slug-history redirect (currently only /bureau/cases/[slug] redirects)
+- Legacy aggregate PUT (app/api/admin/cases/[caseId]/route.ts) does not write CaseSlugHistory when slug changes — only the /overview PATCH does
+- Legacy /activation-codes POST route is unrate-limited and still wired to GenerateActivationCodeButton on the admin cases list
 
 ### Prompt library location
 See black-ledger-prompts.md (uploaded to Cowork session) for Prompts 07–25.
