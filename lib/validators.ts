@@ -234,6 +234,17 @@ export const redeemAccessCodeSchema = z.object({
   code: z.string().trim().min(1).max(64),
 });
 
+export const createAccessCodeSchema = z.object({
+  code: z.string().trim().min(1).max(64),
+  kind: z.enum(["BUREAU_REF", "ARTIFACT_QR", "WITNESS_TIP", "AUDIO_FILE"]),
+  unlocksTarget: z.object({
+    type: z.enum(["record", "person", "hint"]),
+    id: z.number().int().positive(),
+  }),
+  requiresStage: z.number().int().min(0).nullable().optional(),
+  oneTimePerUser: z.boolean().optional(),
+});
+
 export const solutionPatchSchema = z.object({
   solutionSuspect: z.string().trim().min(1).max(300).optional(),
   solutionMotive: z.string().trim().min(1).max(500).optional(),
