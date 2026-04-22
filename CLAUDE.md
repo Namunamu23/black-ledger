@@ -1,7 +1,7 @@
-## Black Ledger — Project State (updated 2026-04-20)
+## Black Ledger — Project State (updated 2026-04-22)
 
 ### Current status
-Week 3 COMPLETE / Week 4 IN PROGRESS — 24 commits on origin/main. 66 Vitest tests passing. Build clean.
+Week 4 COMPLETE / Week 5 NOT STARTED — 29 commits on main (24 pushed + 5 local). 66 Vitest tests passing. Build clean.
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -34,6 +34,14 @@ Notable changes:
 - 350ecd6  feat(admin): support inbox — paginated list, detail view, status actions, reply stub
 - 6d8421b  feat(admin): slug history + 301 redirect — CaseSlugHistory model, rename tracking, page-level redirect
 
+### Week 4 — Completed commits (closed 2026-04-22)
+5 commits, in order:
+- e616159  chore: delete orphaned EditCaseContentForm, fix CLAUDE.md commit count + follow-ups
+- 11a3f1d  feat(schema): AccessCode + HiddenEvidence models for physical-to-digital bridge
+- 25a21cb  feat(unlock): /bureau/unlock page + /api/access-codes/redeem endpoint
+- ae992fa  feat(workspace): revealed evidence section — AccessCodeRedemption render at workspace load
+- e0a321  feat(admin): AccessCode creator + QR generator + /u/[code] short redirect
+
 ### Architecture / key files
 - lib/case-evaluation.ts — Jaccard + exact-name matcher (theory submissions)
 - lib/text-utils.ts — shared tokenize/normalizeIdentity used by both theory + checkpoint matchers
@@ -59,16 +67,19 @@ Notable changes:
 - components/admin/ImageUploader.tsx — client component: sign → PUT → onChange + blurhash
 - app/bureau/admin/support/ — support inbox (paginated list + detail + status actions + reply stub)
 - app/api/admin/support/[id]/reply|status/route.ts — reply stub (no transport yet) + status PATCH
-- components/admin/EditCaseContentForm.tsx — DEPRECATED (deprecation header added; remove after Week 3 QA)
 - .env.example — all env vars documented (DATABASE_URL, AUTH_SECRET, SEED_ADMIN_*, UPSTASH_*, NEXT_PUBLIC_APP_URL, R2_*)
+- prisma/schema.prisma — Week 4 additions: AccessCode, AccessCodeRedemption, HiddenEvidence models; AccessCodeKind + HiddenEvidenceKind enums
+- app/api/access-codes/redeem/route.ts — POST, rate-limited 5/60s, validates AccessCode, creates AccessCodeRedemption (@@unique race guard), resolves unlocksTarget to content
+- app/bureau/unlock/page.tsx + _components/UnlockForm.tsx — player unlock page; auto-submits on ?code= query param; shows revealed content
+- app/bureau/cases/[slug]/_components/RevealedEvidence.tsx — client component; renders AccessCode-unlocked evidence in case workspace with Framer Motion animations
+- app/api/admin/cases/[caseId]/access-codes/route.ts — GET (list with redemption counts) + POST (create, with cross-case target validation)
+- app/bureau/admin/cases/[caseId]/access-codes/ — admin AccessCode management: create form, QR display, copy URL, list with redemption counts
+- app/u/[code]/route.ts — short URL redirect to /bureau/unlock?code=<code>
 
-### Week 4 priorities
-- Prompt 16: AccessCode + HiddenEvidence schema (physical-to-digital bridge)
-- Prompt 17: Redemption flow (/bureau/unlock + /api/access-codes/redeem)
-- Prompt 18: Hidden evidence reveal (UserHiddenEvidence + workspace render)
-- Prompt 19: Admin code creator + QR generator (extend /codes page)
+### Week 5 priorities
+Week 5 prompts: see black-ledger-prompts.md
 
-### Known follow-ups (deferred from Week 3)
+### Known follow-ups
 - Email transport (resend/nodemailer) — wire into /api/admin/support/[id]/reply + add SupportReply model
 - SupportMessageStatus to lib/enums.ts + lib/labels.ts when transport lands
 - Subject column on SupportMessage + public SupportForm — separate prompt
@@ -76,6 +87,11 @@ Notable changes:
 - Public /cases/[slug] page slug-history redirect (currently only /bureau/cases/[slug] redirects)
 - Legacy aggregate PUT (app/api/admin/cases/[caseId]/route.ts) does not write CaseSlugHistory when slug changes — only the /overview PATCH does
 - Legacy /activation-codes POST route is unrate-limited and still wired to GenerateActivationCodeButton on the admin cases list
+- /u/[code] short URL base hardcoded to https://blackledger.app/u in AccessCodeList.tsx — swap to NEXT_PUBLIC_APP_URL for dev QR codes
+- AccessCodeList shows "record #5" style target label, not the actual title — enrich GET endpoint or pass label map from page when needed
+- HiddenEvidence model created but not yet wired as an unlocksTarget type — currently only CaseRecord/CasePerson/CaseHint are resolved; add "hidden_evidence" type to resolveContent() and resolveEvidence() when HiddenEvidence rows are authored
+- No PATCH endpoint for retiring AccessCodes (setting retiredAt) — needed for admin code management
+- requireSessionJson() helper not yet added to lib/auth-helpers.ts — player API routes (checkpoint, theory, redeem) call auth() directly; a shared helper would be cleaner
 
 ### Prompt library location
 See black-ledger-prompts.md (uploaded to Cowork session) for Prompts 07–25.
