@@ -230,6 +230,10 @@ export const revokeCodeSchema = z.object({
   revokedAt: z.string().datetime(),
 });
 
+export const redeemAccessCodeSchema = z.object({
+  code: z.string().trim().min(1).max(64),
+});
+
 export const solutionPatchSchema = z.object({
   solutionSuspect: z.string().trim().min(1).max(300).optional(),
   solutionMotive: z.string().trim().min(1).max(500).optional(),
