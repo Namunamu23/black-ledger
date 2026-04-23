@@ -66,21 +66,21 @@ export default function HomePage() {
         <div className="relative flex min-h-screen flex-col justify-center px-8 pb-16 pt-24 md:px-16 lg:px-24">
           {/* Headline — three lines, word-by-word reveal */}
           <div>
-            <p className="text-[clamp(3.5rem,8vw,8.5rem)] font-black leading-[0.92] tracking-[-0.03em] text-[#f5f0eb]">
+            <p className="text-[clamp(2rem,4.5vw,5rem)] font-black leading-[0.92] tracking-[-0.03em] text-[#f5f0eb]">
               <WordReveal
                 text="Open the file."
                 inView={heroInView}
                 baseDelay={0.1}
               />
             </p>
-            <p className="text-[clamp(3.5rem,8vw,8.5rem)] font-black leading-[0.92] tracking-[-0.03em] text-[rgba(245,240,235,0.38)]">
+            <p className="text-[clamp(2rem,4.5vw,5rem)] font-black leading-[0.92] tracking-[-0.03em] text-[rgba(245,240,235,0.38)]">
               <WordReveal
                 text="Enter the bureau."
                 inView={heroInView}
                 baseDelay={0.25}
               />
             </p>
-            <p className="text-[clamp(3.5rem,8vw,8.5rem)] font-black leading-[0.92] tracking-[-0.03em]">
+            <p className="text-[clamp(2rem,4.5vw,5rem)] font-black leading-[0.92] tracking-[-0.03em]">
               <span className="text-[rgba(245,240,235,0.2)]">
                 <WordReveal
                   text="Solve what"
@@ -203,7 +203,7 @@ export default function HomePage() {
         <DrawLine color="#c9a84c" delay={0} />
         <div className="grid grid-cols-3 divide-x divide-[rgba(10,10,10,0.1)]">
           <div className="px-8 py-12 text-center">
-            <div className="text-[clamp(4rem,8vw,7rem)] font-black tabular-nums leading-none text-[#0a0a0a]">
+            <div className="text-[clamp(2.5rem,5vw,5rem)] font-black tabular-nums leading-none text-[#0a0a0a]">
               01
             </div>
             <div className="mt-3 font-mono text-[11px] uppercase tracking-[0.45em] text-[rgba(10,10,10,0.35)]">
@@ -211,7 +211,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="px-8 py-12 text-center">
-            <div className="text-[clamp(4rem,8vw,7rem)] font-black tabular-nums leading-none text-[#0a0a0a]">
+            <div className="text-[clamp(2.5rem,5vw,5rem)] font-black tabular-nums leading-none text-[#0a0a0a]">
               03
             </div>
             <div className="mt-3 font-mono text-[11px] uppercase tracking-[0.45em] text-[rgba(10,10,10,0.35)]">
@@ -219,7 +219,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="px-8 py-12 text-center">
-            <div className="text-[clamp(4rem,8vw,7rem)] font-black tabular-nums leading-none text-[#0a0a0a]">
+            <div className="text-[clamp(2.5rem,5vw,5rem)] font-black tabular-nums leading-none text-[#0a0a0a]">
               <CountUp target={90} suffix="+" />
             </div>
             <div className="mt-3 font-mono text-[11px] uppercase tracking-[0.45em] text-[rgba(10,10,10,0.35)]">
@@ -249,7 +249,7 @@ export default function HomePage() {
             <div className="font-mono text-[11px] uppercase tracking-[0.4em] text-[rgba(245,240,235,0.3)]">
               — Distinction
             </div>
-            <p className="mt-8 text-[clamp(2rem,3.5vw,3rem)] font-bold leading-[1.1] tracking-tight text-[#f5f0eb]">
+            <p className="mt-8 text-[clamp(1.5rem,2.2vw,2.2rem)] font-bold leading-[1.1] tracking-tight text-[#f5f0eb]">
               Not a board game. Not a puzzle kit. A cold case file that rewards
               serious investigation.
             </p>
@@ -317,7 +317,7 @@ export default function HomePage() {
           <div className="font-mono text-[11px] uppercase tracking-[0.4em] text-[rgba(245,240,235,0.3)]">
             Process
           </div>
-          <h2 className="mt-4 text-[clamp(2rem,3.5vw,3rem)] font-bold text-[#f5f0eb]">
+          <h2 className="mt-4 text-[clamp(1.5rem,2.2vw,2.2rem)] font-bold text-[#f5f0eb]">
             Three steps. One investigation.
           </h2>
         </motion.div>
@@ -395,7 +395,7 @@ export default function HomePage() {
               className="mt-4"
               color="rgba(245,240,235,0.08)"
             />
-            <h2 className="mt-6 text-[clamp(2rem,3.5vw,3rem)] font-bold text-[#f5f0eb]">
+            <h2 className="mt-6 text-[clamp(1.5rem,2.2vw,2.2rem)] font-bold text-[#f5f0eb]">
               {featuredCase.title}
             </h2>
             <p className="mt-4 text-[15px] leading-[1.8] text-[rgba(245,240,235,0.5)]">
@@ -480,7 +480,7 @@ export default function HomePage() {
             color="rgba(245,240,235,0.07)"
             delay={0.2}
           />
-          <h2 className="mt-6 text-[clamp(2rem,3vw,2.6rem)] font-bold text-[#f5f0eb]">
+          <h2 className="mt-6 text-[clamp(1.4rem,2vw,2rem)] font-bold text-[#f5f0eb]">
             Get updates on new case releases and bureau announcements.
           </h2>
           <p className="mt-4 text-[14px] leading-[1.8] text-[rgba(245,240,235,0.4)]">
