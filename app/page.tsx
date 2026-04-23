@@ -16,12 +16,15 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 
 const GRAIN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`;
 
+// Fixed angles for evidence board cards so they don't re-randomize on render.
+const PIN_ANGLES = [-2.5, 1.8, -1.2];
+
 export default function HomePage() {
   const { home, featuredCase } = siteConfig;
   const { scrollYProgress } = useScroll();
 
   const heroRef = useRef<HTMLElement>(null);
-  const heroInView = useInView(heroRef, { once: true, amount: 0.2 });
+  const heroInView = useInView(heroRef, { once: true, amount: 0.1 });
 
   const featuredRef = useRef<HTMLElement>(null);
   const { scrollYProgress: featuredScroll } = useScroll({
@@ -42,7 +45,7 @@ export default function HomePage() {
       {/* Global: film grain */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-[150] opacity-[0.025]"
+        className="pointer-events-none fixed inset-0 z-[5] opacity-[0.022]"
         style={{ backgroundImage: GRAIN }}
       />
 
@@ -53,76 +56,107 @@ export default function HomePage() {
         ref={heroRef}
         className="relative min-h-screen overflow-hidden bg-[#000000]"
       >
-        {/* Ambient glows */}
         <div
           aria-hidden
-          className="pointer-events-none absolute left-0 top-0 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(196,28,28,0.08),transparent_65%)]"
+          className="pointer-events-none absolute left-0 top-0 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(196,28,28,0.07),transparent_65%)]"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[600px] translate-x-1/3 translate-y-1/4 bg-[radial-gradient(circle,rgba(201,168,76,0.06),transparent_70%)]"
+          className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[500px] translate-x-1/4 translate-y-1/4 bg-[radial-gradient(circle,rgba(201,168,76,0.05),transparent_70%)]"
         />
 
-        <div className="relative flex min-h-screen flex-col justify-center px-8 pb-16 pt-24 md:px-16 lg:px-24">
-          {/* Headline — three lines, word-by-word reveal */}
-          <div>
-            <p className="text-[clamp(2rem,4.5vw,5rem)] font-black leading-[0.92] tracking-[-0.03em] text-[#f5f0eb]">
-              <WordReveal
-                text="Open the file."
-                inView={heroInView}
-                baseDelay={0.1}
+        {/* Scanner line — uses CSS `top` (not transform `y`) so the percentage
+            reads against the section height rather than the 1px scanner. */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute left-0 right-0 z-20 h-[1px]"
+          style={{
+            background:
+              "linear-gradient(to right, transparent, rgba(201,168,76,0.15), rgba(201,168,76,0.3), rgba(201,168,76,0.15), transparent)",
+          }}
+          animate={{ top: ["-2%", "102%"] }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "linear",
+            repeatDelay: 3,
+          }}
+        />
+
+        <div className="relative z-10 flex min-h-screen flex-col justify-center px-8 pb-16 pt-24 md:px-16 lg:px-24">
+          {/* Top row — clock + rubber stamp */}
+          <div className="mb-12 flex items-center justify-between">
+            <CaseClock />
+
+            <motion.div
+              initial={{ scale: 1.6, rotate: -18, opacity: 0 }}
+              animate={{
+                scale: [1.6, 0.88, 1.0],
+                rotate: [-18, -14, -14],
+                opacity: [0, 1, 1],
+              }}
+              transition={{ duration: 0.5, delay: 1.4, times: [0, 0.55, 1] }}
+              className="relative inline-block"
+            >
+              <div className="rounded border-2 border-[rgba(196,28,28,0.7)] px-3 py-1 font-mono text-[13px] font-black uppercase tracking-[0.3em] text-[rgba(196,28,28,0.7)]">
+                BL-001
+              </div>
+              <motion.div
+                aria-hidden
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 1.9, ease: EASE }}
+                className="pointer-events-none absolute inset-0 rounded bg-[rgba(196,28,28,0.04)]"
               />
-            </p>
-            <p className="text-[clamp(2rem,4.5vw,5rem)] font-black leading-[0.92] tracking-[-0.03em] text-[rgba(245,240,235,0.38)]">
-              <WordReveal
-                text="Enter the bureau."
-                inView={heroInView}
-                baseDelay={0.25}
-              />
-            </p>
-            <p className="text-[clamp(2rem,4.5vw,5rem)] font-black leading-[0.92] tracking-[-0.03em]">
-              <span className="text-[rgba(245,240,235,0.2)]">
-                <WordReveal
-                  text="Solve what"
-                  inView={heroInView}
-                  baseDelay={0.4}
-                />
-              </span>
-              <span className="text-[#f5f0eb]">
-                {" "}
-                <WordReveal
-                  text="they missed."
-                  inView={heroInView}
-                  baseDelay={0.52}
-                />
-              </span>
-            </p>
+            </motion.div>
           </div>
 
-          {/* Sub */}
+          {/* Headline — three RedactReveal lines, each wrapped in GlitchText */}
+          <div>
+            <GlitchText>
+              <p className="text-[clamp(2rem,4.5vw,5rem)] font-black leading-[0.92] tracking-[-0.03em] text-[#f5f0eb]">
+                <RedactReveal delay={0.2}>Open the file.</RedactReveal>
+              </p>
+            </GlitchText>
+            <GlitchText>
+              <p className="text-[clamp(2rem,4.5vw,5rem)] font-black leading-[0.92] tracking-[-0.03em] text-[rgba(245,240,235,0.38)]">
+                <RedactReveal delay={0.55}>Enter the bureau.</RedactReveal>
+              </p>
+            </GlitchText>
+            <GlitchText>
+              <p className="text-[clamp(2rem,4.5vw,5rem)] font-black leading-[0.92] tracking-[-0.03em]">
+                <span className="text-[rgba(245,240,235,0.18)]">
+                  <RedactReveal delay={0.9}>Solve what </RedactReveal>
+                </span>
+                <span className="text-[#f5f0eb]">
+                  <RedactReveal delay={1.15}>they missed.</RedactReveal>
+                </span>
+              </p>
+            </GlitchText>
+          </div>
+
           <motion.p
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: EASE, delay: 1.1 }}
+            transition={{ duration: 0.7, ease: EASE, delay: 1.6 }}
             className="mt-10 max-w-sm text-[15px] leading-7 text-[rgba(245,240,235,0.45)]"
           >
             {home.heroText}
           </motion.p>
 
-          {/* CTAs */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: EASE, delay: 1.3 }}
+            transition={{ duration: 0.7, ease: EASE, delay: 1.8 }}
             className="mt-8 flex items-center gap-8"
           >
             <MagneticLink
               href={featuredCase.href}
-              className="group relative overflow-hidden rounded-full bg-[#c9a84c] px-8 py-3.5 text-[14px] font-semibold text-[#000] transition"
+              className="group relative overflow-hidden rounded-full bg-[#c9a84c] px-8 py-3.5 text-[14px] font-semibold text-[#080808]"
             >
               <span
                 aria-hidden
-                className="absolute inset-0 origin-left scale-x-0 bg-white/10 transition-transform duration-300 group-hover:scale-x-100"
+                className="absolute inset-0 origin-left scale-x-0 bg-black/10 transition-transform duration-300 group-hover:scale-x-100"
               />
               <span className="relative z-10 flex items-center gap-2">
                 Examine Case 001
@@ -132,20 +166,23 @@ export default function HomePage() {
 
             <a
               href="/cases"
-              className="border-b border-[rgba(245,240,235,0.12)] pb-0.5 font-mono text-[13px] uppercase tracking-[0.3em] text-[rgba(245,240,235,0.35)] transition hover:border-[rgba(245,240,235,0.4)] hover:text-[rgba(245,240,235,0.7)]"
+              className="border-b border-[rgba(245,240,235,0.12)] pb-0.5 font-mono text-[13px] uppercase tracking-[0.3em] text-[rgba(245,240,235,0.3)] transition hover:border-[rgba(245,240,235,0.4)] hover:text-[rgba(245,240,235,0.7)]"
             >
-              All Cases
+              All Cases →
             </a>
           </motion.div>
 
-          {/* Floating case card (lg+ only) */}
-          <div className="absolute right-8 top-1/2 hidden w-72 -translate-y-1/2 lg:block lg:right-16">
+          {/* Floating case card */}
+          <div
+            className="absolute right-8 top-1/2 hidden lg:block lg:right-16"
+            style={{ transform: "translateY(-50%)" }}
+          >
             <motion.div
               initial={{ opacity: 0, x: 40, rotate: 3 }}
-              animate={{ opacity: 1, x: 0, rotate: 0 }}
-              transition={{ duration: 1.2, ease: EASE, delay: 0.6 }}
-              whileHover={{ y: -6, rotate: -0.5 }}
-              className="rounded-2xl border border-[rgba(245,240,235,0.08)] bg-[rgba(245,240,235,0.03)] p-5"
+              animate={{ opacity: 1, x: 0, rotate: 1.5 }}
+              transition={{ duration: 1.2, ease: EASE, delay: 0.8 }}
+              whileHover={{ y: -8, rotate: 0 }}
+              className="w-72 cursor-pointer rounded-2xl border border-[rgba(245,240,235,0.08)] bg-[rgba(245,240,235,0.03)] p-5 backdrop-blur-sm"
             >
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-[rgba(245,240,235,0.2)]">
@@ -188,11 +225,6 @@ export default function HomePage() {
               Scroll
             </span>
           </motion.div>
-
-          {/* Bottom-right serial */}
-          <div className="absolute bottom-8 right-8 font-mono text-[9px] uppercase tracking-[0.35em] text-[rgba(245,240,235,0.18)]">
-            001
-          </div>
         </div>
       </section>
 
@@ -235,7 +267,7 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================ */}
-      {/* SECTION 3 — DEPTH (#040414)                                   */}
+      {/* SECTION 3 — EVIDENCE BOARD (#040414)                          */}
       {/* ============================================================ */}
       <section className="bg-[#040414] px-8 py-24 md:px-16 md:py-32 lg:px-24">
         <div className="grid gap-20 lg:grid-cols-[1fr_1fr]">
@@ -260,24 +292,31 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="space-y-0">
-            {home.differentiators.map((item, index) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, x: 24 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{
-                  duration: 0.7,
-                  ease: EASE,
-                  delay: index * 0.15,
-                }}
-              >
-                <DrawLine
-                  delay={index * 0.1}
-                  color="rgba(245,240,235,0.07)"
-                />
-                <div className="py-8">
+          {/* Evidence board — pinned cards */}
+          <div className="space-y-10">
+            {home.differentiators.map((item, index) => {
+              const angle = PIN_ANGLES[index] ?? 0;
+              const enterX = index === 1 ? 30 : index === 2 ? -20 : -30;
+              return (
+                <motion.div
+                  key={item.title}
+                  initial={{
+                    opacity: 0,
+                    x: enterX,
+                    y: 20,
+                    rotate: angle * 1.8,
+                  }}
+                  whileInView={{ opacity: 1, x: 0, y: 0, rotate: angle }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{
+                    duration: 0.7,
+                    ease: EASE,
+                    delay: index * 0.15,
+                  }}
+                  style={{ transformOrigin: "top center" }}
+                  className="relative rounded-xl border border-[rgba(245,240,235,0.07)] bg-[rgba(245,240,235,0.02)] p-6 pt-8"
+                >
+                  <EvidencePin />
                   <div className="flex items-start gap-4">
                     <span className="mt-1 font-mono text-[11px] tabular-nums text-[rgba(245,240,235,0.25)]">
                       0{index + 1}
@@ -291,10 +330,9 @@ export default function HomePage() {
                       </p>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-            <DrawLine color="rgba(245,240,235,0.07)" />
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -370,7 +408,7 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================ */}
-      {/* SECTION 5 — THE PRODUCT / FEATURED (#000000) + parallax       */}
+      {/* SECTION 5 — FEATURED / MANILA FOLDER (#000000)                */}
       {/* ============================================================ */}
       <section
         ref={featuredRef}
@@ -391,10 +429,7 @@ export default function HomePage() {
             <div className="font-mono text-[11px] uppercase tracking-[0.4em] text-[rgba(245,240,235,0.3)]">
               Featured Investigation
             </div>
-            <DrawLine
-              className="mt-4"
-              color="rgba(245,240,235,0.08)"
-            />
+            <DrawLine className="mt-4" color="rgba(245,240,235,0.08)" />
             <h2 className="mt-6 text-[clamp(1.5rem,2.2vw,2.2rem)] font-bold text-[#f5f0eb]">
               {featuredCase.title}
             </h2>
@@ -419,37 +454,47 @@ export default function HomePage() {
             </a>
           </motion.div>
 
+          {/* Manila folder card */}
           <motion.div
             style={{ y: cardY }}
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 200 }}
-            className="overflow-hidden rounded-2xl border border-[rgba(245,240,235,0.08)] bg-[rgba(245,240,235,0.025)]"
+            className="relative pt-5"
           >
-            <div className="flex items-center justify-between border-b border-[rgba(245,240,235,0.06)] bg-[rgba(245,240,235,0.02)] px-5 py-3">
-              <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-[rgba(245,240,235,0.2)]">
-                Investigation File
-              </span>
-              <span className="flex items-center gap-2">
-                <span
-                  aria-hidden
-                  className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#c9a84c]"
-                />
-                <span className="font-mono text-[9px] text-[rgba(245,240,235,0.3)]">
-                  Active
-                </span>
+            {/* Folder tab */}
+            <div className="absolute -top-5 left-6 flex h-5 w-28 items-center rounded-t-lg border border-b-0 border-[rgba(201,168,76,0.2)] bg-[rgba(201,168,76,0.06)] px-3">
+              <span className="font-mono text-[8px] uppercase tracking-[0.3em] text-[rgba(201,168,76,0.35)]">
+                CASE FILE
               </span>
             </div>
-            <div className="p-5">
-              <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[rgba(245,240,235,0.2)]">
-                BL-{featuredCase.id}
+
+            <div className="overflow-hidden rounded-2xl border border-[rgba(201,168,76,0.12)] bg-[rgba(201,168,76,0.03)]">
+              <div className="flex items-center justify-between border-b border-[rgba(245,240,235,0.06)] bg-[rgba(245,240,235,0.02)] px-5 py-3">
+                <span className="font-mono text-[9px] uppercase tracking-[0.4em] text-[rgba(245,240,235,0.2)]">
+                  Investigation File
+                </span>
+                <span className="flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#c9a84c]"
+                  />
+                  <span className="font-mono text-[9px] text-[rgba(245,240,235,0.3)]">
+                    Active
+                  </span>
+                </span>
               </div>
-              <p className="mt-2 text-[14px] font-semibold text-[#f5f0eb]">
-                {featuredCase.title}
-              </p>
-              <div className="mt-4 space-y-2.5">
-                <FileRow label="Operatives" value={featuredCase.players} />
-                <FileRow label="Duration" value={featuredCase.duration} />
-                <FileRow label="Tier" value={featuredCase.difficulty} />
+              <div className="p-5">
+                <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[rgba(245,240,235,0.2)]">
+                  BL-{featuredCase.id}
+                </div>
+                <p className="mt-2 text-[14px] font-semibold text-[#f5f0eb]">
+                  {featuredCase.title}
+                </p>
+                <div className="mt-4 space-y-2.5">
+                  <FileRow label="Operatives" value={featuredCase.players} />
+                  <FileRow label="Duration" value={featuredCase.duration} />
+                  <FileRow label="Tier" value={featuredCase.difficulty} />
+                </div>
               </div>
             </div>
           </motion.div>
@@ -499,42 +544,108 @@ export default function HomePage() {
 // HELPERS
 // ============================================================
 
-type WordRevealProps = {
-  text: string;
+type RedactRevealProps = {
+  children: ReactNode;
+  delay?: number;
   className?: string;
-  baseDelay?: number;
-  inView: boolean;
 };
 
-function WordReveal({
-  text,
-  className,
-  baseDelay = 0,
-  inView,
-}: WordRevealProps) {
-  const words = text.split(" ");
+function RedactReveal({ children, delay = 0, className }: RedactRevealProps) {
   return (
-    <span className={className}>
-      {words.map((word, index) => (
-        <span
-          key={`${word}-${index}`}
-          className="mr-[0.22em] inline-block overflow-hidden"
-        >
-          <motion.span
-            className="inline-block"
-            initial={{ y: "110%" }}
-            animate={inView ? { y: "0%" } : { y: "110%" }}
-            transition={{
-              duration: 0.65,
-              ease: EASE,
-              delay: baseDelay + index * 0.09,
-            }}
-          >
-            {word}
-          </motion.span>
-        </span>
-      ))}
+    <span className={clsx("relative inline-block", className)}>
+      {children}
+      <motion.span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[#000000]"
+        initial={{ scaleX: 1 }}
+        animate={{ scaleX: 0 }}
+        transition={{ duration: 0.6, delay, ease: [0.7, 0, 0.3, 1] }}
+        style={{ originX: 1 }}
+      />
     </span>
+  );
+}
+
+function CaseClock() {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const start = Date.now();
+    const id = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 500);
+    return () => clearInterval(id);
+  }, []);
+
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  const display =
+    mins > 0 ? `${mins}m ${String(secs).padStart(2, "0")}s` : `${secs}s`;
+
+  return (
+    <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[rgba(245,240,235,0.25)]">
+      CASE OPENED: {display}
+    </span>
+  );
+}
+
+type GlitchTextProps = {
+  children: ReactNode;
+  className?: string;
+};
+
+function GlitchText({ children, className }: GlitchTextProps) {
+  const [glitching, setGlitching] = useState(false);
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    const scheduleNext = () => {
+      const delay = 4000 + Math.random() * 5000;
+      timeoutId = setTimeout(() => {
+        setGlitching(true);
+        timeoutId = setTimeout(() => {
+          setGlitching(false);
+          scheduleNext();
+        }, 120);
+      }, delay);
+    };
+
+    scheduleNext();
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  // Wrap as block-level <motion.div> so the headline <p> child is valid HTML;
+  // a <motion.span> wrapping a <p> would be invalid block-in-inline.
+  return (
+    <motion.div
+      className={className}
+      animate={
+        glitching
+          ? {
+              x: [-3, 2, -1, 0],
+              skewX: [-2, 1.5, 0],
+              filter: [
+                "brightness(1.4) contrast(1.1)",
+                "brightness(0.9)",
+                "brightness(1)",
+              ],
+            }
+          : { x: 0, skewX: 0, filter: "brightness(1)" }
+      }
+      transition={{ duration: 0.12 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function EvidencePin() {
+  return (
+    <div className="absolute -top-2 left-1/2 z-10 -translate-x-1/2">
+      <div className="h-4 w-4 rounded-full border border-[rgba(201,168,76,0.4)] bg-[#c9a84c] shadow-[0_0_12px_rgba(201,168,76,0.6)]" />
+      <div className="mx-auto h-3 w-[2px] bg-[rgba(201,168,76,0.4)]" />
+    </div>
   );
 }
 
@@ -632,7 +743,7 @@ function DrawLine({ className, delay = 0, color }: DrawLineProps) {
   );
 }
 
-// ---- micro components used in section 1 + 5 ----
+// ---- micro components ----
 
 function FloatStat({ value, label }: { value: string; label: string }) {
   return (
