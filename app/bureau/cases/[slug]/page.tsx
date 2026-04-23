@@ -98,7 +98,7 @@ export default async function BureauCasePage({ params }: PageProps) {
       where: { oldSlug: slug },
       include: { caseFile: { select: { slug: true } } },
     });
-    if (historyRow) {
+    if (historyRow && historyRow.caseFile.slug !== slug) {
       redirect(`/bureau/cases/${historyRow.caseFile.slug}`);
     }
     notFound();
