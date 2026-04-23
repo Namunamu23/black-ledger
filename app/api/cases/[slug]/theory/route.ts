@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { theorySubmissionSchema } from "@/lib/validators";
 import { evaluateTheorySubmission } from "@/lib/case-evaluation";
 import {
-  nextUserCaseStatus,
-  type TheoryResultLabel,
+  transitionUserCase,
+  type UserCaseEvent,
 } from "@/lib/user-case-state";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -81,10 +81,16 @@ export async function POST(
     });
 
     const currentStatus = ownedCase.status;
-    const newStatus = nextUserCaseStatus(
-      currentStatus,
-      evaluation.resultLabel as TheoryResultLabel
-    );
+    const eventMap: Record<string, UserCaseEvent> = {
+      CORRECT: "THEORY_CORRECT",
+      PARTIAL: "THEORY_PARTIAL",
+      INCORRECT: "THEORY_INCORRECT",
+    };
+    const event: UserCaseEvent =
+      eventMap[evaluation.resultLabel] ?? "THEORY_INCORRECT";
+    const transitionResult = transitionUserCase(currentStatus, event);
+    const newStatus =
+      typeof transitionResult === "string" ? transitionResult : currentStatus;
 
     const becameSolvedNow =
       newStatus === "SOLVED" && currentStatus !== "SOLVED";
@@ -115,6 +121,18 @@ export async function POST(
           status: newStatus,
           completedAt,
           lastViewedAt: new Date(),
+        },
+      });
+
+      await tx.userCaseEvent.create({
+        data: {
+          userCaseId: ownedCase.id,
+          type: event,
+          payload: {
+            suspectName: parsed.data.suspectName,
+            score: evaluation.score,
+            resultLabel: evaluation.resultLabel,
+          },
         },
       });
     });

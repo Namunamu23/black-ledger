@@ -82,8 +82,16 @@ export async function POST(request: Request) {
         throw new Error("ALREADY_CLAIMED");
       }
 
-      await tx.userCase.create({
+      const newUserCase = await tx.userCase.create({
         data: { userId, caseFileId: activation.caseFileId },
+      });
+
+      await tx.userCaseEvent.create({
+        data: {
+          userCaseId: newUserCase.id,
+          type: "ACTIVATE",
+          payload: { caseFileId: activation.caseFileId },
+        },
       });
     });
 

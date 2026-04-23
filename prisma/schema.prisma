@@ -154,8 +154,19 @@ model UserCase {
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+  events   UserCaseEvent[]
 
   @@unique([userId, caseFileId])
+}
+
+model UserCaseEvent {
+  id         Int      @id @default(autoincrement())
+  userCaseId Int
+  type       String
+  payload    Json
+  createdAt  DateTime @default(now())
+
+  userCase UserCase @relation(fields: [userCaseId], references: [id], onDelete: Cascade)
 }
 
 model CasePerson {

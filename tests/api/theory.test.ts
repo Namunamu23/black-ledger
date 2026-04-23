@@ -24,12 +24,14 @@ const mocks = vi.hoisted(() => {
   const userCaseFindFirst = vi.fn();
   const userCaseUpdate = vi.fn();
   const theorySubmissionCreate = vi.fn();
+  const userCaseEventCreate = vi.fn();
   const transactionFn = vi.fn();
   const authFn = vi.fn();
   return {
     userCaseFindFirst,
     userCaseUpdate,
     theorySubmissionCreate,
+    userCaseEventCreate,
     transactionFn,
     authFn,
   };
@@ -43,6 +45,9 @@ vi.mock("@/lib/prisma", () => ({
     },
     theorySubmission: {
       create: mocks.theorySubmissionCreate,
+    },
+    userCaseEvent: {
+      create: mocks.userCaseEventCreate,
     },
     $transaction: mocks.transactionFn,
   },
@@ -90,6 +95,7 @@ describe("POST /api/cases/[slug]/theory — UserCase state transitions", () => {
       return await callback({
         userCase: { update: mocks.userCaseUpdate },
         theorySubmission: { create: mocks.theorySubmissionCreate },
+        userCaseEvent: { create: mocks.userCaseEventCreate },
       });
     });
   });

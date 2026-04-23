@@ -15,8 +15,17 @@ const mocks = vi.hoisted(() => {
   const userCaseFindFirst = vi.fn();
   const userCaseUpdate = vi.fn();
   const checkpointAttemptCreate = vi.fn();
+  const userCaseEventCreate = vi.fn();
+  const transactionFn = vi.fn();
   const authFn = vi.fn();
-  return { userCaseFindFirst, userCaseUpdate, checkpointAttemptCreate, authFn };
+  return {
+    userCaseFindFirst,
+    userCaseUpdate,
+    checkpointAttemptCreate,
+    userCaseEventCreate,
+    transactionFn,
+    authFn,
+  };
 });
 
 vi.mock("@/lib/prisma", () => ({
@@ -28,6 +37,10 @@ vi.mock("@/lib/prisma", () => ({
     checkpointAttempt: {
       create: mocks.checkpointAttemptCreate,
     },
+    userCaseEvent: {
+      create: mocks.userCaseEventCreate,
+    },
+    $transaction: mocks.transactionFn,
   },
 }));
 
@@ -84,6 +97,13 @@ describe("POST /api/cases/[slug]/checkpoint — strict matcher", () => {
       user: { id: "1", role: "INVESTIGATOR" },
     });
     mocks.userCaseFindFirst.mockResolvedValue(ALDER_USER_CASE);
+
+    mocks.transactionFn.mockImplementation(async (callback: any) => {
+      return await callback({
+        userCase: { update: mocks.userCaseUpdate },
+        userCaseEvent: { create: mocks.userCaseEventCreate },
+      });
+    });
   });
 
   it("exact match passes", async () => {

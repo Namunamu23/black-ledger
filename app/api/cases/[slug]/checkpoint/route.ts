@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { checkpointAnswerSchema } from "@/lib/validators";
 import { normalizeIdentity, tokenize } from "@/lib/text-utils";
 import { rateLimit } from "@/lib/rate-limit";
+import {
+  transitionUserCase,
+  type UserCaseEvent,
+} from "@/lib/user-case-state";
 
 const CHECKPOINT_JACCARD_THRESHOLD = 0.45;
 const MIN_NORMALIZED_LENGTH = 3;
@@ -155,15 +159,34 @@ export async function POST(
 
     const nextStage = userCase.currentStage + 1;
     const finalStageUnlocked = nextStage >= userCase.caseFile.maxStage;
+    const event: UserCaseEvent = finalStageUnlocked
+      ? "CHECKPOINT_FINAL_PASS"
+      : "CHECKPOINT_PASS";
+    const transitionResult = transitionUserCase(userCase.status, event);
+    const newStatus =
+      typeof transitionResult === "string" ? transitionResult : userCase.status;
 
-    await prisma.userCase.update({
-      where: { id: userCase.id },
-      data: {
-        currentStage: nextStage,
-        status: finalStageUnlocked ? "FINAL_REVIEW" : "ACTIVE",
-        firstOpenedAt: userCase.firstOpenedAt ?? new Date(),
-        lastViewedAt: new Date(),
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.userCase.update({
+        where: { id: userCase.id },
+        data: {
+          currentStage: nextStage,
+          status: newStatus,
+          firstOpenedAt: userCase.firstOpenedAt ?? new Date(),
+          lastViewedAt: new Date(),
+        },
+      });
+      await tx.userCaseEvent.create({
+        data: {
+          userCaseId: userCase.id,
+          type: event,
+          payload: {
+            stage: userCase.currentStage,
+            answer: parsed.data.answer,
+            nextStage,
+          },
+        },
+      });
     });
 
     return NextResponse.json(

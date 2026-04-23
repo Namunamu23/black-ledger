@@ -3,10 +3,22 @@
  * UserCaseStatus, re-exported here so the rest of the codebase has a single
  * import location for state-machine types.
  *
- * The state machine is monotonically upward:
- *   NOT_STARTED → ACTIVE → FINAL_REVIEW → SOLVED  (terminal)
+ * The state machine is event-sourced. Routes derive the next status by
+ * applying a UserCaseEvent to the current status via `transitionUserCase`,
+ * never by inline string comparison. The same event is then persisted to
+ * the UserCaseEvent log so the full case lifecycle is auditable from the
+ * database alone.
  *
- * TheoryResultLabel comes from the Prisma TheoryResultLabel enum.
+ * Allowed transitions:
+ *   NOT_STARTED  --ACTIVATE--> ACTIVE
+ *   ACTIVE       --CHECKPOINT_PASS--> ACTIVE
+ *   ACTIVE       --CHECKPOINT_FINAL_PASS--> FINAL_REVIEW
+ *   ACTIVE       --THEORY_INCORRECT--> ACTIVE
+ *   ACTIVE       --THEORY_PARTIAL--> FINAL_REVIEW
+ *   ACTIVE       --THEORY_CORRECT--> SOLVED
+ *   FINAL_REVIEW --any non-terminal--> FINAL_REVIEW (no regressions)
+ *   FINAL_REVIEW --THEORY_CORRECT--> SOLVED
+ *   SOLVED       --any event--> SOLVED  (terminal — protection invariant)
  */
 export {
   UserCaseStatus,
@@ -18,50 +30,85 @@ import type {
   TheoryResultLabel,
 } from "@/generated/prisma/client";
 
-const STATUS_ORDER: Record<UserCaseStatus, number> = {
-  NOT_STARTED: 0,
-  ACTIVE: 1,
-  FINAL_REVIEW: 2,
-  SOLVED: 3,
+export type UserCaseEvent =
+  | "ACTIVATE"
+  | "CHECKPOINT_PASS"
+  | "CHECKPOINT_FINAL_PASS"
+  | "THEORY_INCORRECT"
+  | "THEORY_PARTIAL"
+  | "THEORY_CORRECT";
+
+const TRANSITIONS: Record<
+  UserCaseStatus,
+  Partial<Record<UserCaseEvent, UserCaseStatus>>
+> = {
+  NOT_STARTED: {
+    ACTIVATE: "ACTIVE",
+  },
+  ACTIVE: {
+    ACTIVATE: "ACTIVE",
+    CHECKPOINT_PASS: "ACTIVE",
+    CHECKPOINT_FINAL_PASS: "FINAL_REVIEW",
+    THEORY_INCORRECT: "ACTIVE",
+    THEORY_PARTIAL: "FINAL_REVIEW",
+    THEORY_CORRECT: "SOLVED",
+  },
+  FINAL_REVIEW: {
+    ACTIVATE: "FINAL_REVIEW",
+    CHECKPOINT_PASS: "FINAL_REVIEW",
+    CHECKPOINT_FINAL_PASS: "FINAL_REVIEW",
+    THEORY_INCORRECT: "FINAL_REVIEW",
+    THEORY_PARTIAL: "FINAL_REVIEW",
+    THEORY_CORRECT: "SOLVED",
+  },
+  SOLVED: {
+    ACTIVATE: "SOLVED",
+    CHECKPOINT_PASS: "SOLVED",
+    CHECKPOINT_FINAL_PASS: "SOLVED",
+    THEORY_INCORRECT: "SOLVED",
+    THEORY_PARTIAL: "SOLVED",
+    THEORY_CORRECT: "SOLVED",
+  },
 };
 
 /**
- * For a given theory result, the lowest status the case must hold afterwards.
- * Combined with the current status by taking the higher of the two so the
- * machine can never move backwards.
+ * Apply a UserCaseEvent to a UserCase's current status. Returns the new
+ * status on success, or `{ error }` when no transition is defined for the
+ * (status, event) pair. Callers MUST discriminate on `typeof result ===
+ * "string"` before assigning.
+ *
+ * The error path is reserved for genuinely undefined transitions — e.g.
+ * NOT_STARTED + CHECKPOINT_PASS, which means a route attempted to advance
+ * a case that was never activated. Surfacing rather than silently ignoring
+ * keeps wiring bugs visible.
  */
-const RESULT_FLOOR: Record<TheoryResultLabel, UserCaseStatus> = {
-  INCORRECT: "ACTIVE",
-  PARTIAL: "FINAL_REVIEW",
-  CORRECT: "SOLVED",
-};
+export function transitionUserCase(
+  currentStatus: UserCaseStatus,
+  event: UserCaseEvent
+): UserCaseStatus | { error: string } {
+  const next = TRANSITIONS[currentStatus]?.[event];
+  if (next === undefined) {
+    return {
+      error: `No transition defined for status=${currentStatus} event=${event}`,
+    };
+  }
+  return next;
+}
 
 /**
- * Given a UserCase's current status and the result label of a brand-new
- * theory submission, return the status the UserCase should hold after the
- * submission is recorded.
- *
- * Invariants:
- *   - SOLVED is terminal. Once solved, the status never moves regardless of
- *     subsequent submission results. This is the SOLVED-protection invariant.
- *   - The state machine is monotonically upward. The returned status is never
- *     "lower" than the current one.
- *   - Each result label has a floor status the case must reach: INCORRECT
- *     keeps the case at ACTIVE, PARTIAL pushes it up to FINAL_REVIEW, CORRECT
- *     pushes it up to SOLVED. The current status wins if it is already higher.
- *
- * This is the only place in the codebase that decides UserCase.status
- * transitions caused by theory submissions. Route handlers must call this
- * function rather than inline status decisions.
+ * @deprecated Prefer `transitionUserCase` with an explicit UserCaseEvent.
+ * Kept so legacy callers that compute status purely from a theory result
+ * label keep working without churn. New routes should use the event API.
  */
 export function nextUserCaseStatus(
   currentStatus: UserCaseStatus,
   submissionResult: TheoryResultLabel
 ): UserCaseStatus {
-  if (currentStatus === "SOLVED") return "SOLVED";
-
-  const candidate = RESULT_FLOOR[submissionResult];
-  return STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus]
-    ? candidate
-    : currentStatus;
+  const eventMap: Record<TheoryResultLabel, UserCaseEvent> = {
+    CORRECT: "THEORY_CORRECT",
+    PARTIAL: "THEORY_PARTIAL",
+    INCORRECT: "THEORY_INCORRECT",
+  };
+  const result = transitionUserCase(currentStatus, eventMap[submissionResult]);
+  return typeof result === "string" ? result : currentStatus;
 }
