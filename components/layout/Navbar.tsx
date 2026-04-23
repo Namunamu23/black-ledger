@@ -39,11 +39,11 @@ export default function Navbar({ session }: NavbarProps) {
   const operativeId = session ? deriveOperativeId(session) : null;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,8,0.92)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Link
           href="/"
-          className="text-sm font-semibold uppercase tracking-[0.35em] text-zinc-100"
+          className="text-sm font-semibold uppercase tracking-[0.35em] text-[#f5f0eb]"
         >
           {siteConfig.brand.name}
         </Link>
@@ -59,8 +59,8 @@ export default function Navbar({ session }: NavbarProps) {
                   className={clsx(
                     "rounded-full px-3 py-2 text-sm transition",
                     isActive
-                      ? "bg-zinc-800 text-white"
-                      : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                      ? "bg-[rgba(245,240,235,0.08)] text-[#f5f0eb]"
+                      : "text-[rgba(245,240,235,0.4)] hover:bg-[rgba(245,240,235,0.06)] hover:text-[#f5f0eb]"
                   )}
                 >
                   {item.label}
@@ -71,12 +71,12 @@ export default function Navbar({ session }: NavbarProps) {
 
           {session ? (
             <>
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400">
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[rgba(245,240,235,0.4)]">
                 OP · {operativeId}
               </span>
               <Link
                 href="/bureau"
-                className="rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-amber-300"
+                className="rounded-full bg-[#c9a84c] px-4 py-2 text-sm font-semibold text-[#080808] transition hover:bg-[#d4b55a]"
               >
                 Bureau
               </Link>
@@ -85,7 +85,7 @@ export default function Navbar({ session }: NavbarProps) {
           ) : (
             <Link
               href="/bureau"
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200"
+              className="rounded-full bg-[#c9a84c] px-4 py-2 text-sm font-semibold text-[#080808] transition hover:bg-[#d4b55a]"
             >
               Access Bureau
             </Link>
@@ -96,14 +96,14 @@ export default function Navbar({ session }: NavbarProps) {
           type="button"
           aria-label="Toggle menu"
           onClick={() => setOpen((prev) => !prev)}
-          className="rounded-xl border border-zinc-800 p-2 text-zinc-300 transition hover:bg-zinc-900 md:hidden"
+          className="rounded-xl border border-[rgba(255,255,255,0.08)] p-2 text-[rgba(245,240,235,0.5)] transition hover:bg-[rgba(245,240,235,0.05)] md:hidden"
         >
           {open ? <X size={18} /> : <Menu size={18} />}
         </button>
       </div>
 
       {open && (
-        <div className="border-t border-zinc-800 bg-zinc-950 md:hidden">
+        <div className="border-t border-[rgba(255,255,255,0.06)] bg-[#080808] md:hidden">
           <div className="mx-auto flex max-w-6xl flex-col px-6 py-4">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -115,8 +115,8 @@ export default function Navbar({ session }: NavbarProps) {
                   className={clsx(
                     "rounded-xl px-3 py-3 text-sm transition",
                     isActive
-                      ? "bg-zinc-900 text-white"
-                      : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                      ? "bg-[rgba(245,240,235,0.08)] text-[#f5f0eb]"
+                      : "text-[rgba(245,240,235,0.4)] hover:bg-[rgba(245,240,235,0.06)] hover:text-[#f5f0eb]"
                   )}
                 >
                   {item.label}
@@ -126,13 +126,13 @@ export default function Navbar({ session }: NavbarProps) {
 
             {session ? (
               <>
-                <div className="mt-3 px-3 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400">
+                <div className="mt-3 px-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgba(245,240,235,0.4)]">
                   OP · {operativeId}
                 </div>
                 <Link
                   href="/bureau"
                   onClick={() => setOpen(false)}
-                  className="mt-3 rounded-xl bg-amber-400 px-4 py-3 text-center text-sm font-semibold text-zinc-950 transition hover:bg-amber-300"
+                  className="mt-3 rounded-xl bg-[#c9a84c] px-4 py-3 text-center text-sm font-semibold text-[#080808] transition hover:bg-[#d4b55a]"
                 >
                   Bureau
                 </Link>
@@ -144,7 +144,7 @@ export default function Navbar({ session }: NavbarProps) {
               <Link
                 href="/bureau"
                 onClick={() => setOpen(false)}
-                className="mt-3 rounded-xl bg-white px-4 py-3 text-center text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200"
+                className="mt-3 rounded-xl bg-[#c9a84c] px-4 py-3 text-center text-sm font-semibold text-[#080808] transition hover:bg-[#d4b55a]"
               >
                 Access Bureau
               </Link>

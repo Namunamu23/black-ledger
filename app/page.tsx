@@ -64,18 +64,8 @@ export default function HomePage() {
         />
 
         <div className="relative flex min-h-screen flex-col justify-center px-8 pb-16 pt-24 md:px-16 lg:px-24">
-          {/* Top serial */}
-          <motion.div
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, ease: EASE }}
-            className="font-mono text-[11px] uppercase tracking-[0.45em] text-[rgba(245,240,235,0.25)]"
-          >
-            BL / ACTIVE INVESTIGATION / {new Date().getFullYear()}
-          </motion.div>
-
           {/* Headline — three lines, word-by-word reveal */}
-          <div className="mt-12">
+          <div>
             <p className="text-[clamp(3.5rem,8vw,8.5rem)] font-black leading-[0.92] tracking-[-0.03em] text-[#f5f0eb]">
               <WordReveal
                 text="Open the file."
