@@ -14,7 +14,8 @@
     "seed:admin": "tsx scripts/create-admin.ts",
     "seed:case": "tsx scripts/seed-case-file.ts",
     "reset:case": "tsx scripts/reset-case-progress.ts",
-    "seed:people": "tsx scripts/seed-global-people.ts"
+    "seed:people": "tsx scripts/seed-global-people.ts",
+    "new-case": "tsx scripts/new-case.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1032.0",
