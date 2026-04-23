@@ -5,12 +5,10 @@
  * Edit all TODO fields before running: npx tsx prisma/seed/cases/harbor-fog.ts
  */
 import dotenv from "dotenv";
-import { PrismaClient } from "../../../generated/prisma";
-
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
-const prisma = new PrismaClient();
+import { prisma } from "../../../lib/prisma";
 
 const caseData = {
   "slug": "harbor-fog",

@@ -239,12 +239,10 @@ async function main() {
  * Edit all TODO fields before running: npx tsx prisma/seed/cases/${slug}.ts
  */
 import dotenv from "dotenv";
-import { PrismaClient } from "../../../generated/prisma";
-
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
-const prisma = new PrismaClient();
+import { prisma } from "../../../lib/prisma";
 
 const caseData = ${JSON.stringify(caseData, null, 2)};
 
