@@ -24,7 +24,6 @@ export const siteConfig = {
   { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
   { href: "/support", label: "Support" },
-  { href: "/login", label: "Login" },
 ],
 
   home: {
