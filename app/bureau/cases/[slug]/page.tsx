@@ -2,13 +2,26 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
-import Reveal from "@/components/ui/Reveal";
 import TheorySubmissionForm from "@/components/bureau/TheorySubmissionForm";
 import CheckpointForm from "@/components/bureau/CheckpointForm";
 import { CASE_STATUS_LABEL, THEORY_RESULT_LABEL } from "@/lib/labels";
 import RevealedEvidence, {
   type ResolvedEvidence,
 } from "./_components/RevealedEvidence";
+import {
+  Card,
+  Pill,
+  StampBadge,
+  RedactedBar,
+  TerminalReadout,
+} from "@/components/ui";
+
+const BTN_PRIMARY_SM =
+  "inline-flex items-center rounded-2xl bg-amber-400 px-3 py-1.5 text-sm font-semibold text-zinc-950 transition hover:bg-amber-300";
+const BTN_OUTLINE_SM =
+  "inline-flex items-center rounded-2xl border border-zinc-700 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-zinc-800";
+const BTN_OUTLINE_MD =
+  "inline-flex items-center rounded-2xl border border-zinc-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800";
 
 type UnlocksTarget = { type: string; id: number };
 
@@ -152,337 +165,450 @@ export default async function BureauCasePage({ params }: PageProps) {
   const theoryUnlocked = currentStage >= caseFile.maxStage;
   const progressPercent = Math.round((currentStage / caseFile.maxStage) * 100);
 
+  // ---- Status pill tone (UserCaseStatus → Pill tone) ----
+  const statusToneMap: Record<string, "success" | "warning" | "info" | "neutral"> = {
+    SOLVED: "success",
+    FINAL_REVIEW: "warning",
+    ACTIVE: "info",
+    NOT_STARTED: "neutral",
+  };
+  const statusTone = statusToneMap[status] ?? "neutral";
+
+  // ---- Theory result pill tone ----
+  const resultToneMap: Record<string, "success" | "warning" | "danger"> = {
+    CORRECT: "success",
+    PARTIAL: "warning",
+    INCORRECT: "danger",
+  };
+
+  const caseSerial = "BL-" + slug.toUpperCase().replace(/-/g, "").slice(0, 8);
+
   return (
-    <main className="bg-zinc-950 text-white">
-      <section className="border-b border-zinc-900 py-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <Reveal>
-  <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-    Case Workspace
-  </div>
-  <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-    {caseFile.title}
-  </h1>
-  <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-300">
-    {caseFile.summary}
-  </p>
+    <main className="relative min-h-screen bg-[#050507] text-zinc-100">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(185,28,28,0.18),transparent_28%),radial-gradient(circle_at_80%_5%,rgba(14,116,144,0.15),transparent_26%),radial-gradient(circle_at_50%_92%,rgba(245,158,11,0.08),transparent_30%),linear-gradient(to_bottom,#050507,#09090b_50%,#030304)]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:54px_54px] opacity-20"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(to_bottom,rgba(255,255,255,0.03)_0px,rgba(255,255,255,0.03)_1px,transparent_1px,transparent_5px)] opacity-[0.04]"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute left-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-red-500/50 to-transparent"
+        aria-hidden
+      />
 
-  <div className="mt-8 flex flex-wrap gap-3">
-    <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-      Stage {currentStage}/{caseFile.maxStage}
-    </span>
-    <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-      {CASE_STATUS_LABEL[status]}
-    </span>
-    <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-      {caseFile.players}
-    </span>
-    <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-      {caseFile.duration}
-    </span>
-    <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
-      {caseFile.difficulty}
-    </span>
-  </div>
+      <div className="relative mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+        {/* Case header */}
+        <Card variant="dossier" padding="none">
+          <div className="border-b border-red-950/70 bg-gradient-to-r from-red-950/30 via-zinc-950 to-cyan-950/20 px-5 py-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_22px_rgba(239,68,68,0.95)]"
+                  aria-hidden
+                />
+                <span className="font-mono text-[11px] uppercase tracking-[0.34em] text-red-200">
+                  Case Workspace
+                </span>
+                <Pill tone="danger" label="Classified" />
+                {status === "SOLVED" ? (
+                  <StampBadge
+                    label="Case Resolved"
+                    tone="green"
+                    size="sm"
+                    rotate
+                  />
+                ) : null}
+              </div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-zinc-500">
+                Node BLB-NY-01 / Active Review
+              </div>
+            </div>
+          </div>
 
-  <div className="mt-8 flex flex-wrap gap-4">
-    <Link
-      href={`/bureau/cases/${slug}/database`}
-      className="rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
-    >
-      Open Bureau Database
-    </Link>
+          <div className="p-6">
+            <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-zinc-500">
+              {caseSerial}
+            </div>
+            <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
+              {caseFile.title}
+            </h1>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400">
+              {caseFile.summary}
+            </p>
 
-    {status === "SOLVED" ? (
-      <Link
-        href={`/bureau/cases/${slug}/debrief`}
-        className="rounded-2xl border border-emerald-500/30 px-5 py-3 font-semibold text-emerald-400 transition hover:bg-emerald-500/10"
-      >
-        Open Debrief
-      </Link>
-    ) : null}
-  </div>
-</Reveal>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Pill
+                tone="warning"
+                label={`Stage ${currentStage} / ${caseFile.maxStage}`}
+              />
+              <Pill tone={statusTone} label={CASE_STATUS_LABEL[status]} />
+              <Pill tone="neutral" label={caseFile.players} />
+              <Pill tone="neutral" label={caseFile.duration} />
+              <Pill tone="neutral" label={caseFile.difficulty} />
+            </div>
 
-          {status === "SOLVED" ? (
-            <Reveal delay={0.06}>
-              <div className="mt-8 rounded-[2rem] border border-emerald-500/30 bg-emerald-500/10 p-8">
-                <div className="text-xs uppercase tracking-[0.3em] text-emerald-400">
-                  Solved
-                </div>
-                <h2 className="mt-4 text-3xl font-semibold text-white">
-                  Case resolved successfully
-                </h2>
-                <p className="mt-4 max-w-2xl text-base leading-8 text-zinc-300">
-                  Your final theory matched the expected suspect, motive, and evidence strongly enough to resolve the case.
-                </p>
-
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href={`/bureau/cases/${slug}/database`}
+                className={BTN_OUTLINE_SM}
+              >
+                Bureau Database
+              </Link>
+              {status === "SOLVED" ? (
                 <Link
                   href={`/bureau/cases/${slug}/debrief`}
-                  className="mt-6 inline-flex rounded-2xl bg-white px-5 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-200"
+                  className="inline-flex items-center rounded-2xl border border-emerald-500/30 px-3 py-1.5 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/10"
                 >
                   Open Debrief
                 </Link>
-              </div>
-            </Reveal>
-          ) : null}
-
-          <Reveal delay={0.08}>
-            <div className="mt-8 rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
-              <div className="text-sm text-zinc-400">Review progress</div>
-              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-zinc-800">
-                <div
-                  className="h-full rounded-full bg-amber-400"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <div className="mt-3 text-sm text-zinc-400">
-                {progressPercent}% of stages unlocked
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {currentCheckpoint ? (
-        <section className="border-b border-zinc-900 py-16">
-          <div className="mx-auto max-w-6xl px-6">
-            <Reveal>
-              <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
-                <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-                  Stage {currentStage} Checkpoint
-                </div>
-                <h2 className="mt-4 text-3xl font-semibold text-white">
-                  Clear this checkpoint to unlock the next stage
-                </h2>
-                <p className="mt-4 max-w-2xl text-sm leading-8 text-zinc-300">
-                  Progression is tied to case understanding, not manual advancement.
-                </p>
-
-                <div className="mt-8">
-                  <CheckpointForm
-                    slug={slug}
-                    prompt={currentCheckpoint.prompt}
-                  />
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-      ) : null}
-
-      <RevealedEvidence items={revealedEvidence} />
-
-      <section className="border-b border-zinc-900 py-16">
-        <div className="mx-auto max-w-6xl px-6">
-          <Reveal>
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-                People of Interest
-              </div>
-              {remainingPeople > 0 ? (
-                <div className="text-sm text-zinc-500">
-                  {remainingPeople} more will unlock later
-                </div>
               ) : null}
             </div>
-          </Reveal>
+          </div>
+        </Card>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {visiblePeople.map((person, index) => (
-              <Reveal key={person.id} delay={index * 0.05}>
-                <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6">
-                  <div className="text-sm text-zinc-400">{person.role}</div>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">
+        {/* Progress + (optional) solved summary */}
+        <div
+          className={`mt-4 grid gap-4 ${
+            status === "SOLVED" ? "md:grid-cols-2" : ""
+          }`}
+        >
+          <Card variant="dossier" padding="md">
+            <TerminalReadout
+              tone="amber"
+              label="STAGE PROGRESSION"
+              lines={[
+                `${progressPercent}% of stages unlocked — Stage ${currentStage} of ${caseFile.maxStage}`,
+              ]}
+            />
+          </Card>
+
+          {status === "SOLVED" ? (
+            <Card
+              variant="dossier"
+              padding="md"
+              className="border-emerald-500/20"
+            >
+              <Pill tone="success" label="Resolved" />
+              <h2 className="mt-3 text-xl font-semibold text-white">
+                Case resolved successfully
+              </h2>
+              <p className="mt-2 text-sm text-zinc-400">
+                Your final theory matched the expected suspect, motive, and
+                evidence.
+              </p>
+              <Link
+                href={`/bureau/cases/${slug}/debrief`}
+                className={`mt-4 ${BTN_PRIMARY_SM}`}
+              >
+                Open Debrief
+              </Link>
+            </Card>
+          ) : null}
+        </div>
+
+        {/* Checkpoint */}
+        {currentCheckpoint ? (
+          <div className="mt-6">
+            <Card
+              variant="dossier"
+              padding="lg"
+              className="border-amber-500/20"
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="h-2 w-2 rounded-full bg-amber-500"
+                  aria-hidden
+                />
+                <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-amber-400">
+                  Stage {currentStage} Checkpoint
+                </span>
+              </div>
+              <h2 className="mt-4 text-2xl font-semibold text-white">
+                Clear this checkpoint to unlock the next stage
+              </h2>
+              <p className="mt-2 text-sm text-zinc-400">
+                Progression is tied to case understanding, not manual
+                advancement.
+              </p>
+              <div className="mt-6">
+                <CheckpointForm
+                  slug={slug}
+                  prompt={currentCheckpoint.prompt}
+                />
+              </div>
+            </Card>
+          </div>
+        ) : null}
+
+        {/* Revealed evidence (renders its own section if non-empty) */}
+        <RevealedEvidence items={revealedEvidence} />
+
+        {/* People of Interest */}
+        <div className="mt-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span
+                className="h-2 w-2 rounded-full bg-cyan-500"
+                aria-hidden
+              />
+              <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-zinc-500">
+                People of Interest
+              </span>
+            </div>
+            {remainingPeople > 0 ? (
+              <span className="font-mono text-[10px] text-zinc-600">
+                {remainingPeople} subjects locked
+              </span>
+            ) : null}
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {visiblePeople.map((person) => (
+              <Card key={person.id} variant="dossier" padding="none">
+                <div className="flex items-center justify-between border-b border-red-950/50 px-4 py-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+                    Subject Profile
+                  </span>
+                  <Pill tone="neutral" label={person.role} />
+                </div>
+                <div className="p-4">
+                  <h2 className="text-lg font-semibold text-white">
                     {person.name}
                   </h2>
-                  <p className="mt-4 text-sm leading-7 text-zinc-300">
+                  <p className="mt-2 text-sm leading-6 text-zinc-400">
                     {person.summary}
                   </p>
                 </div>
-              </Reveal>
+              </Card>
             ))}
+            {remainingPeople > 0
+              ? Array.from({ length: remainingPeople }).map((_, i) => (
+                  <Card
+                    key={`locked-person-${i}`}
+                    variant="dossier"
+                    padding="md"
+                  >
+                    <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-700 mb-3">
+                      Classified Subject
+                    </div>
+                    <RedactedBar width="lg" className="mb-2" />
+                    <RedactedBar width="md" className="mb-3" />
+                    <RedactedBar width="full" />
+                    <RedactedBar width="full" className="mt-1" />
+                  </Card>
+                ))
+              : null}
           </div>
         </div>
-      </section>
 
-      <section className="border-b border-zinc-900 py-16">
-        <div className="mx-auto max-w-6xl px-6">
-          <Reveal>
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
+        {/* Case Records */}
+        <div className="mt-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span
+                className="h-2 w-2 rounded-full bg-amber-500"
+                aria-hidden
+              />
+              <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-zinc-500">
                 Case Records
-              </div>
-              {remainingRecords > 0 ? (
-                <div className="text-sm text-zinc-500">
-                  {remainingRecords} more will unlock later
-                </div>
-              ) : null}
+              </span>
             </div>
-          </Reveal>
-
-          <div className="mt-6 grid gap-4">
-            {visibleRecords.map((record, index) => (
-              <Reveal key={record.id} delay={index * 0.05}>
-                <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6">
-  <div className="text-sm uppercase tracking-[0.2em] text-zinc-500">
-    {record.category}
-  </div>
-  <h2 className="mt-3 text-2xl font-semibold text-white">
-    {record.title}
-  </h2>
-  <p className="mt-4 text-sm leading-7 text-zinc-300">
-    {record.summary}
-  </p>
-
-  <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-7 text-zinc-400">
-    {record.body}
-  </div>
-
-  <Link
-    href={`/bureau/cases/${slug}/records/${record.id}`}
-    className="mt-5 inline-flex rounded-2xl border border-zinc-700 px-5 py-3 font-semibold text-white transition hover:bg-zinc-950"
-  >
-    Open Record Detail
-  </Link>
-</div>
-              </Reveal>
-            ))}
+            {remainingRecords > 0 ? (
+              <span className="font-mono text-[10px] text-zinc-600">
+                {remainingRecords} records locked
+              </span>
+            ) : null}
           </div>
-        </div>
-      </section>
 
-      <section className="border-b border-zinc-900 py-16">
-        <div className="mx-auto max-w-6xl px-6">
-          <Reveal>
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-                Bureau Hints
-              </div>
-              {remainingHints > 0 ? (
-                <div className="text-sm text-zinc-500">
-                  {remainingHints} more will unlock later
+          <div className="grid gap-4">
+            {visibleRecords.map((record) => (
+              <Card key={record.id} variant="dossier" padding="none">
+                <div className="flex items-center justify-between border-b border-red-950/50 px-4 py-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
+                    Evidence Record
+                  </span>
+                  <Pill tone="neutral" label={record.category} />
                 </div>
-              ) : null}
-            </div>
-          </Reveal>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {visibleHints.map((hint, index) => (
-              <Reveal key={hint.id} delay={index * 0.05}>
-                <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6">
-                  <div className="text-xs uppercase tracking-[0.25em] text-amber-300">
-                    Level {hint.level}
-                  </div>
-                  <h2 className="mt-4 text-xl font-semibold text-white">
-                    {hint.title}
+                <div className="p-4">
+                  <h2 className="text-lg font-semibold text-white">
+                    {record.title}
                   </h2>
-                  <p className="mt-4 text-sm leading-7 text-zinc-300">
-                    {hint.content}
+                  <p className="mt-2 text-sm leading-6 text-zinc-400">
+                    {record.summary}
                   </p>
+                  <TerminalReadout
+                    tone="neutral"
+                    label="RECORD BODY"
+                    lines={record.body.split("\n").filter(Boolean)}
+                    className="mt-3"
+                  />
+                  <Link
+                    href={`/bureau/cases/${slug}/records/${record.id}`}
+                    className={`mt-3 ${BTN_OUTLINE_SM}`}
+                  >
+                    Open Record Detail
+                  </Link>
                 </div>
-              </Reveal>
+              </Card>
             ))}
+            {remainingRecords > 0
+              ? Array.from({ length: remainingRecords }).map((_, i) => (
+                  <Card
+                    key={`locked-record-${i}`}
+                    variant="dossier"
+                    padding="md"
+                  >
+                    <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-700 mb-3">
+                      Classified Record
+                    </div>
+                    <RedactedBar width="lg" className="mb-2" />
+                    <RedactedBar width="md" className="mb-3" />
+                    <RedactedBar width="full" />
+                    <RedactedBar width="full" className="mt-1" />
+                  </Card>
+                ))
+              : null}
           </div>
         </div>
-      </section>
 
-      <section className="py-16">
-        <div className="mx-auto grid max-w-6xl gap-6 px-6 lg:grid-cols-[1fr_0.9fr]">
-          <Reveal>
-            <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
-              <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-                Final Theory
-              </div>
-              <h2 className="mt-4 text-3xl font-semibold text-white">
-                Submit your current conclusion
-              </h2>
-
-              {theoryUnlocked ? (
-                <>
-                  <p className="mt-4 text-sm leading-8 text-zinc-300">
-                    Final-stage review is unlocked. Your submission will now be scored and receive structured feedback.
-                  </p>
-                  <div className="mt-8">
-                    <TheorySubmissionForm slug={slug} />
-                  </div>
-                </>
-              ) : (
-                <p className="mt-4 text-sm leading-8 text-zinc-300">
-                  Theory submission unlocks only after you clear all progression checkpoints.
-                </p>
-              )}
+        {/* Bureau Hints */}
+        <div className="mt-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span
+                className="h-2 w-2 rounded-full bg-emerald-500"
+                aria-hidden
+              />
+              <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-zinc-500">
+                Bureau Hints
+              </span>
             </div>
-          </Reveal>
+            {remainingHints > 0 ? (
+              <span className="font-mono text-[10px] text-zinc-600">
+                {remainingHints} hints locked
+              </span>
+            ) : null}
+          </div>
 
-          <Reveal delay={0.08}>
-            <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
-              <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-                Recent Submissions
-              </div>
-              <h2 className="mt-4 text-3xl font-semibold text-white">
-                Your latest attempts
-              </h2>
-
-              {recentSubmissions.length === 0 ? (
-                <p className="mt-6 text-sm leading-7 text-zinc-300">
-                  No theory submissions yet.
+          <div className="grid gap-4 md:grid-cols-3">
+            {visibleHints.map((hint) => (
+              <Card key={hint.id} variant="dossier" padding="md">
+                <Pill tone="warning" label={`Level ${hint.level}`} />
+                <h2 className="mt-3 text-lg font-semibold text-white">
+                  {hint.title}
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-zinc-400">
+                  {hint.content}
                 </p>
-              ) : (
-                <div className="mt-6 space-y-4">
-                  {recentSubmissions.map((submission) => {
-                    const badgeColor =
-                      submission.resultLabel === "CORRECT"
-                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                        : submission.resultLabel === "PARTIAL"
-                        ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                        : "border-red-500/30 bg-red-500/10 text-red-400";
-
-                    return (
-                      <div
-                        key={submission.id}
-                        className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4"
-                      >
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="text-sm text-zinc-400">Suspect</div>
-                          <span className={`rounded-full border px-3 py-1 text-xs ${badgeColor}`}>
-                            {THEORY_RESULT_LABEL[submission.resultLabel]}
-                          </span>
-                        </div>
-
-                        <div className="mt-1 text-lg font-semibold text-white">
-                          {submission.suspectName}
-                        </div>
-
-                        <div className="mt-3 text-sm text-zinc-400">
-                          Score
-                        </div>
-                        <div className="mt-1 text-sm text-zinc-300">
-                          {submission.score}/3
-                        </div>
-
-                        <div className="mt-3 text-sm text-zinc-400">
-                          Feedback
-                        </div>
-                        <div className="mt-1 text-sm leading-7 text-zinc-300">
-                          {submission.feedback}
-                        </div>
-
-                        <div className="mt-3 text-sm text-zinc-400">
-                          Submitted
-                        </div>
-                        <div className="mt-1 text-sm text-zinc-300">
-                          {submission.createdAt.toLocaleString()}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </Reveal>
+              </Card>
+            ))}
+            {remainingHints > 0
+              ? Array.from({ length: remainingHints }).map((_, i) => (
+                  <Card
+                    key={`locked-hint-${i}`}
+                    variant="dossier"
+                    padding="md"
+                    className="opacity-50"
+                  >
+                    <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-700">
+                      Hint Locked
+                    </div>
+                    <RedactedBar width="sm" className="mt-2" />
+                    <RedactedBar width="lg" className="mt-2" />
+                  </Card>
+                ))
+              : null}
+          </div>
         </div>
-      </section>
+
+        {/* Final Theory + Recent Submissions */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+          <Card variant="dossier" padding="lg">
+            <Pill
+              tone={theoryUnlocked ? "success" : "neutral"}
+              label={
+                theoryUnlocked
+                  ? "Theory Submission Unlocked"
+                  : "Locked — Clear All Checkpoints"
+              }
+            />
+            <h2 className="mt-4 text-2xl font-semibold text-white">
+              Submit your current conclusion
+            </h2>
+            {theoryUnlocked ? (
+              <>
+                <p className="mt-3 text-sm leading-7 text-zinc-400">
+                  Final-stage review is unlocked. Your submission will now be
+                  scored and receive structured feedback.
+                </p>
+                <div className="mt-6">
+                  <TheorySubmissionForm slug={slug} />
+                </div>
+              </>
+            ) : (
+              <p className="mt-3 text-sm leading-7 text-zinc-400">
+                Theory submission unlocks only after you clear all progression
+                checkpoints.
+              </p>
+            )}
+          </Card>
+
+          <Card variant="dossier" padding="lg">
+            <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-500">
+              Recent Submissions
+            </div>
+            <h2 className="mt-3 text-xl font-semibold text-white">
+              Your latest attempts
+            </h2>
+
+            {recentSubmissions.length === 0 ? (
+              <TerminalReadout
+                tone="neutral"
+                label="STATUS"
+                lines={["No theory submissions yet."]}
+                className="mt-4"
+              />
+            ) : (
+              <div className="mt-4 space-y-4">
+                {recentSubmissions.map((submission) => (
+                  <div
+                    key={submission.id}
+                    className="rounded-2xl border border-zinc-800 p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-white">
+                        {submission.suspectName}
+                      </span>
+                      <Pill
+                        tone={resultToneMap[submission.resultLabel] ?? "neutral"}
+                        label={THEORY_RESULT_LABEL[submission.resultLabel]}
+                      />
+                    </div>
+                    <TerminalReadout
+                      tone="neutral"
+                      label="SCORE"
+                      lines={[`${submission.score}/3`]}
+                      className="mt-3"
+                    />
+                    <p className="mt-2 text-sm text-zinc-400">
+                      {submission.feedback}
+                    </p>
+                    <p className="mt-2 font-mono text-[10px] text-zinc-600">
+                      {new Date(submission.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
     </main>
   );
 }
