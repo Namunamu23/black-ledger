@@ -1,7 +1,7 @@
-## Black Ledger — Project State (updated 2026-04-22)
+## Black Ledger — Project State (updated 2026-04-23)
 
 ### Current status
-Week 4 COMPLETE / Week 5 NOT STARTED — 29 commits on main (24 pushed + 5 local). 66 Vitest tests passing. Build clean.
+Week 4 COMPLETE / Week 5 NOT STARTED — 32 commits on origin/main, all pushed. 66 Vitest tests + 57 integration tests passing. Build clean.
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -41,6 +41,8 @@ Notable changes:
 - 25a21cb  feat(unlock): /bureau/unlock page + /api/access-codes/redeem endpoint
 - ae992fa  feat(workspace): revealed evidence section — AccessCodeRedemption render at workspace load
 - e0a321  feat(admin): AccessCode creator + QR generator + /u/[code] short redirect
+- ed892ad  chore(test): add full-flow regression script — 57 checks across all 4 weeks
+- 5908e1d  fix(workspace): guard slug-history redirect against self-redirect loop
 
 ### Architecture / key files
 - lib/case-evaluation.ts — Jaccard + exact-name matcher (theory submissions)
@@ -92,6 +94,7 @@ Week 5 prompts: see black-ledger-prompts.md
 - HiddenEvidence model created but not yet wired as an unlocksTarget type — currently only CaseRecord/CasePerson/CaseHint are resolved; add "hidden_evidence" type to resolveContent() and resolveEvidence() when HiddenEvidence rows are authored
 - No PATCH endpoint for retiring AccessCodes (setting retiredAt) — needed for admin code management
 - requireSessionJson() helper not yet added to lib/auth-helpers.ts — player API routes (checkpoint, theory, redeem) call auth() directly; a shared helper would be cleaner
+- Add .gitattributes to repo to prevent recurring CRLF line-ending noise on Windows
 
 ### Prompt library location
 See black-ledger-prompts.md (uploaded to Cowork session) for Prompts 07–25.
