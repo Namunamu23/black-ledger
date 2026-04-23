@@ -6,10 +6,37 @@ import { useState } from "react";
 import clsx from "clsx";
 import { Menu, X } from "lucide-react";
 import { siteConfig } from "@/data/site";
+import SignOutButton from "@/components/auth/SignOutButton";
 
-export default function Navbar() {
+type NavbarSession = {
+  user: {
+    email?: string | null;
+    name?: string | null;
+    role?: string;
+  };
+} | null;
+
+type NavbarProps = {
+  session?: NavbarSession;
+};
+
+function deriveOperativeId(session: NonNullable<NavbarSession>): string {
+  const raw =
+    session.user.email?.split("@")[0] ?? session.user.name ?? "operative";
+  return raw.length > 16 ? raw.slice(0, 16) : raw;
+}
+
+export default function Navbar({ session }: NavbarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // When the user is signed in, hide the /login nav item — it's redundant
+  // and would just bounce them back to the bureau.
+  const navItems = session
+    ? siteConfig.navItems.filter((item) => item.href !== "/login")
+    : siteConfig.navItems;
+
+  const operativeId = session ? deriveOperativeId(session) : null;
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl">
@@ -23,7 +50,7 @@ export default function Navbar() {
 
         <div className="hidden items-center gap-3 md:flex">
           <nav className="flex items-center gap-2">
-            {siteConfig.navItems.map((item) => {
+            {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
@@ -42,12 +69,27 @@ export default function Navbar() {
             })}
           </nav>
 
-          <Link
-            href="/bureau"
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200"
-          >
-            Access Bureau
-          </Link>
+          {session ? (
+            <>
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400">
+                OP · {operativeId}
+              </span>
+              <Link
+                href="/bureau"
+                className="rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-amber-300"
+              >
+                Bureau
+              </Link>
+              <SignOutButton />
+            </>
+          ) : (
+            <Link
+              href="/bureau"
+              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200"
+            >
+              Access Bureau
+            </Link>
+          )}
         </div>
 
         <button
@@ -63,7 +105,7 @@ export default function Navbar() {
       {open && (
         <div className="border-t border-zinc-800 bg-zinc-950 md:hidden">
           <div className="mx-auto flex max-w-6xl flex-col px-6 py-4">
-            {siteConfig.navItems.map((item) => {
+            {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
@@ -82,13 +124,31 @@ export default function Navbar() {
               );
             })}
 
-            <Link
-              href="/bureau"
-              onClick={() => setOpen(false)}
-              className="mt-3 rounded-xl bg-white px-4 py-3 text-center text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200"
-            >
-              Access Bureau
-            </Link>
+            {session ? (
+              <>
+                <div className="mt-3 px-3 font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-400">
+                  OP · {operativeId}
+                </div>
+                <Link
+                  href="/bureau"
+                  onClick={() => setOpen(false)}
+                  className="mt-3 rounded-xl bg-amber-400 px-4 py-3 text-center text-sm font-semibold text-zinc-950 transition hover:bg-amber-300"
+                >
+                  Bureau
+                </Link>
+                <div className="mt-3 flex justify-center">
+                  <SignOutButton />
+                </div>
+              </>
+            ) : (
+              <Link
+                href="/bureau"
+                onClick={() => setOpen(false)}
+                className="mt-3 rounded-xl bg-white px-4 py-3 text-center text-sm font-semibold text-zinc-950 transition hover:bg-zinc-200"
+              >
+                Access Bureau
+              </Link>
+            )}
           </div>
         </div>
       )}

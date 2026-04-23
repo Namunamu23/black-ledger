@@ -4,6 +4,7 @@ import { Manrope } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { siteConfig } from "@/data/site";
+import { auth } from "@/auth";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -18,11 +19,13 @@ export const metadata: Metadata = {
   description: siteConfig.brand.description,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en">
       <body className={`${manrope.className} bg-zinc-950 text-white antialiased`}>
@@ -34,7 +37,7 @@ export default function RootLayout({
         </a>
 
         <div className="min-h-screen flex flex-col">
-          <Navbar />
+          <Navbar session={session} />
           <main id="main-content" className="flex-1">
             {children}
           </main>
