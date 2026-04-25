@@ -1,7 +1,7 @@
-## Black Ledger — Project State (updated 2026-04-23)
+## Black Ledger — Project State (updated 2026-04-25)
 
 ### Current status
-Week 4 COMPLETE / Week 5 NOT STARTED — 32 commits on origin/main, all pushed. 66 Vitest tests + 57 integration tests passing. Build clean.
+Week 5 COMPLETE — 37 commits on origin/main, all pushed. 91 Vitest tests passing (was 87; +4 stage-validation tests). Build clean. 57 integration tests still passing.
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -56,7 +56,7 @@ Notable changes:
 - types/next-auth.d.ts — Session/JWT augmented with id + role
 - prisma/schema.prisma — Prisma enums, CaseAudit model, per-case debrief copy fields; new this week: CaseSlugHistory model, SupportMessageStatus enum; new columns ActivationCode.kitSerial/revokedAt, CaseFile.heroImageUrl, CasePerson.portraitUrl
 - next.config.ts — security headers + CSP report-only
-- middleware.ts — CSRF origin check on all POST/PUT/PATCH/DELETE /api/* except /api/auth/*; auth gating for /bureau/* and /api/admin/*
+- middleware.ts — CSRF origin check on all POST/PUT/PATCH/DELETE /api/* except /api/auth/*; auth gating for /bureau/* and /api/admin/*. `/bureau/unlock` has an explicit pass-through before the `/bureau/*` gate so unauthenticated QR-code arrivals reach the unlock page.
 - app/api/admin/cases/[caseId]/route.ts — diff/upsert PUT with CaseAudit trail (legacy aggregate; tabs are now the primary editor)
 - app/api/admin/cases/[caseId]/workflow/route.ts — unified PATCH for workflow transitions; replaces deleted /status + /publish routes
 - app/bureau/admin/cases/[caseId]/edit/_components/ — 6 tab components (Overview/People/Records/Hints/Checkpoints/Solution), each with independent save state
@@ -72,29 +72,50 @@ Notable changes:
 - .env.example — all env vars documented (DATABASE_URL, AUTH_SECRET, SEED_ADMIN_*, UPSTASH_*, NEXT_PUBLIC_APP_URL, R2_*)
 - prisma/schema.prisma — Week 4 additions: AccessCode, AccessCodeRedemption, HiddenEvidence models; AccessCodeKind + HiddenEvidenceKind enums
 - app/api/access-codes/redeem/route.ts — POST, rate-limited 5/60s, validates AccessCode, creates AccessCodeRedemption (@@unique race guard), resolves unlocksTarget to content
-- app/bureau/unlock/page.tsx + _components/UnlockForm.tsx — player unlock page; auto-submits on ?code= query param; shows revealed content
+- app/bureau/unlock/page.tsx + _components/UnlockForm.tsx — player unlock page; publicly accessible; unauthenticated visitors see sign-in card with callbackUrl preserving ?code= through login; authenticated users see UnlockForm which auto-submits on ?code= query param
 - app/bureau/cases/[slug]/_components/RevealedEvidence.tsx — client component; renders AccessCode-unlocked evidence in case workspace with Framer Motion animations
 - app/api/admin/cases/[caseId]/access-codes/route.ts — GET (list with redemption counts) + POST (create, with cross-case target validation)
 - app/bureau/admin/cases/[caseId]/access-codes/ — admin AccessCode management: create form, QR display, copy URL, list with redemption counts
 - app/u/[code]/route.ts — short URL redirect to /bureau/unlock?code=<code>
 
-### Week 5 priorities
-Week 5 prompts: see black-ledger-prompts.md
+### Week 5 — Completed commits (closed 2026-04-25)
+5 commits — full security + UX audit pass. All pushed to origin/main.
+
+- **fix(security)** — Rate-limit `POST /api/cases/activate` (5/60 s) + legacy `POST /api/admin/cases/[caseId]/activation-codes` (10/60 s). Fix QR code URL: was hardcoded `https://blackledger.app/u`, now reads `NEXT_PUBLIC_APP_URL ?? http://localhost:3000`.
+- **fix(admin)** — Per-section PATCH endpoints (`people`, `records`, `hints`, `checkpoints`) now validate `unlockStage ≤ maxStage` (checkpoints: `stage < maxStage`). 4 new Vitest tests added (91 total). tsc clean.
+- **fix(public)** — Public `/cases/[slug]` page now checks `CaseSlugHistory` and issues a 301 redirect on renamed cases (mirrors the bureau route). Removed dead `/terms` and `/privacy` links from Footer.
+- **chore** — Added `.gitattributes` (`* text=auto eol=lf`). Ran full repo renormalization — working tree clean on all platforms.
+- **fix(ux)** — `/bureau/unlock` is now publicly accessible (middleware carve-out before `/bureau/*` auth block). Unauthenticated visitors see a sign-in card; `callbackUrl` preserves the `?code=` param through the NextAuth bounce so the form auto-fills after login.
+
+### Week 6 priorities
+Week 6+ prompts: see black-ledger-prompts.md
 
 ### Known follow-ups
-- Email transport (resend/nodemailer) — wire into /api/admin/support/[id]/reply + add SupportReply model
-- SupportMessageStatus to lib/enums.ts + lib/labels.ts when transport lands
-- Subject column on SupportMessage + public SupportForm — separate prompt
-- CSP img-src to add R2 public origin when CSP flips from report-only to enforced
-- Public /cases/[slug] page slug-history redirect (currently only /bureau/cases/[slug] redirects)
-- Legacy aggregate PUT (app/api/admin/cases/[caseId]/route.ts) does not write CaseSlugHistory when slug changes — only the /overview PATCH does
-- Legacy /activation-codes POST route is unrate-limited and still wired to GenerateActivationCodeButton on the admin cases list
-- /u/[code] short URL base hardcoded to https://blackledger.app/u in AccessCodeList.tsx — swap to NEXT_PUBLIC_APP_URL for dev QR codes
-- AccessCodeList shows "record #5" style target label, not the actual title — enrich GET endpoint or pass label map from page when needed
-- HiddenEvidence model created but not yet wired as an unlocksTarget type — currently only CaseRecord/CasePerson/CaseHint are resolved; add "hidden_evidence" type to resolveContent() and resolveEvidence() when HiddenEvidence rows are authored
-- No PATCH endpoint for retiring AccessCodes (setting retiredAt) — needed for admin code management
-- requireSessionJson() helper not yet added to lib/auth-helpers.ts — player API routes (checkpoint, theory, redeem) call auth() directly; a shared helper would be cleaner
-- Add .gitattributes to repo to prevent recurring CRLF line-ending noise on Windows
+
+**P1**
+- Legacy aggregate PUT (`app/api/admin/cases/[caseId]/route.ts`) does not write `CaseSlugHistory` when slug changes — only the `/overview` PATCH does. Could cause 404s if anyone uses the old aggregate editor after a rename.
+- `requireSessionJson()` helper not yet added to `lib/auth-helpers.ts` — player API routes (checkpoint, theory, redeem) call `auth()` directly; a shared helper would be cleaner and more consistent.
+
+**P2**
+- `AccessCodeList` shows "record #5" style target label, not the actual title — enrich GET endpoint or pass label map from page.
+- `HiddenEvidence` model created but not yet wired as an `unlocksTarget` type — `resolveContent()` and `resolveEvidence()` only handle record/person/hint; add "hidden_evidence" branch when rows are authored.
+- No PATCH endpoint for retiring `AccessCodes` (setting `retiredAt`) — needed for admin code management.
+- Validator length inconsistency between old `adminCaseSchema` and per-section schemas (e.g. `debriefClosing: max(2000)` vs `max(3000)`).
+- `CaseAudit` not written for: workflow PATCH, batch-generate, revoke, AccessCode create.
+- `TheorySubmission` row written even when `UserCaseStatus` is already SOLVED — pollutes history.
+- Image upload only checks `contentType`, not file magic bytes — could allow spoofed uploads.
+
+**P3**
+- Archive button on `PublishCaseButton` has no confirmation dialog.
+- CSP `img-src` does not include R2 public origin — will block hero images when CSP flips from report-only to enforced.
+- No `GlobalPerson` admin UI — can only create/edit via seed scripts.
+- `/bureau/unlock` unauthenticated message says "We saved your code" — slightly misleading (it's in the URL, not stored). Copy-only fix.
+- `SupportMessageStatus` not in `lib/enums.ts` — waiting on email transport.
+- Email transport not wired — support reply is stub only.
+
+**Upcoming major milestones**
+- **Week 7 (Prompt 24)**: Postgres cutover (Neon / Supabase / Railway). Required before any real traffic — SQLite won't survive concurrent writes.
+- **Week 8 (Prompt 25)**: Stripe Checkout + webhook, Order model, email activation code on purchase.
 
 ### Prompt library location
 See black-ledger-prompts.md (uploaded to Cowork session) for Prompts 07–25.
