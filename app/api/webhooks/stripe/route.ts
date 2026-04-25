@@ -141,7 +141,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (!updatedOrder.activationCode) return;
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const unlockUrl = `${appUrl}/bureau/unlock`;
+  const bureauUrl = `${appUrl}/bureau`;
   const code1 = updatedOrder.activationCode.code;
   const caseTitle = updatedOrder.caseFile.title;
 
@@ -155,7 +155,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         "",
         `Activation code: ${code1}`,
         "",
-        `Sign in to the bureau and redeem at: ${unlockUrl}`,
+        `Sign in to the bureau and enter your code in the activation form: ${bureauUrl}`,
         "",
         "If you have any trouble, reply to this email.",
       ].join("\n"),
@@ -166,8 +166,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
             <code style="background:#f1f5f9; padding:4px 8px; border-radius:6px; font-family:ui-monospace, monospace;">${escapeHtml(code1)}</code>
           </p>
           <p>
-            Sign in to the bureau and redeem at:
-            <a href="${unlockUrl}">${unlockUrl}</a>
+            Sign in to the bureau and enter your code in the activation form:<br/>
+            <a href="${bureauUrl}">${bureauUrl}</a>
           </p>
           <p style="color:#64748b; font-size:12px;">If you have any trouble, reply to this email.</p>
         </div>
