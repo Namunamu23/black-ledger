@@ -15,11 +15,14 @@ export default auth((req) => {
 
   // CSRF: state-mutating /api/ requests must come from our own origin.
   // /api/auth/* is excluded — NextAuth has its own CSRF token flow.
+  // /api/webhooks/* is excluded — third parties (Stripe, etc.) post from
+  //   their own servers; signature verification happens inside the handler.
   // Safe methods (GET/HEAD) are skipped because they don't change state.
   if (
     STATE_MUTATING_METHODS.has(req.method) &&
     pathname.startsWith("/api/") &&
-    !pathname.startsWith("/api/auth/")
+    !pathname.startsWith("/api/auth/") &&
+    !pathname.startsWith("/api/webhooks/")
   ) {
     const origin = req.headers.get("origin");
     if (!origin || origin !== APP_ORIGIN) {
