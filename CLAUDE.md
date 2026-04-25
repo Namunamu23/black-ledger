@@ -1,7 +1,7 @@
 ## Black Ledger — Project State (updated 2026-04-25)
 
 ### Current status
-Week 7 COMPLETE — 43 commits on origin/main, all pushed. 93 Vitest tests passing. Build clean. PostgreSQL on Neon (production DB). Smoke test passed.
+Week 8 COMPLETE — 48 commits on origin/main, all pushed. 98 Vitest tests passing. Build clean. PostgreSQL on Neon (production DB). Stripe Checkout live.
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -79,6 +79,13 @@ Notable changes:
 - app/api/admin/cases/[caseId]/access-codes/route.ts — GET (list with redemption counts) + POST (create, with cross-case target validation)
 - app/bureau/admin/cases/[caseId]/access-codes/ — admin AccessCode management: create form, QR display, copy URL, list with redemption counts
 - app/u/[code]/route.ts — short URL redirect to /bureau/unlock?code=<code>
+- lib/stripe.ts — lazy singleton Stripe client (getStripe()); throws if STRIPE_SECRET_KEY unset
+- lib/resend.ts — lazy singleton Resend client (getResend()); throws if RESEND_API_KEY unset
+- app/api/checkout/route.ts — POST guest checkout: validates caseId+email, creates Stripe session + Order(PENDING), returns { url }
+- app/api/checkout/status/route.ts — GET by session_id; returns { status, email } for success page
+- app/api/webhooks/stripe/route.ts — signature-verified webhook: completes Order, creates ActivationCode(PURCHASE), sends email via Resend
+- app/checkout/success/page.tsx — success page: reads ?session_id, shows code delivery status
+- components/bureau/BuyButton.tsx — client component: email form → POST /api/checkout → window.location.assign
 
 ### Week 5 — Completed commits (closed 2026-04-25)
 5 commits — full security + UX audit pass. All pushed to origin/main.
@@ -102,8 +109,17 @@ Notable changes:
 - **fix(infra)** — `lib/prisma.ts`: `import "dotenv/config"` → `dotenv.config({ path: ".env.local" }); dotenv.config()` — fixed loading order bug where `.env` (SQLite URL) was loaded before `.env.local` (Postgres URL).
 - Neon database provisioned: AWS US East 1, Postgres 17. Migration `20260425045353_init` applied. Admin seeded. Smoke test: auth, bureau dashboard, admin panel all confirmed working against Neon.
 
-### Week 8 priorities
-Week 8: Stripe Checkout + webhook, Order model, email activation code on purchase.
+### Week 8 — Completed commits (closed 2026-04-25)
+5 commits — Stripe Checkout + purchase flow. All pushed to origin/main.
+
+- **feat(schema)** (4726bb6) — `Order` model + `OrderStatus` enum (`PENDING/COMPLETE/FAILED/REFUNDED`). `ActivationCodeSource` enum (`ADMIN/PURCHASE`) + `source` field on `ActivationCode`. Back-relations on `CaseFile` + `ActivationCode`. Migration `20260425142952_add_order` applied to Neon. `prisma.config.ts` now loads `.env.local` first (mirrors `lib/prisma.ts`).
+- **feat(checkout)** (70e3889) — `POST /api/checkout`: guest Stripe Checkout session, rate-limited 5/60 s. Creates `Order(PENDING)`. Returns `{ url }` for redirect. `lib/stripe.ts` lazy singleton. `checkoutSchema` in `lib/validators.ts`. New env vars: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`.
+- **feat(webhook)** (872cd08) — `POST /api/webhooks/stripe`: signature-verified handler. `checkout.session.completed` → creates `ActivationCode(source: PURCHASE)` in a transaction, marks `Order(COMPLETE)`, sends activation code email via Resend. Handles `checkout.session.expired` / `payment_intent.payment_failed` → `Order(FAILED)`. Middleware CSRF bypass for `/api/webhooks/*`. `lib/resend.ts` lazy singleton. New env vars: `RESEND_API_KEY`, `RESEND_FROM`.
+- **feat(ui)** (cd9c768) — `BuyButton` client component (email capture → POST `/api/checkout` → Stripe redirect). `GET /api/checkout/status` endpoint. `/checkout/success` page. `BuyButton` wired into public case page — shown only when `PUBLISHED` and user doesn't already own the case.
+- **chore(test)** (218c87c) — 5 new tests in `tests/api/stripe.test.ts`: checkout 404 for unpublished, checkout returns URL, webhook rejects bad signature, `checkout.session.completed` creates code + completes order, idempotent second call. 93 → 98 tests. tsc clean.
+
+### Week 9 priorities
+Next: production smoke test with real Stripe test keys + Resend, then domain/DNS setup for `blackledger.app`.
 
 ### Known follow-ups
 
@@ -127,7 +143,7 @@ Week 8: Stripe Checkout + webhook, Order model, email activation code on purchas
 - Email transport not wired — support reply is stub only.
 
 **Upcoming major milestones**
-- **Week 8 (Prompt 25)**: Stripe Checkout + webhook, Order model, email activation code on purchase. This is the only remaining blocker before selling physical kits.
+- **Week 9**: Production smoke test with Stripe test keys + Resend. Domain/DNS (`blackledger.app`). Vercel deploy or Railway. First real kit sale.
 
 ### Prompt library location
 See black-ledger-prompts.md (uploaded to Cowork session) for Prompts 07–25.
