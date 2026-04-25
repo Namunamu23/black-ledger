@@ -24,5 +24,5 @@ export function getResend(): Resend {
 }
 
 export function getResendFrom(): string {
-  return process.env.RESEND_FROM ?? "no-reply@blackledger.app";
+  return process.env.RESEND_FROM ?? "no-reply@theblackledger.app";
 }

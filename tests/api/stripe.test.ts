@@ -62,7 +62,7 @@ vi.mock("@/lib/stripe", () => ({
 
 vi.mock("@/lib/resend", () => ({
   getResend: () => ({ emails: { send: mocks.resendSend } }),
-  getResendFrom: () => "no-reply@blackledger.app",
+  getResendFrom: () => "no-reply@theblackledger.app",
 }));
 
 import { POST as checkoutPOST } from "@/app/api/checkout/route";
