@@ -1,7 +1,7 @@
 ## Black Ledger — Project State (updated 2026-04-25)
 
 ### Current status
-Week 5 COMPLETE — 37 commits on origin/main, all pushed. 91 Vitest tests passing (was 87; +4 stage-validation tests). Build clean. 57 integration tests still passing.
+Week 7 COMPLETE — 43 commits on origin/main, all pushed. 93 Vitest tests passing. Build clean. PostgreSQL on Neon (production DB). Smoke test passed.
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -49,7 +49,9 @@ Notable changes:
 - lib/text-utils.ts — shared tokenize/normalizeIdentity used by both theory + checkpoint matchers
 - lib/user-case-state.ts — monotonic state machine, SOLVED is terminal
 - lib/rate-limit.ts — token-bucket per (ip, route); in-memory dev, Upstash Redis prod
-- lib/auth-helpers.ts — requireSession(), requireAdmin(), getOptionalSession()
+- lib/auth-helpers.ts — requireSession(), requireAdmin(), getOptionalSession(), requireSessionJson()
+- lib/prisma.ts — PrismaPg adapter (@prisma/adapter-pg); loads .env.local first, .env as fallback; DATABASE_URL = pooled Neon URL
+- prisma.config.ts — datasource.url = DIRECT_URL ?? DATABASE_URL (migration commands use direct URL, bypass pooler)
 - lib/enums.ts — browser-safe const mirrors of all Prisma enums (UserRole, TheoryResultLabel, UserCaseStatus, CaseWorkflowStatus)
 - lib/labels.ts — human-readable label constants
 - lib/validators.ts — Zod schemas; child entities carry id + globalPersonId; per-section PATCH schemas + upload + support schemas
@@ -87,14 +89,25 @@ Notable changes:
 - **chore** — Added `.gitattributes` (`* text=auto eol=lf`). Ran full repo renormalization — working tree clean on all platforms.
 - **fix(ux)** — `/bureau/unlock` is now publicly accessible (middleware carve-out before `/bureau/*` auth block). Unauthenticated visitors see a sign-in card; `callbackUrl` preserves the `?code=` param through the NextAuth bounce so the form auto-fills after login.
 
-### Week 6 priorities
-Week 6+ prompts: see black-ledger-prompts.md
+### Week 6 — Completed commits (closed 2026-04-25)
+2 commits — P1 fixes. All pushed to origin/main.
+
+- **refactor(auth)** (32cbe10) — Added `requireSessionJson()` to `lib/auth-helpers.ts`; migrated `activate`, `theory`, `checkpoint` player routes to use it. Fixed legacy aggregate PUT: now runs `caseSlugHistory.findFirst` history-conflict pre-check and `caseSlugHistory.upsert` inside the transaction when slug changes. +2 tests (93 total). tsc clean.
+- **chore(docs)** (d3c47fd) — CLAUDE.md updated.
+
+### Week 7 — Completed commits (closed 2026-04-25)
+4 commits — Postgres cutover. All pushed to origin/main. Smoke test confirmed ✅.
+
+- **feat(infra)** (0278909) — Replaced `@prisma/adapter-better-sqlite3` with `@prisma/adapter-pg`. Schema: `sqlite` → `postgresql`. `lib/prisma.ts`: `PrismaBetterSqlite3` → `PrismaPg({ connectionString })`. `prisma.config.ts`: `datasource.url = DIRECT_URL ?? DATABASE_URL`. `.env.example` updated. Prisma 7 note: adapter is mandatory — `new PrismaClient()` without adapter is a compile error in Prisma 7.
+- **fix(infra)** — `lib/prisma.ts`: `import "dotenv/config"` → `dotenv.config({ path: ".env.local" }); dotenv.config()` — fixed loading order bug where `.env` (SQLite URL) was loaded before `.env.local` (Postgres URL).
+- Neon database provisioned: AWS US East 1, Postgres 17. Migration `20260425045353_init` applied. Admin seeded. Smoke test: auth, bureau dashboard, admin panel all confirmed working against Neon.
+
+### Week 8 priorities
+Week 8: Stripe Checkout + webhook, Order model, email activation code on purchase.
 
 ### Known follow-ups
 
-**P1**
-- Legacy aggregate PUT (`app/api/admin/cases/[caseId]/route.ts`) does not write `CaseSlugHistory` when slug changes — only the `/overview` PATCH does. Could cause 404s if anyone uses the old aggregate editor after a rename.
-- `requireSessionJson()` helper not yet added to `lib/auth-helpers.ts` — player API routes (checkpoint, theory, redeem) call `auth()` directly; a shared helper would be cleaner and more consistent.
+**P1 — all closed.**
 
 **P2**
 - `AccessCodeList` shows "record #5" style target label, not the actual title — enrich GET endpoint or pass label map from page.
@@ -114,8 +127,7 @@ Week 6+ prompts: see black-ledger-prompts.md
 - Email transport not wired — support reply is stub only.
 
 **Upcoming major milestones**
-- **Week 7 (Prompt 24)**: Postgres cutover (Neon / Supabase / Railway). Required before any real traffic — SQLite won't survive concurrent writes.
-- **Week 8 (Prompt 25)**: Stripe Checkout + webhook, Order model, email activation code on purchase.
+- **Week 8 (Prompt 25)**: Stripe Checkout + webhook, Order model, email activation code on purchase. This is the only remaining blocker before selling physical kits.
 
 ### Prompt library location
 See black-ledger-prompts.md (uploaded to Cowork session) for Prompts 07–25.
