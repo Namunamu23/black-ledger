@@ -38,6 +38,13 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
+  // /bureau/unlock is publicly reachable so players can see
+  // the unlock form when arriving from a QR code before signing in.
+  // Auth is enforced at the API level in /api/access-codes/redeem.
+  if (pathname.startsWith("/bureau/unlock")) {
+    return NextResponse.next();
+  }
+
   // /bureau/* — any authenticated user
   if (pathname.startsWith("/bureau")) {
     if (!session?.user) {
