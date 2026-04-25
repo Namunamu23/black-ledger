@@ -6,10 +6,10 @@ import type { AccessCodeWithCount } from "./AccessCodesPanel";
 
 type Props = { codes: AccessCodeWithCount[] };
 
-// Spec hardcodes the production origin so a printed QR code remains
-// stable regardless of which environment generates it. Swap to
-// NEXT_PUBLIC_APP_URL if per-env QR images become useful.
-const CODE_URL_BASE = "https://blackledger.app/u";
+// QR target URL is derived from NEXT_PUBLIC_APP_URL so dev and prod
+// environments emit codes that resolve to their own origin. Falls back to
+// http://localhost:3000 when the env var is not set.
+const CODE_URL_BASE = `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/u`;
 
 function urlFor(code: string) {
   return `${CODE_URL_BASE}/${encodeURIComponent(code)}`;

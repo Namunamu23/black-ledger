@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-helpers";
+import { rateLimit } from "@/lib/rate-limit";
 
 function generateCode(prefix: string) {
   const cleanPrefix = prefix
@@ -18,6 +19,17 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
+  const limit = await rateLimit(request, { limit: 10, windowMs: 60_000 });
+  if (!limit.success) {
+    return NextResponse.json(
+      { message: "Too many requests." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) },
+      }
+    );
+  }
+
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
 
