@@ -32,14 +32,6 @@ export default function Footer() {
           <div className="text-xs text-zinc-600">
             © {new Date().getFullYear()} Black Ledger. All rights reserved.
           </div>
-          <div className="flex gap-4 text-xs text-zinc-600">
-            <Link href="/terms" className="transition hover:text-zinc-400">
-              Terms
-            </Link>
-            <Link href="/privacy" className="transition hover:text-zinc-400">
-              Privacy
-            </Link>
-          </div>
         </div>
       </div>
     </footer>

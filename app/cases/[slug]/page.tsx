@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import CasePublicView from "@/components/cases/CasePublicView";
 
 type PageProps = {
@@ -15,7 +15,18 @@ export default async function PublicCasePage({ params }: PageProps) {
     where: { slug },
   });
 
-  if (!caseFile || !caseFile.isActive || caseFile.workflowStatus !== "PUBLISHED") {
+  if (!caseFile) {
+    const historyRow = await prisma.caseSlugHistory.findUnique({
+      where: { oldSlug: slug },
+      include: { caseFile: { select: { slug: true } } },
+    });
+    if (historyRow && historyRow.caseFile.slug !== slug) {
+      redirect(`/cases/${historyRow.caseFile.slug}`);
+    }
+    notFound();
+  }
+
+  if (!caseFile.isActive || caseFile.workflowStatus !== "PUBLISHED") {
     notFound();
   }
 
