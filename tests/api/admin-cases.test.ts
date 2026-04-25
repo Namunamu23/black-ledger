@@ -22,6 +22,8 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 const mocks = vi.hoisted(() => {
   const caseFileFindUnique = vi.fn();
   const caseFileFindFirst = vi.fn();
+  const caseSlugHistoryFindFirst = vi.fn();
+  const caseSlugHistoryUpsert = vi.fn();
   const caseFileUpdate = vi.fn();
   const casePersonUpdate = vi.fn();
   const casePersonDeleteMany = vi.fn();
@@ -41,6 +43,8 @@ const mocks = vi.hoisted(() => {
   return {
     caseFileFindUnique,
     caseFileFindFirst,
+    caseSlugHistoryFindFirst,
+    caseSlugHistoryUpsert,
     caseFileUpdate,
     casePersonUpdate,
     casePersonDeleteMany,
@@ -66,6 +70,10 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: mocks.caseFileFindUnique,
       findFirst: mocks.caseFileFindFirst,
       update: mocks.caseFileUpdate,
+    },
+    caseSlugHistory: {
+      findFirst: mocks.caseSlugHistoryFindFirst,
+      upsert: mocks.caseSlugHistoryUpsert,
     },
     casePerson: {
       update: mocks.casePersonUpdate,
@@ -175,10 +183,13 @@ describe("PUT /api/admin/cases/[caseId] — diff/upsert preserves CasePerson ide
 
     mocks.caseFileFindUnique.mockResolvedValue(SEED_CASE);
     mocks.caseFileFindFirst.mockResolvedValue(null);
+    mocks.caseSlugHistoryFindFirst.mockResolvedValue(null);
+    mocks.caseSlugHistoryUpsert.mockResolvedValue({});
 
     mocks.transactionFn.mockImplementation(async (callback: any) => {
       return await callback({
         caseFile: { update: mocks.caseFileUpdate },
+        caseSlugHistory: { upsert: mocks.caseSlugHistoryUpsert },
         casePerson: {
           update: mocks.casePersonUpdate,
           deleteMany: mocks.casePersonDeleteMany,
@@ -281,5 +292,98 @@ describe("PUT /api/admin/cases/[caseId] — diff/upsert preserves CasePerson ide
       updated: 1,
       deleted: 0,
     });
+  });
+
+  it("legacy PUT writes CaseSlugHistory when slug changes", async () => {
+    const submission = {
+      title: SEED_CASE.title,
+      slug: "new-slug",
+      summary: SEED_CASE.summary,
+      players: SEED_CASE.players,
+      duration: SEED_CASE.duration,
+      difficulty: SEED_CASE.difficulty,
+      maxStage: SEED_CASE.maxStage,
+      solutionSuspect: SEED_CASE.solutionSuspect,
+      solutionMotive: SEED_CASE.solutionMotive,
+      solutionEvidence: SEED_CASE.solutionEvidence,
+      debriefOverview: SEED_CASE.debriefOverview,
+      debriefWhatHappened: SEED_CASE.debriefWhatHappened,
+      debriefWhyItWorked: SEED_CASE.debriefWhyItWorked,
+      debriefClosing: SEED_CASE.debriefClosing,
+      debriefSectionTitle: SEED_CASE.debriefSectionTitle,
+      debriefIntro: SEED_CASE.debriefIntro,
+      isActive: SEED_CASE.isActive,
+      people: SEED_CASE.people.map((p) => ({
+        id: p.id,
+        globalPersonId: p.globalPersonId,
+        name: p.name,
+        role: p.role,
+        summary: p.summary,
+        unlockStage: p.unlockStage,
+        sortOrder: p.sortOrder,
+      })),
+      records: [],
+      hints: [],
+      checkpoints: [],
+    };
+
+    const response = await PUT(makePutRequest(submission), {
+      params: params(),
+    });
+
+    expect(response.status).toBe(200);
+    expect(mocks.caseSlugHistoryUpsert).toHaveBeenCalledOnce();
+    expect(mocks.caseSlugHistoryUpsert.mock.calls[0][0]).toEqual({
+      where: { oldSlug: "alder-street-review" },
+      update: { caseFileId: 1 },
+      create: { caseFileId: 1, oldSlug: "alder-street-review" },
+    });
+  });
+
+  it("legacy PUT rejects slug that is another case's retired oldSlug", async () => {
+    mocks.caseSlugHistoryFindFirst.mockResolvedValue({
+      id: 99,
+      caseFileId: 2,
+      oldSlug: "retired-slug",
+    });
+
+    const submission = {
+      title: SEED_CASE.title,
+      slug: "retired-slug",
+      summary: SEED_CASE.summary,
+      players: SEED_CASE.players,
+      duration: SEED_CASE.duration,
+      difficulty: SEED_CASE.difficulty,
+      maxStage: SEED_CASE.maxStage,
+      solutionSuspect: SEED_CASE.solutionSuspect,
+      solutionMotive: SEED_CASE.solutionMotive,
+      solutionEvidence: SEED_CASE.solutionEvidence,
+      debriefOverview: SEED_CASE.debriefOverview,
+      debriefWhatHappened: SEED_CASE.debriefWhatHappened,
+      debriefWhyItWorked: SEED_CASE.debriefWhyItWorked,
+      debriefClosing: SEED_CASE.debriefClosing,
+      debriefSectionTitle: SEED_CASE.debriefSectionTitle,
+      debriefIntro: SEED_CASE.debriefIntro,
+      isActive: SEED_CASE.isActive,
+      people: SEED_CASE.people.map((p) => ({
+        id: p.id,
+        globalPersonId: p.globalPersonId,
+        name: p.name,
+        role: p.role,
+        summary: p.summary,
+        unlockStage: p.unlockStage,
+        sortOrder: p.sortOrder,
+      })),
+      records: [],
+      hints: [],
+      checkpoints: [],
+    };
+
+    const response = await PUT(makePutRequest(submission), {
+      params: params(),
+    });
+
+    expect(response.status).toBe(409);
+    expect(mocks.caseSlugHistoryUpsert).not.toHaveBeenCalled();
   });
 });

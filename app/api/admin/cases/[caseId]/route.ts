@@ -96,6 +96,21 @@ export async function PUT(
       );
     }
 
+    if (data.slug !== existing.slug) {
+      const historyConflict = await prisma.caseSlugHistory.findFirst({
+        where: { oldSlug: data.slug, NOT: { caseFileId: parsedCaseId } },
+      });
+      if (historyConflict) {
+        return NextResponse.json(
+          {
+            message:
+              "That slug was previously used by another case and is reserved.",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const invalidUnlockStage =
       [...data.people, ...data.records, ...data.hints].some(
         (item) => item.unlockStage > data.maxStage
@@ -391,6 +406,17 @@ export async function PUT(
         await tx.caseFile.update({
           where: { id: parsedCaseId },
           data: caseFileScalars,
+        });
+      }
+
+      if (caseFileChanged.includes("slug")) {
+        await tx.caseSlugHistory.upsert({
+          where: { oldSlug: existing.slug },
+          update: { caseFileId: parsedCaseId },
+          create: {
+            caseFileId: parsedCaseId,
+            oldSlug: existing.slug,
+          },
         });
       }
 

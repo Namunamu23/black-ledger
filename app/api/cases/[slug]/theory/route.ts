@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { requireSessionJson } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { theorySubmissionSchema } from "@/lib/validators";
 import { evaluateTheorySubmission } from "@/lib/case-evaluation";
@@ -26,15 +26,9 @@ export async function POST(
 
   const { slug } = await params;
 
-  const session = await auth();
-  const userId = Number((session?.user as { id?: string } | undefined)?.id);
-
-  if (!session?.user || !Number.isInteger(userId)) {
-    return NextResponse.json(
-      { message: "You must be logged in to submit a theory." },
-      { status: 401 }
-    );
-  }
+  const sessionOrErr = await requireSessionJson();
+  if (sessionOrErr instanceof NextResponse) return sessionOrErr;
+  const userId = Number(sessionOrErr.user.id);
 
   try {
     const body = await request.json();

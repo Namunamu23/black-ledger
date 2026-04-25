@@ -1,7 +1,7 @@
 /**
  * Auth guards used by server components, layouts, and API routes.
  *
- * Three flavors:
+ * Four flavors:
  *   - requireSession(): for pages/layouts that should redirect to /login
  *     when there is no session. Returns the typed Session on success;
  *     never returns undefined (redirect() throws a NEXT_REDIRECT signal
@@ -15,6 +15,11 @@
  *   - getOptionalSession(): for pages that read the session for display
  *     but already rely on a layout or middleware for auth gating, or
  *     deliberately render content for both authed and anonymous users.
+ *
+ *   - requireSessionJson(): for player-facing API routes that should return a
+ *     401 JSON response (not a redirect) when there is no session. Returns the
+ *     typed Session on success, or a 401 NextResponse the caller should return
+ *     as-is. Use the `result instanceof NextResponse` discriminator.
  *
  * Pages that use notFound() instead of redirect on missing session, and
  * non-admin API routes that return 401 JSON, do not use these helpers —
@@ -46,4 +51,13 @@ export async function requireAdmin(): Promise<Session | NextResponse> {
 export async function getOptionalSession(): Promise<Session | null> {
   const session = await auth();
   return session ?? null;
+}
+
+export async function requireSessionJson(): Promise<Session | NextResponse> {
+  const session = await auth();
+  const userId = Number(session?.user?.id);
+  if (!session?.user || !Number.isInteger(userId)) {
+    return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
+  }
+  return session;
 }
