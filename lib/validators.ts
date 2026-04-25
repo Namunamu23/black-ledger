@@ -32,6 +32,15 @@ export const activationCodeSchema = z.object({
     .max(64, "Activation code is too long."),
 });
 
+export const checkoutSchema = z.object({
+  caseId: z.number().int().positive("Invalid case id."),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Please enter a valid email address."),
+});
+
 export const theorySubmissionSchema = z.object({
   suspectName: z
     .string()
