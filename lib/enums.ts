@@ -45,3 +45,18 @@ export const CaseWorkflowStatus = {
 } as const;
 export type CaseWorkflowStatus =
   (typeof CaseWorkflowStatus)[keyof typeof CaseWorkflowStatus];
+
+export const ActivationCodeSource = {
+  ADMIN: "ADMIN",
+  PURCHASE: "PURCHASE",
+} as const;
+export type ActivationCodeSource =
+  (typeof ActivationCodeSource)[keyof typeof ActivationCodeSource];
+
+export const OrderStatus = {
+  PENDING: "PENDING",
+  COMPLETE: "COMPLETE",
+  FAILED: "FAILED",
+  REFUNDED: "REFUNDED",
+} as const;
+export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];

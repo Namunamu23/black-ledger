@@ -45,6 +45,18 @@ enum AccessCodeKind {
   AUDIO_FILE
 }
 
+enum ActivationCodeSource {
+  ADMIN
+  PURCHASE
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETE
+  FAILED
+  REFUNDED
+}
+
 enum HiddenEvidenceKind {
   RECORD
   PERSON_DETAIL
@@ -104,6 +116,7 @@ model CaseFile {
   accessCodes         AccessCode[]           @relation("CaseAccessCodes")
   redemptions         AccessCodeRedemption[] @relation("CaseRedemptions")
   hiddenEvidence      HiddenEvidence[]       @relation("CaseHiddenEvidence")
+  orders              Order[]
 }
 
 model CaseSlugHistory {
@@ -128,17 +141,19 @@ model CaseAudit {
 }
 
 model ActivationCode {
-  id              Int       @id @default(autoincrement())
-  code            String    @unique
+  id              Int                  @id @default(autoincrement())
+  code            String               @unique
   kitSerial       String?
+  source          ActivationCodeSource @default(ADMIN)
   caseFileId      Int
   claimedByUserId Int?
   claimedAt       DateTime?
   revokedAt       DateTime?
-  createdAt       DateTime  @default(now())
+  createdAt       DateTime             @default(now())
 
   caseFile      CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
   claimedByUser User?    @relation("ClaimedCodes", fields: [claimedByUserId], references: [id])
+  order         Order?
 }
 
 model UserCase {
@@ -447,4 +462,18 @@ model HiddenEvidence {
   body        String
   revealOrder Int
   createdAt   DateTime           @default(now())
+}
+
+model Order {
+  id                  Int             @id @default(autoincrement())
+  stripeSessionId     String          @unique
+  stripePaymentIntent String?
+  status              OrderStatus     @default(PENDING)
+  email               String
+  caseFileId          Int
+  caseFile            CaseFile        @relation(fields: [caseFileId], references: [id])
+  activationCodeId    Int?            @unique
+  activationCode      ActivationCode? @relation(fields: [activationCodeId], references: [id])
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 }
