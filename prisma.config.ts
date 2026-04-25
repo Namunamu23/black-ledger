@@ -9,6 +9,9 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Migrations and introspection should bypass the connection pooler.
+    // Falls back to DATABASE_URL when DIRECT_URL is unset (e.g. Railway,
+    // local dev) so single-URL setups still work.
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });
