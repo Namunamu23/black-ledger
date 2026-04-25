@@ -34,6 +34,17 @@ export async function PATCH(
     return NextResponse.json({ message: "Case not found." }, { status: 404 });
   }
 
+  for (const item of parsed.data.records) {
+    if (item.unlockStage > existing.maxStage) {
+      return NextResponse.json(
+        {
+          message: `unlockStage ${item.unlockStage} exceeds case maxStage (${existing.maxStage}).`,
+        },
+        { status: 422 }
+      );
+    }
+  }
+
   const existingById = new Map(existing.records.map((r) => [r.id, r]));
   const submittedIds = new Set<number>();
   const toCreate: Array<{

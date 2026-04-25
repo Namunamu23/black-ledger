@@ -34,6 +34,17 @@ export async function PATCH(
     return NextResponse.json({ message: "Case not found." }, { status: 404 });
   }
 
+  for (const item of parsed.data.checkpoints) {
+    if (item.stage >= existing.maxStage) {
+      return NextResponse.json(
+        {
+          message: `Checkpoint stage ${item.stage} must be less than case maxStage (${existing.maxStage}).`,
+        },
+        { status: 422 }
+      );
+    }
+  }
+
   const existingById = new Map(existing.checkpoints.map((c) => [c.id, c]));
   const submittedIds = new Set<number>();
   const toCreate: Array<{

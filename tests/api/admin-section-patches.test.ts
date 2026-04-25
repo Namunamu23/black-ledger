@@ -56,6 +56,9 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/auth", () => ({ auth: mocks.authFn }));
 
 import { PATCH as peoplePATCH } from "@/app/api/admin/cases/[caseId]/people/route";
+import { PATCH as recordsPATCH } from "@/app/api/admin/cases/[caseId]/records/route";
+import { PATCH as hintsPATCH } from "@/app/api/admin/cases/[caseId]/hints/route";
+import { PATCH as checkpointsPATCH } from "@/app/api/admin/cases/[caseId]/checkpoints/route";
 import { PATCH as overviewPATCH } from "@/app/api/admin/cases/[caseId]/overview/route";
 import { PATCH as solutionPATCH } from "@/app/api/admin/cases/[caseId]/solution/route";
 
@@ -214,6 +217,39 @@ describe("PATCH /api/admin/cases/[caseId]/people", () => {
     });
   });
 
+  it("people PATCH rejects unlockStage > maxStage", async () => {
+    mocks.caseFileFindUnique.mockResolvedValue({
+      id: 1,
+      maxStage: 3,
+      people: SEED_PEOPLE,
+    });
+
+    const submission = {
+      people: [
+        {
+          globalPersonId: null,
+          name: "Out of Range",
+          role: "Witness",
+          summary: "Submitted with an invalid unlockStage.",
+          unlockStage: 5,
+          sortOrder: 9,
+        },
+      ],
+    };
+
+    const response = await peoplePATCH(makeRequest("people", submission), {
+      params: params(),
+    });
+
+    expect(response.status).toBe(422);
+    const json = (await response.json()) as { message?: string };
+    expect(json.message).toContain("maxStage");
+
+    expect(mocks.casePersonUpdate).not.toHaveBeenCalled();
+    expect(mocks.casePersonCreateMany).not.toHaveBeenCalled();
+    expect(mocks.casePersonDeleteMany).not.toHaveBeenCalled();
+  });
+
   it("omitting an existing person id from the payload deletes that row", async () => {
     mocks.caseFileFindUnique.mockResolvedValue({
       id: 1,
@@ -299,5 +335,96 @@ describe("PATCH /api/admin/cases/[caseId]/solution", () => {
     expect(mocks.caseAuditCreate.mock.calls[0][0].data.action).toBe(
       "UPDATE_SOLUTION"
     );
+  });
+});
+
+describe("PATCH /api/admin/cases/[caseId]/records", () => {
+  it("records PATCH rejects unlockStage > maxStage", async () => {
+    mocks.caseFileFindUnique.mockResolvedValue({
+      id: 1,
+      maxStage: 3,
+      records: [],
+    });
+
+    const submission = {
+      records: [
+        {
+          title: "Out of Range Record",
+          category: "Report",
+          summary: "Submitted with an invalid unlockStage.",
+          body: "Body text.",
+          unlockStage: 5,
+          sortOrder: 1,
+        },
+      ],
+    };
+
+    const response = await recordsPATCH(makeRequest("records", submission), {
+      params: params(),
+    });
+
+    expect(response.status).toBe(422);
+    const json = (await response.json()) as { message?: string };
+    expect(json.message).toContain("maxStage");
+  });
+});
+
+describe("PATCH /api/admin/cases/[caseId]/hints", () => {
+  it("hints PATCH rejects unlockStage > maxStage", async () => {
+    mocks.caseFileFindUnique.mockResolvedValue({
+      id: 1,
+      maxStage: 3,
+      hints: [],
+    });
+
+    const submission = {
+      hints: [
+        {
+          level: 1,
+          title: "Out of Range Hint",
+          content: "Submitted with an invalid unlockStage.",
+          unlockStage: 5,
+          sortOrder: 1,
+        },
+      ],
+    };
+
+    const response = await hintsPATCH(makeRequest("hints", submission), {
+      params: params(),
+    });
+
+    expect(response.status).toBe(422);
+    const json = (await response.json()) as { message?: string };
+    expect(json.message).toContain("maxStage");
+  });
+});
+
+describe("PATCH /api/admin/cases/[caseId]/checkpoints", () => {
+  it("checkpoints PATCH rejects stage >= maxStage", async () => {
+    mocks.caseFileFindUnique.mockResolvedValue({
+      id: 1,
+      maxStage: 3,
+      checkpoints: [],
+    });
+
+    const submission = {
+      checkpoints: [
+        {
+          stage: 3,
+          prompt: "Out of range checkpoint?",
+          acceptedAnswers: "answer",
+          successMessage: "Should never trigger.",
+        },
+      ],
+    };
+
+    const response = await checkpointsPATCH(
+      makeRequest("checkpoints", submission),
+      { params: params() }
+    );
+
+    expect(response.status).toBe(422);
+    const json = (await response.json()) as { message?: string };
+    expect(json.message).toContain("maxStage");
   });
 });
