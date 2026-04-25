@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import CasePublicView from "@/components/cases/CasePublicView";
+import { getOptionalSession } from "@/lib/auth-helpers";
 
 type PageProps = {
   params: Promise<{
@@ -30,5 +31,16 @@ export default async function PublicCasePage({ params }: PageProps) {
     notFound();
   }
 
-  return <CasePublicView caseFile={caseFile} />;
+  const session = await getOptionalSession();
+  const userId = Number(session?.user?.id);
+  let alreadyOwns = false;
+  if (Number.isInteger(userId)) {
+    const ownership = await prisma.userCase.findUnique({
+      where: { userId_caseFileId: { userId, caseFileId: caseFile.id } },
+      select: { id: true },
+    });
+    alreadyOwns = ownership !== null;
+  }
+
+  return <CasePublicView caseFile={caseFile} canBuy={!alreadyOwns} />;
 }

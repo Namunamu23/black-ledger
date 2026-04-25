@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Card, Pill, StampBadge } from "@/components/ui";
+import BuyButton from "@/components/bureau/BuyButton";
 
 type CasePublicViewProps = {
   caseFile: {
+    id: number;
     title: string;
     slug: string;
     summary: string;
@@ -12,12 +14,14 @@ type CasePublicViewProps = {
   };
   previewMode?: boolean;
   adminBackHref?: string;
+  canBuy?: boolean;
 };
 
 export default function CasePublicView({
   caseFile,
   previewMode = false,
   adminBackHref,
+  canBuy = false,
 }: CasePublicViewProps) {
   return (
     <main className="relative min-h-screen bg-[#050507] text-zinc-100">
@@ -167,12 +171,16 @@ export default function CasePublicView({
               Order includes the physical case file and lifetime digital
               bureau access. Ships within 3–5 business days.
             </p>
-            <Link
-              href="/support"
-              className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-amber-400 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300"
-            >
-              Order Investigation Kit
-            </Link>
+            {canBuy ? (
+              <BuyButton caseId={caseFile.id} />
+            ) : (
+              <Link
+                href="/support"
+                className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-amber-400 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300"
+              >
+                Order Investigation Kit
+              </Link>
+            )}
             <div className="mt-4 flex items-center gap-3">
               <hr className="flex-1 border-zinc-800" />
               <span className="font-mono text-[10px] text-zinc-600">OR</span>
