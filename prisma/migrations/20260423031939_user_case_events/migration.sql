@@ -1,9 +1,0 @@
--- CreateTable
-CREATE TABLE "UserCaseEvent" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "userCaseId" INTEGER NOT NULL,
-    "type" TEXT NOT NULL,
-    "payload" JSONB NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "UserCaseEvent_userCaseId_fkey" FOREIGN KEY ("userCaseId") REFERENCES "UserCase" ("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
