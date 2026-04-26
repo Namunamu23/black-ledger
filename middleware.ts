@@ -25,7 +25,15 @@ export default auth((req) => {
     !pathname.startsWith("/api/webhooks/")
   ) {
     const origin = req.headers.get("origin");
-    if (!origin || origin !== APP_ORIGIN) {
+
+    let allowed = false;
+    try {
+      allowed = new URL(origin ?? "").origin === new URL(APP_ORIGIN).origin;
+    } catch {
+      allowed = false;
+    }
+
+    if (!allowed) {
       return NextResponse.json({ message: "Forbidden." }, { status: 403 });
     }
   }

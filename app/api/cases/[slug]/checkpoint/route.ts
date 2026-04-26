@@ -161,8 +161,8 @@ export async function POST(
       typeof transitionResult === "string" ? transitionResult : userCase.status;
 
     await prisma.$transaction(async (tx) => {
-      await tx.userCase.update({
-        where: { id: userCase.id },
+      const advanced = await tx.userCase.updateMany({
+        where: { id: userCase.id, currentStage: userCase.currentStage },
         data: {
           currentStage: nextStage,
           status: newStatus,
@@ -170,6 +170,11 @@ export async function POST(
           lastViewedAt: new Date(),
         },
       });
+
+      if (advanced.count === 0) {
+        throw new Error("STAGE_CONFLICT");
+      }
+
       await tx.userCaseEvent.create({
         data: {
           userCaseId: userCase.id,
@@ -191,6 +196,13 @@ export async function POST(
       { status: 200 }
     );
   } catch (error) {
+    if (error instanceof Error && error.message === "STAGE_CONFLICT") {
+      return NextResponse.json(
+        { message: "Stage already advanced by a concurrent request." },
+        { status: 409 }
+      );
+    }
+
     console.error("Checkpoint route error:", error);
 
     return NextResponse.json(

@@ -134,12 +134,18 @@ export default async function BureauCasePage({ params }: PageProps) {
 
   // Resolve each redemption to its actual content. Drop nulls (unknown
   // unlocksTarget types or deleted target rows) so the UI never has to
-  // render placeholders for missing evidence.
-  const revealedEvidence: ResolvedEvidence[] = (
-    await Promise.all(
-      redemptions.map((r) => resolveEvidence(r.accessCode.unlocksTarget))
+  // render placeholders for missing evidence. Use allSettled so a single
+  // failed lookup doesn't fail the whole page.
+  const settled = await Promise.allSettled(
+    redemptions.map((r) => resolveEvidence(r.accessCode.unlocksTarget))
+  );
+  const revealedEvidence: ResolvedEvidence[] = settled
+    .filter(
+      (r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof resolveEvidence>>> =>
+        r.status === "fulfilled"
     )
-  ).filter((item): item is ResolvedEvidence => item !== null);
+    .map((r) => r.value)
+    .filter((item): item is ResolvedEvidence => item !== null);
 
   const { caseFile, currentStage, status } = ownedCase;
 

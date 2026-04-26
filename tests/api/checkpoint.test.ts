@@ -13,14 +13,14 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 
 const mocks = vi.hoisted(() => {
   const userCaseFindFirst = vi.fn();
-  const userCaseUpdate = vi.fn();
+  const userCaseUpdateMany = vi.fn();
   const checkpointAttemptCreate = vi.fn();
   const userCaseEventCreate = vi.fn();
   const transactionFn = vi.fn();
   const authFn = vi.fn();
   return {
     userCaseFindFirst,
-    userCaseUpdate,
+    userCaseUpdateMany,
     checkpointAttemptCreate,
     userCaseEventCreate,
     transactionFn,
@@ -32,7 +32,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     userCase: {
       findFirst: mocks.userCaseFindFirst,
-      update: mocks.userCaseUpdate,
+      updateMany: mocks.userCaseUpdateMany,
     },
     checkpointAttempt: {
       create: mocks.checkpointAttemptCreate,
@@ -97,10 +97,11 @@ describe("POST /api/cases/[slug]/checkpoint — strict matcher", () => {
       user: { id: "1", role: "INVESTIGATOR" },
     });
     mocks.userCaseFindFirst.mockResolvedValue(ALDER_USER_CASE);
+    mocks.userCaseUpdateMany.mockResolvedValue({ count: 1 });
 
     mocks.transactionFn.mockImplementation(async (callback: any) => {
       return await callback({
-        userCase: { update: mocks.userCaseUpdate },
+        userCase: { updateMany: mocks.userCaseUpdateMany },
         userCaseEvent: { create: mocks.userCaseEventCreate },
       });
     });
@@ -112,8 +113,8 @@ describe("POST /api/cases/[slug]/checkpoint — strict matcher", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(mocks.userCaseUpdate).toHaveBeenCalledOnce();
-    expect(mocks.userCaseUpdate.mock.calls[0][0].data.currentStage).toBe(2);
+    expect(mocks.userCaseUpdateMany).toHaveBeenCalledOnce();
+    expect(mocks.userCaseUpdateMany.mock.calls[0][0].data.currentStage).toBe(2);
   });
 
   it("case-insensitive match passes", async () => {
@@ -122,15 +123,15 @@ describe("POST /api/cases/[slug]/checkpoint — strict matcher", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(mocks.userCaseUpdate).toHaveBeenCalledOnce();
-    expect(mocks.userCaseUpdate.mock.calls[0][0].data.currentStage).toBe(2);
+    expect(mocks.userCaseUpdateMany).toHaveBeenCalledOnce();
+    expect(mocks.userCaseUpdateMany.mock.calls[0][0].data.currentStage).toBe(2);
   });
 
   it("submission shorter than 3 normalized chars is rejected", async () => {
     const response = await POST(makeRequest("ab"), { params: params() });
 
     expect(response.status).toBe(400);
-    expect(mocks.userCaseUpdate).not.toHaveBeenCalled();
+    expect(mocks.userCaseUpdateMany).not.toHaveBeenCalled();
   });
 
   it("pure substring that is not a real match is rejected", async () => {
@@ -141,7 +142,7 @@ describe("POST /api/cases/[slug]/checkpoint — strict matcher", () => {
     const response = await POST(makeRequest("log"), { params: params() });
 
     expect(response.status).toBe(400);
-    expect(mocks.userCaseUpdate).not.toHaveBeenCalled();
+    expect(mocks.userCaseUpdateMany).not.toHaveBeenCalled();
   });
 
   it("phrasing variation passes via Jaccard", async () => {
@@ -153,7 +154,17 @@ describe("POST /api/cases/[slug]/checkpoint — strict matcher", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(mocks.userCaseUpdate).toHaveBeenCalledOnce();
-    expect(mocks.userCaseUpdate.mock.calls[0][0].data.currentStage).toBe(2);
+    expect(mocks.userCaseUpdateMany).toHaveBeenCalledOnce();
+    expect(mocks.userCaseUpdateMany.mock.calls[0][0].data.currentStage).toBe(2);
+  });
+
+  it("returns 409 when a concurrent advance wins the race (ARCH-01)", async () => {
+    mocks.userCaseUpdateMany.mockResolvedValue({ count: 0 });
+
+    const response = await POST(makeRequest("badge access log"), {
+      params: params(),
+    });
+
+    expect(response.status).toBe(409);
   });
 });

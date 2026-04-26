@@ -20,12 +20,16 @@ const SECURITY_HEADERS: Array<{ key: string; value: string }> = [
   },
 ];
 
+const r2Origin = process.env.R2_PUBLIC_URL
+  ? new URL(process.env.R2_PUBLIC_URL).origin
+  : "";
+
 const CSP_REPORT_ONLY = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "img-src 'self' data: blob:",
+  `img-src 'self' data: blob: ${r2Origin}`,
   "connect-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
