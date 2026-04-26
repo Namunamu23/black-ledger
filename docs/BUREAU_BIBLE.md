@@ -137,7 +137,7 @@ Every shipped kit contains:
   shorter than the full digital body; the full text only appears in the
   Bureau workspace.
 - At least one **QR-coded artifact** — a sticker, a card, a printed
-  audio reference. Each QR encodes `https://blackledger.app/u/<code>`
+  audio reference. Each QR encodes `https://theblackledger.app/u/<code>`
   and points at an `AccessCode` whose `unlocksTarget` reveals a digital
   record not present in the physical kit.
 - An **activation code** (`ActivationCode`) printed on the inside of
