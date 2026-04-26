@@ -65,6 +65,23 @@ beforeEach(() => {
   });
 });
 
+/**
+ * React JSX elements contain circular module references (component types
+ * close back onto their own module's default export). JSON.stringify throws
+ * on these. This replacer silently drops already-visited objects so string
+ * prop values (href, title, text, etc.) are still extracted for assertions.
+ */
+function safeStringify(value: unknown): string {
+  const seen = new WeakSet<object>();
+  return JSON.stringify(value, (_key, val) => {
+    if (typeof val === "object" && val !== null) {
+      if (seen.has(val)) return undefined;
+      seen.add(val);
+    }
+    return val as unknown;
+  });
+}
+
 // ─── 1. /u/:code — short-URL redirect ────────────────────────────────────
 
 describe("GET /u/:code", () => {
@@ -127,7 +144,7 @@ describe("UnlockPage (logged-out)", () => {
 
     // The rendered JSX tree contains a Link whose href should encode the
     // return path. Inspect the props tree without a DOM renderer.
-    const json = JSON.stringify(result);
+    const json = safeStringify(result);
     expect(json).toContain(
       encodeURIComponent("/bureau/unlock?code=1207DF29")
     );
@@ -145,7 +162,7 @@ describe("UnlockPage (logged-out)", () => {
     expect(mocks.redirectFn).not.toHaveBeenCalled();
     expect(result).toBeDefined();
     // callbackUrl falls back to /bureau/unlock (no code)
-    const json = JSON.stringify(result);
+    const json = safeStringify(result);
     expect(json).toContain(
       encodeURIComponent("/bureau/unlock")
     );
@@ -205,7 +222,7 @@ describe("BureauLayout (logged-in investigator)", () => {
 
     expect(mocks.redirectFn).not.toHaveBeenCalled();
     // Layout returns a React element wrapping the children sentinel.
-    expect(JSON.stringify(result)).toContain("sentinel");
+    expect(safeStringify(result)).toContain("sentinel");
   });
 });
 
@@ -226,7 +243,7 @@ describe("UnlockPage (logged-in)", () => {
     });
 
     expect(mocks.redirectFn).not.toHaveBeenCalled();
-    const json = JSON.stringify(result);
+    const json = safeStringify(result);
     // The sign-in card title "Sign in to unlock evidence" is a string prop
     // on SectionHeader — it survives JSON.stringify. Assert it is absent,
     // confirming we are in the authenticated render branch.
@@ -284,6 +301,6 @@ describe("AdminLayout", () => {
 
     const result = await AdminLayout({ children: "admin-sentinel" as unknown as ReactNode });
     expect(mocks.redirectFn).not.toHaveBeenCalled();
-    expect(JSON.stringify(result)).toContain("admin-sentinel");
+    expect(safeStringify(result)).toContain("admin-sentinel");
   });
 });
