@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import PageHero from "@/components/ui/PageHero";
 import LoginForm from "@/components/auth/LoginForm";
@@ -33,7 +34,12 @@ export default function LoginPage() {
               This login now uses real credentials and a protected bureau session.
             </p>
 
-            <LoginForm />
+            {/* Suspense boundary required because LoginForm reads
+                useSearchParams (callbackUrl) — without it, Next would
+                deopt the entire route to client-side rendering. */}
+            <Suspense fallback={null}>
+              <LoginForm />
+            </Suspense>
           </div>
         </div>
       </section>

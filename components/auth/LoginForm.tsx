@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { pickPostLoginPath } from "@/lib/post-login-path";
+
 export default function LoginForm() {
+  const searchParams = useSearchParams();
+  // Sanitized at render time so the closure inside handleSubmit captures
+  // the safe path. Anything off-origin or non-relative falls back to
+  // /bureau via pickPostLoginPath.
+  const postLoginPath = pickPostLoginPath(searchParams.get("callbackUrl"));
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -19,7 +28,6 @@ export default function LoginForm() {
       email,
       password,
       redirect: false,
-      redirectTo: "/bureau",
     });
 
     if (!result || result.error) {
@@ -28,7 +36,7 @@ export default function LoginForm() {
       return;
     }
 
-    window.location.assign("/bureau");
+    window.location.assign(postLoginPath);
   }
 
   return (
