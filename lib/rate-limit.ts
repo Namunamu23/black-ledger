@@ -117,8 +117,14 @@ export async function rateLimit(
 
 /**
  * Test-only helper. Clears the in-memory bucket map so each test starts
- * with a fresh bucket per IP/path. NOT exported for production use.
+ * with a fresh bucket per IP/path. Throws if called outside the test
+ * environment to prevent accidental invocation in production code.
  */
 export function _resetForTesting(): void {
+  if (process.env.NODE_ENV !== "test") {
+    throw new Error(
+      "_resetForTesting is for test environments only and must not be called in production."
+    );
+  }
   buckets.clear();
 }

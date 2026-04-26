@@ -1,8 +1,11 @@
 import dotenv from "dotenv";
 import { prisma } from "../lib/prisma";
+import { assertSafeEnv } from "../lib/assert-safe-env";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
+
+assertSafeEnv("reset-case-progress");
 
 async function main() {
   const email = process.env.SEED_ADMIN_EMAIL?.toLowerCase();

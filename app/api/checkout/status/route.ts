@@ -13,14 +13,11 @@ export async function GET(request: Request) {
 
   const order = await prisma.order.findUnique({
     where: { stripeSessionId: sessionId },
-    select: { status: true, email: true },
+    select: { status: true },
   });
   if (!order) {
-    return NextResponse.json({ status: "PENDING", email: null }, { status: 200 });
+    return NextResponse.json({ status: "PENDING" }, { status: 200 });
   }
 
-  return NextResponse.json(
-    { status: order.status, email: order.email },
-    { status: 200 }
-  );
+  return NextResponse.json({ status: order.status }, { status: 200 });
 }

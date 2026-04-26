@@ -52,6 +52,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (activation.revokedAt) {
+      return NextResponse.json(
+        { message: "This activation code has been revoked." },
+        { status: 410 }
+      );
+    }
+
     const existingOwnership = await prisma.userCase.findUnique({
       where: {
         userId_caseFileId: {

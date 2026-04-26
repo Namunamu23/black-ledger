@@ -1,9 +1,12 @@
 import dotenv from "dotenv";
 import { hash } from "bcryptjs";
 import { prisma } from "../lib/prisma";
+import { assertSafeEnv } from "../lib/assert-safe-env";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
+
+assertSafeEnv("create-admin");
 
 async function main() {
   const email = process.env.SEED_ADMIN_EMAIL;

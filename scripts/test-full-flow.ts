@@ -13,6 +13,9 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
+import { assertSafeEnv } from "../lib/assert-safe-env";
+assertSafeEnv("test-full-flow");
+
 import { execSync } from "node:child_process";
 import { hash } from "bcryptjs";
 import { prisma } from "../lib/prisma";
