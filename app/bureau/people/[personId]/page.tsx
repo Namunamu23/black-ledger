@@ -25,6 +25,9 @@ export default async function BureauPersonProfilePage({ params }: PageProps) {
     notFound();
   }
 
+  const isAdmin =
+    (session.user as { role?: string }).role === "ADMIN";
+
   const [person, ownedCases] = await Promise.all([
     prisma.globalPerson.findUnique({
       where: { id: parsedPersonId },
@@ -40,9 +43,16 @@ export default async function BureauPersonProfilePage({ params }: PageProps) {
         evidenceLinks: {
           orderBy: { sortOrder: "asc" },
         },
-        analystNotes: {
-          orderBy: { sortOrder: "asc" },
-        },
+        // INTERNAL-visibility analyst notes are admin-only. Filtering at the
+        // Prisma include is the load-bearing enforcement; the UI-side gate
+        // on `internalNotes` below is defense-in-depth for the GlobalPerson
+        // scalar field which Prisma always returns by default.
+        analystNotes: isAdmin
+          ? { orderBy: { sortOrder: "asc" } }
+          : {
+              where: { visibility: { not: "INTERNAL" } },
+              orderBy: { sortOrder: "asc" },
+            },
         caseAppearances: {
           include: {
             caseFile: true,
@@ -542,15 +552,17 @@ export default async function BureauPersonProfilePage({ params }: PageProps) {
 
       <section className="py-8">
         <div className="mx-auto grid max-w-[1700px] gap-5 px-4 sm:px-6 xl:grid-cols-[1fr_0.85fr] lg:px-8">
-          <Panel
-            eyebrow="Internal Notes"
-            title="Investigator remarks"
-            text="Internal bureau comments, warnings, contradictions, sealed items, and follow-up recommendations."
-          >
-            <p className="whitespace-pre-line text-base leading-8 text-zinc-300">
-              {person.internalNotes || "No internal notes available."}
-            </p>
-          </Panel>
+          {isAdmin ? (
+            <Panel
+              eyebrow="Internal Notes"
+              title="Investigator remarks"
+              text="Internal bureau comments, warnings, contradictions, sealed items, and follow-up recommendations."
+            >
+              <p className="whitespace-pre-line text-base leading-8 text-zinc-300">
+                {person.internalNotes || "No internal notes available."}
+              </p>
+            </Panel>
+          ) : null}
 
           <Panel
             eyebrow="Unresolved Flags"
