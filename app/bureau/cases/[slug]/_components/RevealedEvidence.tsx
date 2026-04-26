@@ -14,7 +14,15 @@ export type HintContent = {
   type: "hint";
   hint: { id: number; title: string; content: string };
 };
-export type ResolvedEvidence = RecordContent | PersonContent | HintContent;
+export type HiddenEvidenceContent = {
+  type: "hidden_evidence";
+  hiddenEvidence: { id: number; title: string; body: string; kind: string };
+};
+export type ResolvedEvidence =
+  | RecordContent
+  | PersonContent
+  | HintContent
+  | HiddenEvidenceContent;
 
 type Props = { items: ResolvedEvidence[] };
 
@@ -65,6 +73,8 @@ export default function RevealedEvidence({ items }: Props) {
 function evidenceKey(item: ResolvedEvidence): string {
   if (item.type === "record") return `record-${item.record.id}`;
   if (item.type === "person") return `person-${item.person.id}`;
+  if (item.type === "hidden_evidence")
+    return `hidden-evidence-${item.hiddenEvidence.id}`;
   return `hint-${item.hint.id}`;
 }
 
@@ -97,6 +107,25 @@ function EvidenceBody({ item }: { item: ResolvedEvidence }) {
         <p className="mt-4 whitespace-pre-line text-sm leading-7 text-zinc-200">
           {item.person.summary}
         </p>
+      </article>
+    );
+  }
+
+  if (item.type === "hidden_evidence") {
+    return (
+      <article>
+        <div className="text-xs uppercase tracking-[0.25em] text-emerald-400">
+          Hidden Evidence
+        </div>
+        <h3 className="mt-3 text-2xl font-semibold text-white">
+          {item.hiddenEvidence.title}
+        </h3>
+        <p className="mt-2 text-sm leading-7 text-zinc-300 whitespace-pre-wrap">
+          {item.hiddenEvidence.body}
+        </p>
+        <div className="mt-3 text-xs text-zinc-500 uppercase tracking-[0.2em]">
+          {item.hiddenEvidence.kind}
+        </div>
       </article>
     );
   }

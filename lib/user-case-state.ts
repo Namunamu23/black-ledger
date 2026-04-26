@@ -94,21 +94,3 @@ export function transitionUserCase(
   }
   return next;
 }
-
-/**
- * @deprecated Prefer `transitionUserCase` with an explicit UserCaseEvent.
- * Kept so legacy callers that compute status purely from a theory result
- * label keep working without churn. New routes should use the event API.
- */
-export function nextUserCaseStatus(
-  currentStatus: UserCaseStatus,
-  submissionResult: TheoryResultLabel
-): UserCaseStatus {
-  const eventMap: Record<TheoryResultLabel, UserCaseEvent> = {
-    CORRECT: "THEORY_CORRECT",
-    PARTIAL: "THEORY_PARTIAL",
-    INCORRECT: "THEORY_INCORRECT",
-  };
-  const result = transitionUserCase(currentStatus, eventMap[submissionResult]);
-  return typeof result === "string" ? result : currentStatus;
-}

@@ -1,5 +1,5 @@
 /**
- * Browser-safe mirror of the Prisma enum values.
+ * Browser-safe mirror of all 9 Prisma enum values.
  *
  * The Prisma client (re-exported from @/generated/prisma/client) drags in
  * node:module and other Node-only runtime, which cannot be bundled into
@@ -60,3 +60,30 @@ export const OrderStatus = {
   REFUNDED: "REFUNDED",
 } as const;
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+
+export const SupportMessageStatus = {
+  NEW: "NEW",
+  HANDLED: "HANDLED",
+  SPAM: "SPAM",
+} as const;
+export type SupportMessageStatus =
+  (typeof SupportMessageStatus)[keyof typeof SupportMessageStatus];
+
+export const AccessCodeKind = {
+  BUREAU_REF: "BUREAU_REF",
+  ARTIFACT_QR: "ARTIFACT_QR",
+  WITNESS_TIP: "WITNESS_TIP",
+  AUDIO_FILE: "AUDIO_FILE",
+} as const;
+export type AccessCodeKind =
+  (typeof AccessCodeKind)[keyof typeof AccessCodeKind];
+
+export const HiddenEvidenceKind = {
+  RECORD: "RECORD",
+  PERSON_DETAIL: "PERSON_DETAIL",
+  TIMELINE_EVENT: "TIMELINE_EVENT",
+  HINT: "HINT",
+  AUDIO: "AUDIO",
+} as const;
+export type HiddenEvidenceKind =
+  (typeof HiddenEvidenceKind)[keyof typeof HiddenEvidenceKind];

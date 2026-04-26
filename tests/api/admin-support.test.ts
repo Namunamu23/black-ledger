@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   authFn: vi.fn(),
   supportMessageFindUnique: vi.fn(),
   supportMessageUpdate: vi.fn(),
+  resendSend: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -22,6 +23,11 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/auth", () => ({ auth: mocks.authFn }));
+
+vi.mock("@/lib/resend", () => ({
+  getResend: () => ({ emails: { send: mocks.resendSend } }),
+  getResendFrom: () => "no-reply@theblackledger.app",
+}));
 
 import { PATCH as statusPATCH } from "@/app/api/admin/support/[id]/status/route";
 import { POST as replyPOST } from "@/app/api/admin/support/[id]/reply/route";
@@ -107,8 +113,13 @@ describe("POST /api/admin/support/[id]/reply", () => {
     expect(mocks.supportMessageFindUnique).not.toHaveBeenCalled();
   });
 
-  it("returns 200 { sent: false } when no email transport is configured", async () => {
+  it("sends a Resend email, marks the message HANDLED, and returns { sent: true }", async () => {
     mocks.supportMessageFindUnique.mockResolvedValue(SEED_MESSAGE);
+    mocks.resendSend.mockResolvedValue({ id: "email_1" });
+    mocks.supportMessageUpdate.mockResolvedValue({
+      ...SEED_MESSAGE,
+      status: "HANDLED",
+    });
 
     const response = await replyPOST(
       makeReplyRequest({ body: "Thanks, looking into it." }),
@@ -116,11 +127,42 @@ describe("POST /api/admin/support/[id]/reply", () => {
     );
 
     expect(response.status).toBe(200);
-    const json = (await response.json()) as {
-      sent: boolean;
-      reason?: string;
-    };
-    expect(json.sent).toBe(false);
-    expect(json.reason).toBe("email transport not configured");
+    const json = (await response.json()) as { sent: boolean };
+    expect(json.sent).toBe(true);
+
+    expect(mocks.resendSend).toHaveBeenCalledOnce();
+    const emailArgs = mocks.resendSend.mock.calls[0][0];
+    expect(emailArgs.to).toBe(SEED_MESSAGE.email);
+    expect(emailArgs.text).toContain("Thanks, looking into it.");
+
+    expect(mocks.supportMessageUpdate).toHaveBeenCalledOnce();
+    const updateArgs = mocks.supportMessageUpdate.mock.calls[0][0];
+    expect(updateArgs.where).toEqual({ id: 7 });
+    expect(updateArgs.data).toEqual({ status: "HANDLED" });
+  });
+
+  it("returns 502 { sent: false } when Resend throws", async () => {
+    mocks.supportMessageFindUnique.mockResolvedValue(SEED_MESSAGE);
+    mocks.resendSend.mockRejectedValue(new Error("transport down"));
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const response = await replyPOST(
+        makeReplyRequest({ body: "Thanks, looking into it." }),
+        { params: params() }
+      );
+
+      expect(response.status).toBe(502);
+      const json = (await response.json()) as {
+        sent: boolean;
+        reason?: string;
+      };
+      expect(json.sent).toBe(false);
+      expect(json.reason).toContain("Email transport error");
+    } finally {
+      errorSpy.mockRestore();
+    }
+
+    expect(mocks.supportMessageUpdate).not.toHaveBeenCalled();
   });
 });

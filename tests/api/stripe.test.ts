@@ -15,6 +15,7 @@ import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from "vites
 const mocks = vi.hoisted(() => {
   const caseFileFindUnique = vi.fn();
   const orderFindUnique = vi.fn();
+  const orderFindFirst = vi.fn();
   const orderCreate = vi.fn();
   const orderUpdate = vi.fn();
   const activationCodeFindUnique = vi.fn();
@@ -26,6 +27,7 @@ const mocks = vi.hoisted(() => {
   return {
     caseFileFindUnique,
     orderFindUnique,
+    orderFindFirst,
     orderCreate,
     orderUpdate,
     activationCodeFindUnique,
@@ -42,6 +44,7 @@ vi.mock("@/lib/prisma", () => ({
     caseFile: { findUnique: mocks.caseFileFindUnique },
     order: {
       findUnique: mocks.orderFindUnique,
+      findFirst: mocks.orderFindFirst,
       create: mocks.orderCreate,
       update: mocks.orderUpdate,
     },
@@ -190,6 +193,28 @@ describe("POST /api/checkout", () => {
       email: "buyer@example.com",
       caseFileId: 7,
     });
+  });
+
+  it("POST /api/checkout returns 409 when a COMPLETE order already exists for this email + case (A6)", async () => {
+    mocks.caseFileFindUnique.mockResolvedValue({
+      id: 7,
+      slug: "alder-street-review",
+      title: "Alder Street Review",
+      workflowStatus: "PUBLISHED",
+      isActive: true,
+    });
+    mocks.orderFindFirst.mockResolvedValue({ id: 99 });
+
+    const response = await checkoutPOST(
+      makeCheckoutRequest(
+        { caseId: 7, email: "buyer@example.com" },
+        "checkout-dup-ip"
+      )
+    );
+
+    expect(response.status).toBe(409);
+    expect(mocks.stripeSessionsCreate).not.toHaveBeenCalled();
+    expect(mocks.orderCreate).not.toHaveBeenCalled();
   });
 });
 

@@ -54,6 +54,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Case not found." }, { status: 404 });
   }
 
+  // Duplicate-purchase guard: if a COMPLETE order already exists for this
+  // email + case, the buyer already received an activation code. Return 409
+  // rather than charging them again.
+  const existingOrder = await prisma.order.findFirst({
+    where: {
+      caseFileId: caseId,
+      email: { equals: email, mode: "insensitive" },
+      status: "COMPLETE",
+    },
+    select: { id: true },
+  });
+  if (existingOrder) {
+    return NextResponse.json(
+      {
+        message:
+          "An activation code for this case has already been sent to this email address. Check your inbox or contact support.",
+      },
+      { status: 409 }
+    );
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   try {

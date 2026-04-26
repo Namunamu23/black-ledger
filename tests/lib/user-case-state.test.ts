@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   transitionUserCase,
-  nextUserCaseStatus,
   type UserCaseEvent,
 } from "@/lib/user-case-state";
 
@@ -114,23 +113,5 @@ describe("transitionUserCase — error path", () => {
       expect(r.error).toContain("ACTIVE");
       expect(r.error).toContain("UNKNOWN");
     }
-  });
-});
-
-describe("nextUserCaseStatus — deprecated alias", () => {
-  it("CORRECT from FINAL_REVIEW → SOLVED", () => {
-    expect(nextUserCaseStatus("FINAL_REVIEW", "CORRECT")).toBe("SOLVED");
-  });
-  it("PARTIAL from ACTIVE → FINAL_REVIEW", () => {
-    expect(nextUserCaseStatus("ACTIVE", "PARTIAL")).toBe("FINAL_REVIEW");
-  });
-  it("INCORRECT from ACTIVE → ACTIVE", () => {
-    expect(nextUserCaseStatus("ACTIVE", "INCORRECT")).toBe("ACTIVE");
-  });
-  it("CORRECT from SOLVED → SOLVED (terminal)", () => {
-    expect(nextUserCaseStatus("SOLVED", "CORRECT")).toBe("SOLVED");
-  });
-  it("INCORRECT from SOLVED → SOLVED (terminal)", () => {
-    expect(nextUserCaseStatus("SOLVED", "INCORRECT")).toBe("SOLVED");
   });
 });

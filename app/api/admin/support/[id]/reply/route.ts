@@ -1,23 +1,10 @@
-/**
- * POST /api/admin/support/[id]/reply
- *
- * Send an email reply to the original sender of a SupportMessage.
- *
- * TODO: wire an email transport. As of this commit there is no
- * transport library installed (no nodemailer / resend / etc.). Until
- * one is added, the route validates the body, confirms the message
- * exists, and returns 200 { sent: false, reason: "email transport not
- * configured" } so the admin UI can surface the truth without erroring.
- *
- * When a transport is added, persist the reply in a SupportReply table
- * (model not yet in schema) and call the transport from inside this
- * handler.
- */
+// POST /api/admin/support/[id]/reply — sends a Resend email reply to the original sender.
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { supportReplySchema } from "@/lib/validators";
+import { getResend, getResendFrom } from "@/lib/resend";
 
 export async function POST(
   request: Request,
@@ -51,11 +38,52 @@ export async function POST(
     );
   }
 
-  return NextResponse.json(
-    {
-      sent: false,
-      reason: "email transport not configured",
-    },
-    { status: 200 }
-  );
+  const appName = "Black Ledger";
+
+  try {
+    await getResend().emails.send({
+      from: getResendFrom(),
+      to: message.email,
+      subject: `Re: Your message to ${appName}`,
+      text: [
+        `Hi ${message.name},`,
+        "",
+        parsed.data.body,
+        "",
+        "— The Black Ledger Team",
+      ].join("\n"),
+      html: `
+        <div style="font-family: ui-sans-serif, system-ui, sans-serif; color:#0f172a; line-height:1.6;">
+          <p>Hi ${escapeHtml(message.name)},</p>
+          ${parsed.data.body
+            .split("\n")
+            .map((line) => `<p>${escapeHtml(line)}</p>`)
+            .join("")}
+          <p style="color:#64748b; font-size:12px;">— The Black Ledger Team</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Support reply send failure for message", message.id, ":", error);
+    return NextResponse.json(
+      { sent: false, reason: "Email transport error. See server logs." },
+      { status: 502 }
+    );
+  }
+
+  await prisma.supportMessage.update({
+    where: { id: parsedId },
+    data: { status: "HANDLED" },
+  });
+
+  return NextResponse.json({ sent: true }, { status: 200 });
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

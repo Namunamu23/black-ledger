@@ -30,6 +30,13 @@ async function resolveContent(unlocksTarget: unknown) {
     return { type: "hint", hint };
   }
 
+  if (target?.type === "hidden_evidence") {
+    const hiddenEvidence = await prisma.hiddenEvidence.findUnique({
+      where: { id: target.id },
+    });
+    return { type: "hidden_evidence", hiddenEvidence };
+  }
+
   return { type: target?.type ?? "unknown", raw: unlocksTarget };
 }
 

@@ -63,6 +63,22 @@ async function resolveEvidence(
     };
   }
 
+  if (target?.type === "hidden_evidence") {
+    const hiddenEvidence = await prisma.hiddenEvidence.findUnique({
+      where: { id: target.id },
+    });
+    if (!hiddenEvidence) return null;
+    return {
+      type: "hidden_evidence" as const,
+      hiddenEvidence: {
+        id: hiddenEvidence.id,
+        title: hiddenEvidence.title,
+        body: hiddenEvidence.body,
+        kind: hiddenEvidence.kind,
+      },
+    };
+  }
+
   return null;
 }
 
