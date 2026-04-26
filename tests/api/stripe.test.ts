@@ -247,12 +247,18 @@ describe("POST /api/webhooks/stripe", () => {
     expect(codeArgs.data.caseFileId).toBe(7);
     expect(codeArgs.data.source).toBe("PURCHASE");
 
-    expect(mocks.orderUpdate).toHaveBeenCalledOnce();
+    // Two updates: first inside the tx marking Order COMPLETE,
+    // second post-email recording emailSentAt (BUG-05).
+    expect(mocks.orderUpdate).toHaveBeenCalledTimes(2);
     const updateArgs = mocks.orderUpdate.mock.calls[0][0];
     expect(updateArgs.where).toEqual({ id: 11 });
     expect(updateArgs.data.status).toBe("COMPLETE");
     expect(updateArgs.data.stripePaymentIntent).toBe("pi_test_1");
     expect(updateArgs.data.activationCodeId).toBe(99);
+
+    const emailUpdateArgs = mocks.orderUpdate.mock.calls[1][0];
+    expect(emailUpdateArgs.where).toEqual({ id: 11 });
+    expect(emailUpdateArgs.data.emailSentAt).toBeInstanceOf(Date);
 
     expect(mocks.resendSend).toHaveBeenCalledOnce();
     const emailArgs = mocks.resendSend.mock.calls[0][0];
@@ -356,7 +362,8 @@ describe("POST /api/webhooks/stripe", () => {
       source: "PURCHASE",
     });
 
-    expect(mocks.orderUpdate).toHaveBeenCalledOnce();
+    // Two updates: COMPLETE inside tx, then emailSentAt post-email (BUG-05).
+    expect(mocks.orderUpdate).toHaveBeenCalledTimes(2);
     expect(mocks.orderUpdate.mock.calls[0][0]).toMatchObject({
       where: { id: 555 },
       data: {
@@ -365,15 +372,20 @@ describe("POST /api/webhooks/stripe", () => {
         activationCodeId: 99,
       },
     });
+    expect(mocks.orderUpdate.mock.calls[1][0]).toMatchObject({
+      where: { id: 555 },
+    });
+    expect(mocks.orderUpdate.mock.calls[1][0].data.emailSentAt).toBeInstanceOf(Date);
 
     expect(mocks.resendSend).toHaveBeenCalledOnce();
     expect(mocks.resendSend.mock.calls[0][0].to).toBe("buyer@example.com");
   });
 
-  it("declines recovery and logs a warning when session metadata is insufficient (no caseId)", async () => {
+  it("returns 500 and logs STRIPE-ORPHAN when session metadata is insufficient (BUG-03)", async () => {
     // Pre-condition: orphan session AND metadata is empty / corrupted.
-    // No safe way to recover; warn and bail rather than synthesize an
-    // Order with placeholder fields.
+    // After BUG-03, this throws so Stripe retries instead of silently
+    // dropping the event. The handler logs an alertable [STRIPE-ORPHAN]
+    // line for manual investigation.
     mocks.stripeConstructEvent.mockReturnValue({
       id: "evt_test_no_meta",
       type: "checkout.session.completed",
@@ -387,18 +399,23 @@ describe("POST /api/webhooks/stripe", () => {
     });
     mocks.orderFindUnique.mockResolvedValue(null);
 
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       const response = await webhookPOST(
         makeWebhookRequest('{"type":"checkout.session.completed"}')
       );
-      expect(response.status).toBe(200);
-      expect(warnSpy).toHaveBeenCalledOnce();
-      const warnMsg = String(warnSpy.mock.calls[0][0]);
-      expect(warnMsg).toContain("cs_test_no_meta");
-      expect(warnMsg.toLowerCase()).toContain("metadata");
+      expect(response.status).toBe(500);
+      // First call is the structured [STRIPE-ORPHAN] alert; the outer
+      // POST catch then logs a second "Stripe webhook handler error" line.
+      const orphanCall = errorSpy.mock.calls.find((args) =>
+        String(args[0]).includes("[STRIPE-ORPHAN]")
+      );
+      expect(orphanCall).toBeDefined();
+      const orphanMsg = String(orphanCall?.[0]);
+      expect(orphanMsg).toContain("cs_test_no_meta");
+      expect(orphanMsg.toLowerCase()).toContain("metadata");
     } finally {
-      warnSpy.mockRestore();
+      errorSpy.mockRestore();
     }
 
     // No tx, no code, no email — recovery declined.

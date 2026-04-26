@@ -113,10 +113,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const metadataCaseId = Number(session.metadata?.caseId);
     const metadataEmail = session.metadata?.email;
     if (!Number.isInteger(metadataCaseId) || !metadataEmail) {
-      console.warn(
-        `checkout.session.completed for unknown session ${session.id}; metadata insufficient for recovery (caseId=${session.metadata?.caseId ?? "missing"}, email=${metadataEmail ? "present" : "missing"})`
+      console.error(
+        "[STRIPE-ORPHAN] checkout.session.completed — no Order found and metadata insufficient for recovery. " +
+        "Manual investigation required. " +
+        `session_id=${session.id} ` +
+        `customer_email=${session.customer_details?.email ?? session.customer_email ?? "unknown"} ` +
+        `amount_total=${session.amount_total ?? "unknown"} ` +
+        `metadata=${JSON.stringify(session.metadata ?? {})}`
       );
-      return;
+      throw new Error(`STRIPE_ORPHAN:${session.id}`);
     }
 
     const recoveredCase = await prisma.caseFile.findUnique({
@@ -124,10 +129,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       select: { id: true, slug: true, title: true },
     });
     if (!recoveredCase) {
-      console.warn(
-        `checkout.session.completed recovery for ${session.id}: caseFile #${metadataCaseId} from metadata not found`
+      console.error(
+        "[STRIPE-ORPHAN] checkout.session.completed — Order recovery failed: caseFile not found. " +
+        "Manual investigation required. " +
+        `session_id=${session.id} ` +
+        `metadata_caseId=${metadataCaseId} ` +
+        `buyer_email=${metadataEmail}`
       );
-      return;
+      throw new Error(`STRIPE_ORPHAN_NO_CASE:${session.id}`);
     }
 
     console.warn(
@@ -227,10 +236,23 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         </div>
       `,
     });
+    // Record successful send
+    await prisma.order.update({
+      where: { id: updatedOrder.id },
+      data: { emailSentAt: new Date() },
+    });
   } catch (error) {
-    console.error("Resend send failure:", error);
-    // Don't throw — the Order is already COMPLETE and the code minted.
-    // Player can recover via the success page or by contacting support.
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Resend send failure for order", updatedOrder.id, ":", errorMessage);
+    // Record failure — don't throw; the Order is COMPLETE and the code is minted.
+    // Support can query: prisma.order.findMany({ where: { emailSentAt: null, emailLastError: { not: null } } })
+    await prisma.order.update({
+      where: { id: updatedOrder.id },
+      data: { emailLastError: errorMessage.slice(0, 500) },
+    }).catch(() => {
+      // Best-effort: if this update also fails, just log it.
+      console.error("Could not record emailLastError for order", updatedOrder.id);
+    });
   }
 }
 

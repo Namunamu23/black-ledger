@@ -65,6 +65,13 @@ export async function POST(
       );
     }
 
+    if (ownedCase.status === "SOLVED") {
+      return NextResponse.json(
+        { message: "This case is already solved." },
+        { status: 200 }
+      );
+    }
+
     const evaluation = evaluateTheorySubmission({
       suspectName: parsed.data.suspectName,
       motive: parsed.data.motive,
@@ -86,8 +93,7 @@ export async function POST(
     const newStatus =
       typeof transitionResult === "string" ? transitionResult : currentStatus;
 
-    const becameSolvedNow =
-      newStatus === "SOLVED" && currentStatus !== "SOLVED";
+    const becameSolvedNow = newStatus === "SOLVED";
     const completedAt = becameSolvedNow
       ? ownedCase.completedAt ?? new Date()
       : ownedCase.completedAt;

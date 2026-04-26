@@ -100,7 +100,7 @@ describe("POST /api/cases/[slug]/theory — UserCase state transitions", () => {
     });
   });
 
-  it("does NOT downgrade status when current status is SOLVED, even on an obviously wrong submission", async () => {
+  it("returns 200 without writing a submission when the case is already SOLVED (A1)", async () => {
     const originalCompletedAt = new Date("2026-04-01T12:00:00Z");
 
     mocks.userCaseFindFirst.mockResolvedValue({
@@ -121,15 +121,10 @@ describe("POST /api/cases/[slug]/theory — UserCase state transitions", () => {
       { params: params() }
     );
 
-    expect(response.status).toBe(201);
-
-    expect(mocks.theorySubmissionCreate).toHaveBeenCalledOnce();
-    expect(mocks.userCaseUpdate).toHaveBeenCalledOnce();
-
-    const updateArgs = mocks.userCaseUpdate.mock.calls[0][0];
-    expect(updateArgs.where).toEqual({ id: 42 });
-    expect(updateArgs.data.status).toBe("SOLVED");
-    expect(updateArgs.data.completedAt).toEqual(originalCompletedAt);
+    expect(response.status).toBe(200);
+    expect(mocks.theorySubmissionCreate).not.toHaveBeenCalled();
+    expect(mocks.transactionFn).not.toHaveBeenCalled();
+    expect(mocks.userCaseUpdate).not.toHaveBeenCalled();
   });
 
   it("upgrades FINAL_REVIEW to SOLVED on a correct submission and stamps completedAt", async () => {

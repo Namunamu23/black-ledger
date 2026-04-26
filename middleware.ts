@@ -41,7 +41,12 @@ export default auth((req) => {
   // /bureau/admin/* — must be checked before the generic /bureau/* branch
   if (pathname.startsWith("/bureau/admin")) {
     if (!session?.user) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      const callbackUrl = encodeURIComponent(
+        req.nextUrl.pathname + req.nextUrl.search
+      );
+      return NextResponse.redirect(
+        new URL(`/login?callbackUrl=${callbackUrl}`, req.url)
+      );
     }
     if (role !== "ADMIN") {
       return NextResponse.redirect(new URL("/bureau", req.url));
@@ -59,7 +64,12 @@ export default auth((req) => {
   // /bureau/* — any authenticated user
   if (pathname.startsWith("/bureau")) {
     if (!session?.user) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      const callbackUrl = encodeURIComponent(
+        req.nextUrl.pathname + req.nextUrl.search
+      );
+      return NextResponse.redirect(
+        new URL(`/login?callbackUrl=${callbackUrl}`, req.url)
+      );
     }
     return NextResponse.next();
   }
