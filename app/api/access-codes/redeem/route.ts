@@ -79,24 +79,32 @@ export async function POST(request: Request) {
     );
   }
 
-  if (accessCode.requiresStage !== null) {
-    const userCase = await prisma.userCase.findFirst({
-      where: { userId, caseFileId: accessCode.caseFileId },
-    });
+  // Ownership check is unconditional — a player who hasn't activated
+  // this case must not be able to redeem its AccessCodes, even when the
+  // code carries no `requiresStage` gate. Without this, a non-owner with
+  // a leaked QR could read the unlocked record/person/hint content via
+  // `resolveContent` below and pollute their AccessCodeRedemption history
+  // with a case they don't own.
+  const userCase = await prisma.userCase.findFirst({
+    where: { userId, caseFileId: accessCode.caseFileId },
+    select: { id: true, currentStage: true },
+  });
 
-    if (!userCase) {
-      return NextResponse.json(
-        { message: "You have not activated this case." },
-        { status: 403 }
-      );
-    }
+  if (!userCase) {
+    return NextResponse.json(
+      { message: "You have not activated this case." },
+      { status: 403 }
+    );
+  }
 
-    if (userCase.currentStage < accessCode.requiresStage) {
-      return NextResponse.json(
-        { message: "You have not reached the required stage yet." },
-        { status: 403 }
-      );
-    }
+  if (
+    accessCode.requiresStage !== null &&
+    userCase.currentStage < accessCode.requiresStage
+  ) {
+    return NextResponse.json(
+      { message: "You have not reached the required stage yet." },
+      { status: 403 }
+    );
   }
 
   if (accessCode.oneTimePerUser) {
