@@ -90,11 +90,17 @@ beforeEach(() => {
   });
   resetRateLimit();
 
-  // Default: $transaction runs the callback against the same fakes
+  // Default: $transaction runs the callback against the same fakes.
+  // `order.create` is now exposed inside the tx callback for the
+  // P1-5 recovery branch (handleCheckoutCompleted creates the Order
+  // inline if findUnique returned null).
   mocks.transactionFn.mockImplementation(async (callback: any) => {
     return await callback({
       activationCode: { create: mocks.activationCodeCreate },
-      order: { update: mocks.orderUpdate },
+      order: {
+        create: mocks.orderCreate,
+        update: mocks.orderUpdate,
+      },
     });
   });
 });
@@ -277,6 +283,128 @@ describe("POST /api/webhooks/stripe", () => {
     expect(mocks.transactionFn).not.toHaveBeenCalled();
     expect(mocks.activationCodeCreate).not.toHaveBeenCalled();
     expect(mocks.orderUpdate).not.toHaveBeenCalled();
+    expect(mocks.resendSend).not.toHaveBeenCalled();
+  });
+
+  it("recovers an orphan session by creating the Order inside the same transaction (P1-5 recovery happy path)", async () => {
+    // Pre-condition: /api/checkout's prisma.order.create failed after
+    // Stripe accepted the session, so the local Order row never landed.
+    // The webhook delivery hits this scenario and must rebuild the Order
+    // from session metadata, then mint the ActivationCode atomically.
+    mocks.stripeConstructEvent.mockReturnValue({
+      id: "evt_test_recovery",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_test_orphan",
+          payment_intent: "pi_test_recovery",
+          metadata: { caseId: "7", email: "buyer@example.com" },
+        },
+      },
+    });
+    // Order.findUnique returns null — this is the orphan scenario.
+    mocks.orderFindUnique.mockResolvedValue(null);
+    // Recovery path resolves the case via metadata.caseId.
+    mocks.caseFileFindUnique.mockResolvedValue({
+      id: 7,
+      slug: "alder-street-review",
+      title: "Alder Street Review",
+    });
+    mocks.activationCodeFindUnique.mockResolvedValue(null);
+    mocks.activationCodeCreate.mockResolvedValue({
+      id: 99,
+      code: "ALDERSTREETREVIEW-XYZ12345",
+    });
+    // Recovery Order.create returns the synthesized row from inside the tx.
+    mocks.orderCreate.mockResolvedValue({
+      id: 555,
+      stripeSessionId: "cs_test_orphan",
+      caseFileId: 7,
+      email: "buyer@example.com",
+      status: "PENDING",
+    });
+    mocks.orderUpdate.mockResolvedValue({
+      id: 555,
+      activationCode: { code: "ALDERSTREETREVIEW-XYZ12345" },
+      caseFile: { title: "Alder Street Review" },
+    });
+    mocks.resendSend.mockResolvedValue({ id: "email_recovery" });
+
+    const response = await webhookPOST(
+      makeWebhookRequest('{"type":"checkout.session.completed"}')
+    );
+
+    expect(response.status).toBe(200);
+
+    // Critical: the recovery Order.create ran INSIDE the $transaction,
+    // not as a separate pre-tx write. transactionFn fires exactly once
+    // and the Order.create + ActivationCode.create + Order.update all
+    // happened during it.
+    expect(mocks.transactionFn).toHaveBeenCalledOnce();
+    expect(mocks.orderCreate).toHaveBeenCalledOnce();
+    const createArgs = mocks.orderCreate.mock.calls[0][0];
+    expect(createArgs.data).toMatchObject({
+      stripeSessionId: "cs_test_orphan",
+      email: "buyer@example.com",
+      caseFileId: 7,
+      status: "PENDING",
+    });
+
+    expect(mocks.activationCodeCreate).toHaveBeenCalledOnce();
+    expect(mocks.activationCodeCreate.mock.calls[0][0].data).toMatchObject({
+      caseFileId: 7,
+      source: "PURCHASE",
+    });
+
+    expect(mocks.orderUpdate).toHaveBeenCalledOnce();
+    expect(mocks.orderUpdate.mock.calls[0][0]).toMatchObject({
+      where: { id: 555 },
+      data: {
+        status: "COMPLETE",
+        stripePaymentIntent: "pi_test_recovery",
+        activationCodeId: 99,
+      },
+    });
+
+    expect(mocks.resendSend).toHaveBeenCalledOnce();
+    expect(mocks.resendSend.mock.calls[0][0].to).toBe("buyer@example.com");
+  });
+
+  it("declines recovery and logs a warning when session metadata is insufficient (no caseId)", async () => {
+    // Pre-condition: orphan session AND metadata is empty / corrupted.
+    // No safe way to recover; warn and bail rather than synthesize an
+    // Order with placeholder fields.
+    mocks.stripeConstructEvent.mockReturnValue({
+      id: "evt_test_no_meta",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_test_no_meta",
+          payment_intent: "pi_test_no_meta",
+          // metadata intentionally omitted
+        },
+      },
+    });
+    mocks.orderFindUnique.mockResolvedValue(null);
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const response = await webhookPOST(
+        makeWebhookRequest('{"type":"checkout.session.completed"}')
+      );
+      expect(response.status).toBe(200);
+      expect(warnSpy).toHaveBeenCalledOnce();
+      const warnMsg = String(warnSpy.mock.calls[0][0]);
+      expect(warnMsg).toContain("cs_test_no_meta");
+      expect(warnMsg.toLowerCase()).toContain("metadata");
+    } finally {
+      warnSpy.mockRestore();
+    }
+
+    // No tx, no code, no email — recovery declined.
+    expect(mocks.transactionFn).not.toHaveBeenCalled();
+    expect(mocks.orderCreate).not.toHaveBeenCalled();
+    expect(mocks.activationCodeCreate).not.toHaveBeenCalled();
     expect(mocks.resendSend).not.toHaveBeenCalled();
   });
 });

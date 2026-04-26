@@ -84,20 +84,58 @@ export async function POST(request: Request) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const order = await prisma.order.findUnique({
+  const existingOrder = await prisma.order.findUnique({
     where: { stripeSessionId: session.id },
     include: { caseFile: { select: { id: true, slug: true, title: true } } },
   });
 
-  if (!order) {
-    console.warn(
-      `checkout.session.completed for unknown session ${session.id}`
-    );
+  // Idempotency: webhook re-delivery after a successful run is a no-op.
+  // The first run set status to COMPLETE; subsequent deliveries should
+  // not mint a second activation code or send a second email.
+  if (existingOrder?.status === OrderStatus.COMPLETE) {
     return;
   }
 
-  if (order.status === OrderStatus.COMPLETE) {
-    return;
+  // Resolve the case file + buyer email, either from the existing Order
+  // or from session metadata (recovery path for the rare case where
+  // /api/checkout's Stripe session create succeeded but the immediately
+  // following prisma.order.create failed — e.g. transient DB outage).
+  // Without this branch, the customer pays Stripe and never gets a code;
+  // recovery synthesizes the Order from the metadata that /api/checkout
+  // attached at session-create time.
+  let caseFile: { id: number; slug: string; title: string };
+  let buyerEmail: string;
+
+  if (existingOrder) {
+    caseFile = existingOrder.caseFile;
+    buyerEmail = existingOrder.email;
+  } else {
+    const metadataCaseId = Number(session.metadata?.caseId);
+    const metadataEmail = session.metadata?.email;
+    if (!Number.isInteger(metadataCaseId) || !metadataEmail) {
+      console.warn(
+        `checkout.session.completed for unknown session ${session.id}; metadata insufficient for recovery (caseId=${session.metadata?.caseId ?? "missing"}, email=${metadataEmail ? "present" : "missing"})`
+      );
+      return;
+    }
+
+    const recoveredCase = await prisma.caseFile.findUnique({
+      where: { id: metadataCaseId },
+      select: { id: true, slug: true, title: true },
+    });
+    if (!recoveredCase) {
+      console.warn(
+        `checkout.session.completed recovery for ${session.id}: caseFile #${metadataCaseId} from metadata not found`
+      );
+      return;
+    }
+
+    console.warn(
+      `checkout.session.completed for unknown session ${session.id}; recovering Order from metadata (caseId=${metadataCaseId})`
+    );
+
+    caseFile = recoveredCase;
+    buyerEmail = metadataEmail;
   }
 
   const paymentIntentId =
@@ -105,27 +143,43 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       ? session.payment_intent
       : session.payment_intent?.id ?? null;
 
-  let code = buildPurchaseCode(order.caseFile.slug);
+  let code = buildPurchaseCode(caseFile.slug);
   for (let attempt = 0; attempt < 3; attempt++) {
     const collision = await prisma.activationCode.findUnique({
       where: { code },
       select: { id: true },
     });
     if (!collision) break;
-    code = buildPurchaseCode(order.caseFile.slug);
+    code = buildPurchaseCode(caseFile.slug);
   }
 
+  // The recovery Order.create lives INSIDE this $transaction so that the
+  // recovery, the ActivationCode mint, and the Order.update either all
+  // commit or all roll back. Splitting the recovery create into a
+  // pre-transaction write would re-introduce the orphan-pay window the
+  // recovery branch is meant to close.
   const updatedOrder = await prisma.$transaction(async (tx) => {
+    const orderRow = existingOrder
+      ? existingOrder
+      : await tx.order.create({
+          data: {
+            stripeSessionId: session.id,
+            email: buyerEmail,
+            caseFileId: caseFile.id,
+            status: OrderStatus.PENDING,
+          },
+        });
+
     const activationCode = await tx.activationCode.create({
       data: {
         code,
-        caseFileId: order.caseFileId,
+        caseFileId: caseFile.id,
         source: ActivationCodeSource.PURCHASE,
       },
     });
 
     return tx.order.update({
-      where: { id: order.id },
+      where: { id: orderRow.id },
       data: {
         status: OrderStatus.COMPLETE,
         stripePaymentIntent: paymentIntentId,
@@ -148,7 +202,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   try {
     await getResend().emails.send({
       from: getResendFrom(),
-      to: order.email,
+      to: buyerEmail,
       subject: "Your Black Ledger activation code",
       text: [
         `Your kit for "${caseTitle}" is ready to play.`,
