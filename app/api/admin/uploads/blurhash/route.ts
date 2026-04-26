@@ -49,6 +49,28 @@ export async function POST(request: Request) {
     );
   }
 
+  // SSRF guard. The public URL must resolve to the same host as the
+  // configured R2 public bucket — otherwise an admin (or compromised
+  // admin session) could submit `http://169.254.169.254/latest/meta-data/`
+  // or any internal address the prod box can reach, and the server would
+  // fetch it. Mismatches return the same {blurhash: null} shape used for
+  // any other failure mode so attackers can't distinguish "blocked by
+  // policy" from "fetch failed" via response timing or shape.
+  let allowedHost: string | null = null;
+  let submittedHost: string | null = null;
+  try {
+    if (process.env.R2_PUBLIC_URL) {
+      allowedHost = new URL(process.env.R2_PUBLIC_URL).host;
+    }
+    submittedHost = new URL(parsed.data.publicUrl).host;
+  } catch {
+    // malformed URL — null hosts will fail the equality check below.
+  }
+
+  if (!allowedHost || submittedHost !== allowedHost) {
+    return NextResponse.json({ blurhash: null }, { status: 200 });
+  }
+
   const blurhash = await generateBlurhash(parsed.data.publicUrl);
   return NextResponse.json({ blurhash }, { status: 200 });
 }

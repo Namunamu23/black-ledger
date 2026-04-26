@@ -141,4 +141,28 @@ describe("POST /api/admin/uploads/blurhash", () => {
       vi.unstubAllGlobals();
     }
   });
+
+  it("rejects an off-allowlist URL (SSRF guard) BEFORE issuing any fetch (P1-6 regression)", async () => {
+    // If the SSRF guard is missing or moved, fetch would be invoked. The
+    // mock asserts it is NOT — the host check must short-circuit first.
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    try {
+      const response = await blurhashPOST(
+        makeRequest("/api/admin/uploads/blurhash", {
+          publicUrl: "http://169.254.169.254/latest/meta-data/",
+        })
+      );
+
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as { blurhash: string | null };
+      expect(body.blurhash).toBeNull();
+
+      // Critical: the SSRF target host must never be reached.
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
