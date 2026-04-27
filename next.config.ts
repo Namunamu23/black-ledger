@@ -1,11 +1,10 @@
 import type { NextConfig } from "next";
 
-// Hardened security headers applied to every route. The CSP is delivered
-// in report-only mode for now: Next.js emits inline <script> tags during
-// hydration, which a strict 'self' policy would block. Switching to an
-// enforced CSP requires a per-request nonce pipeline (deferred to a
-// later session). Report-only surfaces violations in the browser console
-// and POSTed reports without breaking the app.
+// Hardened security headers applied to every route. The CSP is enforced
+// (not report-only). script-src carries 'unsafe-inline' + 'unsafe-eval'
+// to accommodate Next.js hydration and Framer Motion; tightening to a
+// nonce-based policy is a future hardening opportunity. R2_PUBLIC_URL is
+// injected dynamically into img-src so hero/portrait images are allowed.
 const SECURITY_HEADERS: Array<{ key: string; value: string }> = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -24,7 +23,7 @@ const r2Origin = process.env.R2_PUBLIC_URL
   ? new URL(process.env.R2_PUBLIC_URL).origin
   : "";
 
-const CSP_REPORT_ONLY = [
+const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -44,8 +43,8 @@ const nextConfig: NextConfig = {
         headers: [
           ...SECURITY_HEADERS,
           {
-            key: "Content-Security-Policy-Report-Only",
-            value: CSP_REPORT_ONLY,
+            key: "Content-Security-Policy",
+            value: CSP,
           },
         ],
       },

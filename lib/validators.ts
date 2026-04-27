@@ -188,13 +188,23 @@ export const overviewPatchSchema = z.object({
 
 // ---- Image upload (R2 presigned URL + best-effort blurhash) ----
 
+// Explicit MIME allowlist — rejects image/svg+xml and any other type that
+// could pose risks when served from the CDN. Full magic-byte validation is
+// not done here because the sign endpoint never receives file bytes (the
+// browser PUTs directly to R2 via presigned URL). Sharp will naturally
+// reject non-image content if the blurhash endpoint is called after upload.
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const;
+
 export const uploadSignSchema = z.object({
   filename: z.string().trim().min(1).max(200),
-  contentType: z
-    .string()
-    .trim()
-    .startsWith("image/", "Only image uploads are allowed.")
-    .max(120),
+  contentType: z.enum(ALLOWED_IMAGE_TYPES, {
+    message: "Only JPEG, PNG, WebP, and GIF uploads are allowed.",
+  }),
   context: z.enum(["hero", "portrait", "record"]),
 });
 

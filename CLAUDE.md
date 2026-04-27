@@ -1,7 +1,7 @@
-## Black Ledger — Project State (updated 2026-04-25)
+## Black Ledger — Project State (updated 2026-04-26)
 
 ### Current status
-Week 8 COMPLETE — 48 commits on origin/main, all pushed. 98 Vitest tests passing. Build clean. PostgreSQL on Neon (production DB). Stripe Checkout live.
+Post-audit clean-up COMPLETE — 100 commits on origin/main, all pushed. 140 Vitest tests passing. Build clean. PostgreSQL on Neon. Stripe Checkout live. Full professional audit + 4 fix waves completed 2026-04-26. E2E purchase funnel verified 12/12. Launch-ready.
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -50,42 +50,49 @@ Notable changes:
 - lib/user-case-state.ts — monotonic state machine, SOLVED is terminal
 - lib/rate-limit.ts — token-bucket per (ip, route); in-memory dev, Upstash Redis prod
 - lib/auth-helpers.ts — requireSession(), requireAdmin(), getOptionalSession(), requireSessionJson()
+- lib/assert-safe-env.ts — assertSafeEnv() guard used by scripts; blocks run if DATABASE_URL matches Neon patterns
 - lib/prisma.ts — PrismaPg adapter (@prisma/adapter-pg); loads .env.local first, .env as fallback; DATABASE_URL = pooled Neon URL
 - prisma.config.ts — datasource.url = DIRECT_URL ?? DATABASE_URL (migration commands use direct URL, bypass pooler)
-- lib/enums.ts — browser-safe const mirrors of all Prisma enums (UserRole, TheoryResultLabel, UserCaseStatus, CaseWorkflowStatus)
+- lib/enums.ts — browser-safe const mirrors of ALL 9 Prisma enums (UserRole, TheoryResultLabel, UserCaseStatus, CaseWorkflowStatus, ActivationCodeSource, OrderStatus, SupportMessageStatus, AccessCodeKind, HiddenEvidenceKind)
 - lib/labels.ts — human-readable label constants
-- lib/validators.ts — Zod schemas; child entities carry id + globalPersonId; per-section PATCH schemas + upload + support schemas
+- lib/validators.ts — Zod schemas; uploadSignSchema uses strict MIME allowlist (jpeg/png/webp/gif only); per-section PATCH schemas + upload + support schemas
+- lib/post-login-path.ts — same-origin callbackUrl sanitizer
 - types/next-auth.d.ts — Session/JWT augmented with id + role
-- prisma/schema.prisma — Prisma enums, CaseAudit model, per-case debrief copy fields; new this week: CaseSlugHistory model, SupportMessageStatus enum; new columns ActivationCode.kitSerial/revokedAt, CaseFile.heroImageUrl, CasePerson.portraitUrl
-- next.config.ts — security headers + CSP report-only
-- middleware.ts — CSRF origin check on all POST/PUT/PATCH/DELETE /api/* except /api/auth/*; auth gating for /bureau/* and /api/admin/*. `/bureau/unlock` has an explicit pass-through before the `/bureau/*` gate so unauthenticated QR-code arrivals reach the unlock page.
+- prisma/schema.prisma — all enums + models; migrations: 20260425045353_init, 20260425142952_add_order, 20260426163724_add_order_email_tracking (emailSentAt + emailLastError on Order)
+- next.config.ts — security headers + enforced CSP (script-src has 'unsafe-inline'/'unsafe-eval' for Next.js/Framer; R2 origin injected into img-src from R2_PUBLIC_URL)
+- middleware.ts — CSRF origin check via new URL(origin).origin comparison (prevents subdomain bypass); auth gating for /bureau/* and /api/admin/*; /bureau/unlock carved out before bureau gate
+- app/(unlock)/bureau/unlock/ — public QR landing page (route group, outside bureau layout hierarchy to bypass requireSession)
+- app/bureau/layout.tsx — requireSession() for all real bureau pages
 - app/api/admin/cases/[caseId]/route.ts — diff/upsert PUT with CaseAudit trail (legacy aggregate; tabs are now the primary editor)
-- app/api/admin/cases/[caseId]/workflow/route.ts — unified PATCH for workflow transitions; replaces deleted /status + /publish routes
-- app/bureau/admin/cases/[caseId]/edit/_components/ — 6 tab components (Overview/People/Records/Hints/Checkpoints/Solution), each with independent save state
+- app/api/admin/cases/[caseId]/workflow/route.ts — unified PATCH for workflow transitions
+- app/bureau/admin/cases/[caseId]/edit/_components/ — 6 tab components (Overview/People/Records/Hints/Checkpoints/Solution)
 - app/api/admin/cases/[caseId]/overview|people|records|hints|checkpoints|solution/route.ts — per-section PATCH endpoints with diff/upsert + CaseAudit
 - app/bureau/admin/cases/[caseId]/codes/ — activation code management (batch generate, revoke, CSV export)
 - app/api/admin/cases/[caseId]/codes/route.ts — GET (list + ?format=csv) + POST (batch generate, rate-limited)
 - app/api/admin/cases/[caseId]/codes/[codeId]/route.ts — PATCH (revoke)
-- app/api/admin/uploads/sign/route.ts — R2 presigned PUT URL (15-min expiry, rate-limited)
-- app/api/admin/uploads/blurhash/route.ts — best-effort blurhash generation via sharp
+- app/api/admin/uploads/sign/route.ts — R2 presigned PUT URL (15-min expiry, rate-limited); contentType validated against strict MIME allowlist
+- app/api/admin/uploads/blurhash/route.ts — best-effort blurhash via sharp; SSRF-guarded against R2_PUBLIC_URL host allowlist
 - components/admin/ImageUploader.tsx — client component: sign → PUT → onChange + blurhash
-- app/bureau/admin/support/ — support inbox (paginated list + detail + status actions + reply stub)
-- app/api/admin/support/[id]/reply|status/route.ts — reply stub (no transport yet) + status PATCH
-- .env.example — all env vars documented (DATABASE_URL, AUTH_SECRET, SEED_ADMIN_*, UPSTASH_*, NEXT_PUBLIC_APP_URL, R2_*)
-- prisma/schema.prisma — Week 4 additions: AccessCode, AccessCodeRedemption, HiddenEvidence models; AccessCodeKind + HiddenEvidenceKind enums
-- app/api/access-codes/redeem/route.ts — POST, rate-limited 5/60s, validates AccessCode, creates AccessCodeRedemption (@@unique race guard), resolves unlocksTarget to content
-- app/bureau/unlock/page.tsx + _components/UnlockForm.tsx — player unlock page; publicly accessible; unauthenticated visitors see sign-in card with callbackUrl preserving ?code= through login; authenticated users see UnlockForm which auto-submits on ?code= query param
-- app/bureau/cases/[slug]/_components/RevealedEvidence.tsx — client component; renders AccessCode-unlocked evidence in case workspace with Framer Motion animations
-- app/api/admin/cases/[caseId]/access-codes/route.ts — GET (list with redemption counts) + POST (create, with cross-case target validation)
-- app/bureau/admin/cases/[caseId]/access-codes/ — admin AccessCode management: create form, QR display, copy URL, list with redemption counts
+- app/bureau/admin/support/ — support inbox (paginated list + detail + status actions + reply)
+- app/api/admin/support/[id]/reply/route.ts — Resend email reply; marks message HANDLED on success; 502 on transport error
+- app/api/admin/support/[id]/status/route.ts — status PATCH
+- .env.example — all env vars documented
+- app/api/access-codes/redeem/route.ts — POST, rate-limited 5/60s; checks retiredAt (retiredAt = soft-delete); resolves unlocksTarget including hidden_evidence branch
+- app/(unlock)/bureau/unlock/_components/UnlockForm.tsx — auto-submits on ?code= param; callbackUrl preserved through auth bounce
+- app/bureau/cases/[slug]/_components/RevealedEvidence.tsx — renders AccessCode-unlocked evidence (record/person/hint/hidden_evidence) with Framer Motion
+- app/api/admin/cases/[caseId]/access-codes/route.ts — GET (list with redemption counts) + POST (create)
 - app/u/[code]/route.ts — short URL redirect to /bureau/unlock?code=<code>
-- lib/stripe.ts — lazy singleton Stripe client (getStripe()); throws if STRIPE_SECRET_KEY unset
-- lib/resend.ts — lazy singleton Resend client (getResend()); throws if RESEND_API_KEY unset
-- app/api/checkout/route.ts — POST guest checkout: validates caseId+email, creates Stripe session + Order(PENDING), returns { url }
-- app/api/checkout/status/route.ts — GET by session_id; returns { status, email } for success page
-- app/api/webhooks/stripe/route.ts — signature-verified webhook: completes Order, creates ActivationCode(PURCHASE), sends email via Resend
-- app/checkout/success/page.tsx — success page: reads ?session_id, shows code delivery status
-- components/bureau/BuyButton.tsx — client component: email form → POST /api/checkout → window.location.assign
+- lib/stripe.ts — lazy singleton Stripe client
+- lib/resend.ts — lazy singleton Resend client
+- app/api/checkout/route.ts — POST guest checkout; duplicate-purchase guard returns 409 if COMPLETE order already exists for (caseId, email)
+- app/api/checkout/status/route.ts — GET by session_id; returns { status } only (email stripped)
+- app/api/webhooks/stripe/route.ts — signature-verified; checkout.session.completed → ActivationCode + Order(COMPLETE) + Resend email; records emailSentAt/emailLastError on Order; orphan sessions throw STRIPE_ORPHAN error
+- app/api/cases/activate/route.ts — checks isActive AND revokedAt; revoked code → 410
+- app/api/cases/[slug]/checkpoint/route.ts — atomic updateMany with currentStage precondition; stage conflict → 409
+- app/api/cases/[slug]/theory/route.ts — early return 200 if UserCase is already SOLVED (no new TheorySubmission written)
+- app/checkout/success/page.tsx — success page reads ?session_id
+- components/bureau/BuyButton.tsx — client component: email form → POST /api/checkout → Stripe redirect
+- scripts/test-stripe-e2e.ts — end-to-end purchase funnel test (12 assertions; requires dev server + stripe listen)
 
 ### Week 5 — Completed commits (closed 2026-04-25)
 5 commits — full security + UX audit pass. All pushed to origin/main.
@@ -118,32 +125,36 @@ Notable changes:
 - **feat(ui)** (cd9c768) — `BuyButton` client component (email capture → POST `/api/checkout` → Stripe redirect). `GET /api/checkout/status` endpoint. `/checkout/success` page. `BuyButton` wired into public case page — shown only when `PUBLISHED` and user doesn't already own the case.
 - **chore(test)** (218c87c) — 5 new tests in `tests/api/stripe.test.ts`: checkout 404 for unpublished, checkout returns URL, webhook rejects bad signature, `checkout.session.completed` creates code + completes order, idempotent second call. 93 → 98 tests. tsc clean.
 
-### Week 9 priorities
-Next: production smoke test with real Stripe test keys + Resend, then domain/DNS setup for `blackledger.app`.
+### Post-Week-8 audit + fix waves (2026-04-26)
+Full professional audit + 4 fix waves applied and committed. 14 fixes across security, reliability, correctness, and feature completeness.
+
+- **P0/P1 fixes** (cfaf546, 05d6495, b562f06, 2622694, 041ce32, f74861c, 9d00801, 5a6e1c1) — squash SQLite migrations, SSRF guard on blurhash, analyst notes ADMIN-only, redeem ownership check, callbackUrl sanitization, Stripe orphan session recovery, move bureau/unlock to route group
+- **Wave 1** (0dcfacb) — revokedAt guard on activate route (410), _resetForTesting env gate, strip email from checkout/status, assertSafeEnv scripts
+- **Wave 2** (ed031fb) — atomic checkpoint advance (updateMany precondition + 409), CSRF via new URL parsing (subdomain bypass fix), CSP R2 img-src, Promise.allSettled on bureau parallel lookups
+- **Wave 3** (c942cfc / a6be910) — Stripe orphan alerting (console.error + throw), Order.emailSentAt/emailLastError tracking + migration, callbackUrl appended to auth redirects, theory SOLVED guard
+- **Wave 4** (5a47771) — duplicate-purchase 409 guard on checkout, support reply wired to Resend (HANDLED on success, 502 on failure), hidden_evidence branch in resolveContent + resolveEvidence + RevealedEvidence, all 9 enums in lib/enums.ts, deprecated nextUserCaseStatus deleted
+- **Final cleanup** — CSP flipped from report-only to enforced; uploadSignSchema MIME allowlist tightened to jpeg/png/webp/gif; CLAUDE.md updated
+
+**E2E verification (2026-04-26)**: `scripts/test-stripe-e2e.ts` — 12/12 assertions passing against live Stripe test keys + Neon DB.
 
 ### Known follow-ups
 
-**P1 — all closed.**
+**All P0, P1, P2 items from the 2026-04-26 audit are closed.**
 
-**P2**
-- `AccessCodeList` shows "record #5" style target label, not the actual title — enrich GET endpoint or pass label map from page.
-- `HiddenEvidence` model created but not yet wired as an `unlocksTarget` type — `resolveContent()` and `resolveEvidence()` only handle record/person/hint; add "hidden_evidence" branch when rows are authored.
-- No PATCH endpoint for retiring `AccessCodes` (setting `retiredAt`) — needed for admin code management.
-- Validator length inconsistency between old `adminCaseSchema` and per-section schemas (e.g. `debriefClosing: max(2000)` vs `max(3000)`).
+**Remaining open items (low priority):**
+- `AccessCodeList` shows "record #5" style target label — enrich GET endpoint or pass label map from page.
+- No PATCH endpoint for retiring `AccessCodes` (setting `retiredAt`) — needed for admin code management UX.
+- Validator length inconsistency between old `adminCaseSchema` and per-section schemas (`debriefClosing: max(2000)` vs `max(3000)`).
 - `CaseAudit` not written for: workflow PATCH, batch-generate, revoke, AccessCode create.
-- `TheorySubmission` row written even when `UserCaseStatus` is already SOLVED — pollutes history.
-- Image upload only checks `contentType`, not file magic bytes — could allow spoofed uploads.
-
-**P3**
+- Image upload: strict MIME allowlist added; full magic-byte validation not feasible at presigned-URL layer (server never sees bytes). Sharp will reject non-images at the blurhash step.
 - Archive button on `PublishCaseButton` has no confirmation dialog.
-- CSP `img-src` does not include R2 public origin — will block hero images when CSP flips from report-only to enforced.
-- No `GlobalPerson` admin UI — can only create/edit via seed scripts.
-- `/bureau/unlock` unauthenticated message says "We saved your code" — slightly misleading (it's in the URL, not stored). Copy-only fix.
-- `SupportMessageStatus` not in `lib/enums.ts` — waiting on email transport.
-- Email transport not wired — support reply is stub only.
+- No `GlobalPerson` admin UI — create/edit via seed scripts only.
+- `/bureau/unlock` unauthenticated message says "We saved your code" — slightly misleading copy.
 
 **Upcoming major milestones**
-- **Week 9**: Production smoke test with Stripe test keys + Resend. Domain/DNS (`blackledger.app`). Vercel deploy or Railway. First real kit sale.
+- Domain/DNS setup (`theblackledger.app` — Namecheap, verified in Resend, no A/CNAME yet).
+- Vercel or Railway deploy.
+- First real kit sale.
 
 ### Prompt library location
 See black-ledger-prompts.md (uploaded to Cowork session) for Prompts 07–25.
