@@ -1,13 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 
 export default function CaseActivationForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [code, setCode] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  // Pre-fill from ?activate=CODE deep-link so users who arrive from the
+  // purchase email (which includes the code in the URL) don't have to
+  // manually copy-paste the code.
+  const [code, setCode] = useState(
+    () => searchParams.get("activate")?.trim().toUpperCase() ?? ""
+  );
+
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [message, setMessage] = useState("");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

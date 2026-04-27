@@ -36,7 +36,7 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
                 investigation.
               </p>
               <Link
-                href="/bureau/unlock"
+                href="/bureau"
                 className="mt-6 inline-flex items-center justify-center rounded-2xl bg-amber-400 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300"
               >
                 Go to bureau

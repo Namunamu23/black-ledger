@@ -204,7 +204,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (!updatedOrder.activationCode) return;
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const bureauUrl = `${appUrl}/bureau`;
+  // Deep-link includes ?activate=CODE so the activation form is pre-filled
+  // when the user lands on the bureau page after clicking the email link.
+  const bureauUrl = `${appUrl}/bureau?activate=${encodeURIComponent(updatedOrder.activationCode.code)}`;
+  const registerUrl = `${appUrl}/register`;
   const code1 = updatedOrder.activationCode.code;
   const caseTitle = updatedOrder.caseFile.title;
 
@@ -218,20 +221,30 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         "",
         `Activation code: ${code1}`,
         "",
-        `Sign in to the bureau and enter your code in the activation form: ${bureauUrl}`,
+        "To activate your case:",
+        `1. Create a free account (or sign in if you already have one): ${registerUrl}`,
+        `2. Then use this link — it will pre-fill your code: ${bureauUrl}`,
         "",
         "If you have any trouble, reply to this email.",
       ].join("\n"),
       html: `
         <div style="font-family: ui-sans-serif, system-ui, sans-serif; color:#0f172a; line-height:1.6;">
           <p>Your kit for <strong>${escapeHtml(caseTitle)}</strong> is ready to play.</p>
-          <p style="font-size:18px;">Activation code:
-            <code style="background:#f1f5f9; padding:4px 8px; border-radius:6px; font-family:ui-monospace, monospace;">${escapeHtml(code1)}</code>
+          <p style="font-size:18px; margin-bottom:4px;">Activation code:</p>
+          <p style="margin-top:0;">
+            <code style="background:#f1f5f9; padding:6px 12px; border-radius:6px; font-family:ui-monospace, monospace; font-size:16px;">${escapeHtml(code1)}</code>
           </p>
-          <p>
-            Sign in to the bureau and enter your code in the activation form:<br/>
-            <a href="${bureauUrl}">${bureauUrl}</a>
-          </p>
+          <p><strong>To activate your case:</strong></p>
+          <ol style="padding-left:20px;">
+            <li>
+              <a href="${escapeHtml(registerUrl)}">Create a free account</a>
+              (or sign in if you already have one)
+            </li>
+            <li>
+              Click this link — it will take you straight to the bureau with your code pre-filled:<br/>
+              <a href="${escapeHtml(bureauUrl)}">${escapeHtml(bureauUrl)}</a>
+            </li>
+          </ol>
           <p style="color:#64748b; font-size:12px;">If you have any trouble, reply to this email.</p>
         </div>
       `,

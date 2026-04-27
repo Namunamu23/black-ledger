@@ -1,5 +1,26 @@
 import { z } from "zod";
 
+export const registerSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Please enter a valid email address."),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters.")
+    .max(128, "Password is too long."),
+  name: z.string().trim().max(80, "Name is too long.").optional().or(z.literal("")),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Please enter a valid email address."),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(1, "Reset token is required."),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters.")
+    .max(128, "Password is too long."),
+});
+
 export const waitlistSchema = z.object({
   email: z.string().trim().toLowerCase().email("Please enter a valid email address."),
 });

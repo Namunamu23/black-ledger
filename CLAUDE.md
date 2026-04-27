@@ -1,7 +1,7 @@
 ## Black Ledger — Project State (updated 2026-04-26)
 
 ### Current status
-Post-audit clean-up COMPLETE — 100 commits on origin/main, all pushed. 140 Vitest tests passing. Build clean. PostgreSQL on Neon. Stripe Checkout live. Full professional audit + 4 fix waves completed 2026-04-26. E2E purchase funnel verified 12/12. Launch-ready.
+Registration system COMPLETE — 101 commits on origin/main, all pushed. 157 Vitest tests passing. Build clean. PostgreSQL on Neon. Stripe Checkout live. Full registration + password reset + purchase deep-link flow implemented 2026-04-26.
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -90,9 +90,16 @@ Notable changes:
 - app/api/cases/activate/route.ts — checks isActive AND revokedAt; revoked code → 410
 - app/api/cases/[slug]/checkpoint/route.ts — atomic updateMany with currentStage precondition; stage conflict → 409
 - app/api/cases/[slug]/theory/route.ts — early return 200 if UserCase is already SOLVED (no new TheorySubmission written)
-- app/checkout/success/page.tsx — success page reads ?session_id
+- app/checkout/success/page.tsx — success page reads ?session_id; "Go to bureau" links to /bureau
 - components/bureau/BuyButton.tsx — client component: email form → POST /api/checkout → Stripe redirect
 - scripts/test-stripe-e2e.ts — end-to-end purchase funnel test (12 assertions; requires dev server + stripe listen)
+- app/api/register/route.ts — POST, rate-limited 3/60 s; duplicate check → 409; bcrypt 12; role hardcoded INVESTIGATOR
+- app/api/forgot-password/route.ts — POST, rate-limited 3/60 s; always-200 (no enumeration); 32-byte hex token; 1-hour expiry; Resend email
+- app/api/reset-password/route.ts — POST, rate-limited 5/60 s; token + expiry check; bcrypt 12; clears token fields
+- components/auth/RegisterForm.tsx — auto sign-in after registration; callbackUrl support; confirm password client-side
+- components/auth/ForgotPasswordForm.tsx — shows success state on send; back-to-sign-in link
+- components/auth/ResetPasswordForm.tsx — reads ?token= from URL; shows error if missing/expired
+- components/bureau/CaseActivationForm.tsx — reads ?activate=CODE param and pre-fills input (for purchase email deep-link)
 
 ### Week 5 — Completed commits (closed 2026-04-25)
 5 commits — full security + UX audit pass. All pushed to origin/main.
@@ -137,6 +144,24 @@ Full professional audit + 4 fix waves applied and committed. 14 fixes across sec
 
 **E2E verification (2026-04-26)**: `scripts/test-stripe-e2e.ts` — 12/12 assertions passing against live Stripe test keys + Neon DB.
 
+### Week 9 — Registration system (2026-04-26)
+1 commit — full account creation + password reset + purchase deep-link flow.
+
+- **feat(auth)** — `POST /api/register` (rate-limited 3/60 s, bcrypt 12, INVESTIGATOR role hardcoded, 409 on duplicate). `POST /api/forgot-password` (secure 32-byte hex token, 1-hour expiry, Resend email, always-200 to prevent email enumeration). `POST /api/reset-password` (token lookup, expiry check, bcrypt 12, token cleared on success).
+- **feat(schema)** — `passwordResetToken String? @unique` + `passwordResetExpiresAt DateTime?` added to User model. Migration `20260426200000_add_password_reset` created (run `npx prisma migrate dev` on first deploy after this commit).
+- **feat(ui)** — `/register` page + `RegisterForm` (auto sign-in after creation, callbackUrl preserved). `/forgot-password` page + `ForgotPasswordForm`. `/reset-password` page + `ResetPasswordForm` (reads `?token=` from URL). `LoginForm` updated with "Forgot password?" + "Create account" links.
+- **feat(ux)** — `CaseActivationForm` reads `?activate=CODE` URL param and pre-fills the input. `bureau/page.tsx` wraps it in `<Suspense>`. `checkout/success/page.tsx` "Go to bureau" button fixed from `/bureau/unlock` → `/bureau`. Stripe webhook email updated: includes registration link + `?activate=CODE` deep-link so clicking the email takes the buyer straight to the pre-filled bureau form.
+- **chore(test)** — 17 new Vitest tests in `tests/api/register.test.ts` covering all three new routes: happy paths, duplicate detection, bcrypt cost factor, email enumeration prevention, token expiry, field clearing. 140 → 157 tests.
+
+### Architecture additions (Week 9)
+- `app/api/register/route.ts` — POST, rate-limited 3/60 s; duplicate check; bcrypt 12; role hardcoded to INVESTIGATOR
+- `app/api/forgot-password/route.ts` — POST, rate-limited 3/60 s; always-200; randomBytes(32) token; Resend email
+- `app/api/reset-password/route.ts` — POST, rate-limited 5/60 s; token lookup + expiry; bcrypt 12; clears token fields
+- `app/register/page.tsx` + `components/auth/RegisterForm.tsx` — auto sign-in after registration; callbackUrl support
+- `app/forgot-password/page.tsx` + `components/auth/ForgotPasswordForm.tsx`
+- `app/reset-password/page.tsx` + `components/auth/ResetPasswordForm.tsx` — reads `?token=` param
+- `prisma/migrations/20260426200000_add_password_reset/migration.sql` — ALTERs User table
+
 ### Known follow-ups
 
 **All P0, P1, P2 items from the 2026-04-26 audit are closed.**
@@ -153,7 +178,6 @@ Full professional audit + 4 fix waves applied and committed. 14 fixes across sec
 
 **Upcoming major milestones**
 - Domain/DNS setup (`theblackledger.app` — Namecheap, verified in Resend, no A/CNAME yet).
-- Vercel or Railway deploy.
 - First real kit sale.
 
 ### Prompt library location

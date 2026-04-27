@@ -72,6 +72,8 @@ model User {
   passwordHash           String
   role                   UserRole            @default(INVESTIGATOR)
   createdAt              DateTime            @default(now())
+  passwordResetToken     String?             @unique
+  passwordResetExpiresAt DateTime?
   ownedCases             UserCase[]
   claimedActivationCodes ActivationCode[]    @relation("ClaimedCodes")
   theorySubmissions      TheorySubmission[]

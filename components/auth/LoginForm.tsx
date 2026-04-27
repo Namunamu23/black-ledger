@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 import { pickPostLoginPath } from "@/lib/post-login-path";
 
 export default function LoginForm() {
@@ -70,6 +71,18 @@ export default function LoginForm() {
       </button>
 
       {message ? <p className="text-sm text-red-400">{message}</p> : null}
+
+      <div className="flex items-center justify-between text-sm">
+        <Link
+          href="/forgot-password"
+          className="text-zinc-500 hover:text-zinc-300"
+        >
+          Forgot password?
+        </Link>
+        <Link href="/register" className="text-amber-400 hover:text-amber-300">
+          Create account
+        </Link>
+      </div>
     </form>
   );
 }

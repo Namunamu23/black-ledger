@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { getOptionalSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
@@ -172,7 +173,10 @@ export default async function BureauPage() {
               operative account.
             </p>
             <div className="mt-6">
-              <CaseActivationForm />
+              {/* Suspense required — CaseActivationForm reads useSearchParams */}
+              <Suspense fallback={null}>
+                <CaseActivationForm />
+              </Suspense>
             </div>
           </Card>
         </div>
