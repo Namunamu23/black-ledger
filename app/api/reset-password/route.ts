@@ -53,6 +53,7 @@ export async function POST(request: Request) {
         passwordHash,
         passwordResetToken: null,
         passwordResetExpiresAt: null,
+        tokenVersion: { increment: 1 },
       },
     });
 

@@ -13,12 +13,14 @@ declare module "@auth/core/types" {
       email: string;
       name?: string | null;
       role: UserRole;
+      tokenVersion?: number;
     };
   }
 
   interface User {
     id: string;
     role: UserRole;
+    tokenVersion?: number;
   }
 }
 
@@ -26,6 +28,7 @@ declare module "@auth/core/jwt" {
   interface JWT {
     id: string;
     role: UserRole;
+    tokenVersion?: number;
   }
 }
 
@@ -36,12 +39,14 @@ declare module "next-auth" {
       email: string;
       name?: string | null;
       role: UserRole;
+      tokenVersion?: number;
     };
   }
 
   interface User {
     id: string;
     role: UserRole;
+    tokenVersion?: number;
   }
 }
 
@@ -49,5 +54,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: UserRole;
+    tokenVersion?: number;
   }
 }
