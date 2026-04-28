@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { encode } from "blurhash";
 import { requireAdmin } from "@/lib/auth-helpers";
+import { rateLimit } from "@/lib/rate-limit";
 import { blurhashRequestSchema } from "@/lib/validators";
 
 const TARGET_WIDTH = 32;
@@ -37,6 +38,17 @@ async function generateBlurhash(publicUrl: string): Promise<string | null> {
 }
 
 export async function POST(request: Request) {
+  const limit = await rateLimit(request, { limit: 30, windowMs: 60_000 });
+  if (!limit.success) {
+    return NextResponse.json(
+      { message: "Too many requests." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) },
+      }
+    );
+  }
+
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
 
