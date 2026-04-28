@@ -12,12 +12,11 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
   const order = sessionId
     ? await prisma.order.findUnique({
         where: { stripeSessionId: sessionId },
-        select: { status: true, email: true },
+        select: { status: true },
       })
     : null;
 
   const isComplete = order?.status === "COMPLETE";
-  const email = order?.email ?? null;
 
   return (
     <main className="relative min-h-screen bg-[#050507] text-zinc-100">
@@ -30,10 +29,9 @@ export default async function CheckoutSuccessPage({ searchParams }: PageProps) {
                 Activation code sent
               </h1>
               <p className="mt-3 text-sm leading-6 text-zinc-400">
-                Your activation code has been sent to{" "}
-                <span className="font-mono text-zinc-200">{email}</span>. Check
-                your inbox, sign in to the bureau, and redeem it to begin the
-                investigation.
+                Your activation code has been sent to the email address you
+                entered at checkout. Check your inbox, sign in to the bureau,
+                and redeem it to begin the investigation.
               </p>
               <Link
                 href="/bureau"
