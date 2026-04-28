@@ -2,7 +2,10 @@ import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
+import { assertSafeEnv } from "../lib/assert-safe-env";
 import { prisma } from "../lib/prisma";
+
+assertSafeEnv("unarchive-case");
 
 const CASE_ID = 3; // change this if needed
 
