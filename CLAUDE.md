@@ -1,7 +1,7 @@
-## Black Ledger — Project State (updated 2026-04-27)
+## Black Ledger — Project State (updated 2026-04-28)
 
 ### Current status
-Registration system + god-mode audit + 2 surgical fix batches COMPLETE — 117 commits on origin/main, all pushed. 160 Vitest tests passing across 21 files. Build clean. PostgreSQL on Neon. Stripe Checkout live. Full registration + password reset + purchase deep-link flow implemented 2026-04-26. Two parallel god-mode audits + verification report run 2026-04-27; 10 verified surgical fixes shipped across Batch 1 (5 fixes) and Batch 2 (5 fixes). Batch 3 (JWT session invalidation on password reset) queued — first schema-touching batch.
+Registration system + god-mode audit + 3 surgical fix batches + JWT session invalidation COMPLETE — 124+ commits on origin/main, all pushed and deployed. 161 Vitest tests passing across 21 files. Build clean (no edge-runtime warnings). PostgreSQL on Neon. Stripe Checkout live. Full registration + password reset + purchase deep-link flow implemented 2026-04-26. Two parallel god-mode audits + verification report run 2026-04-27; 13 verified surgical fixes shipped across Batch 1 (5), Batch 2 (5), Batch 3 (3 + 2 follow-up patches). JWT sessions now invalidate on password reset via `User.tokenVersion` increment + DB-checked session callback; verified end-to-end in production (stale JWT redirects to /login, fresh sign-in works). Live at https://theblackledger.app .
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -203,17 +203,41 @@ Full professional audit + 4 fix waves applied and committed. 14 fixes across sec
 - `app/api/admin/cases/route.ts` — P2002 catch on create.
 - `scripts/seed-global-people.ts`, `scripts/unarchive-case.ts` — `assertSafeEnv` guards added.
 
-### Known follow-ups (updated 2026-04-27)
+### Week 11 — Batch 3: JWT session invalidation (closed 2026-04-28)
+5 commits on origin/main + Neon migration applied + Vercel deploy verified. The first schema-touching batch.
+
+**Batch 3 — JWT session invalidation (3 commits + 2 follow-up patches):**
+- **feat(schema)** (87cf012) — Add `User.tokenVersion Int @default(0)`. New migration `20260427210000_add_user_token_version` ALTERs the `User` table to add an integer column with default 0. Hand-written SQL (no `prisma migrate dev` ran in the fix session); applied to Neon manually via `npx prisma migrate deploy` after review.
+- **fix(security)** (5853ef7) — Capture `tokenVersion` in JWT on sign-in (`auth.ts` authorize returns it; `auth.config.ts` jwt callback stores it). Verify against live DB in session callback: mismatch → clear `session.user`. Bump `tokenVersion: { increment: 1 }` on password reset (`app/api/reset-password/route.ts`). Add `maxAge: 60 * 60 * 24 * 7` (7 days) to session config.
+- **test(security)** (dc010a8) — `tests/api/register.test.ts` gets a new test asserting `prisma.user.update` writes `tokenVersion: { increment: 1 }` on successful reset. 160 → 161 tests.
+- **fix(auth)** (12c8973) — Split-config follow-up: `auth.config.ts` is now Prisma-free (edge-safe for middleware). The DB-checking session callback was moved to `auth.ts` where Prisma can run. Without this, `next build` produced `node:path` / `node:url` not-supported-in-edge-runtime warnings tracing through `middleware.ts → auth.config.ts → lib/prisma.ts → generated/prisma/client.ts`. After the split, the build is clean and middleware does coarse JWT-only gating while route handlers and pages run the full DB tokenVersion check via `auth()` from `auth.ts`.
+- **fix(ui)** (post-deploy) — `components/layout/Navbar.tsx` Navbar guards changed from `session ?` to `session?.user ?`. The session callback returns `{ ...session, user: undefined }` on tokenVersion mismatch (truthy session, undefined user), and the Navbar's old guard treated session-truthy as user-defined and crashed with `TypeError: Cannot read properties of undefined (reading 'email')` on `/login` after a stale-JWT redirect. The `NavbarSession` type now correctly marks `user` as optional. End-to-end retest passed.
+
+**Deployment notes:**
+- Neon migration applied via `npx prisma migrate deploy` (uses `DIRECT_URL` from `.env.local`). Output confirmed: "All migrations have been successfully applied."
+- Vercel auto-deployed; production at https://theblackledger.app went live with no errors. Error rate stays at 0%.
+- End-to-end security test verified: signing in, resetting password from incognito, returning to original browser, refreshing `/bureau` → redirect to `/login` → sign in with new password → fresh session. The whole "I think I'm compromised" recovery flow now actually invalidates the attacker's JWT.
+
+### Architecture additions (Week 11)
+- `prisma/schema.prisma` — `User.tokenVersion Int @default(0)` field.
+- `prisma/migrations/20260427210000_add_user_token_version/migration.sql` — additive `ALTER TABLE User ADD COLUMN`.
+- `auth.config.ts` — edge-safe (no Prisma import). Trivial pass-through session callback for middleware.
+- `auth.ts` — full DB-checking session callback overrides the trivial one. `tokenVersion` returned from `authorize`.
+- `types/next-auth.d.ts` — augment `User`/`Session.user`/`JWT` with optional `tokenVersion?: number` across both `@auth/core/types` + `next-auth` and `@auth/core/jwt` + `next-auth/jwt` modules.
+- `app/api/reset-password/route.ts` — bumps `tokenVersion` via `{ increment: 1 }` in the update.
+- `components/layout/Navbar.tsx` — `NavbarSession.user` is optional; all guards use `session?.user`.
+- `audits/FIX_PROMPT_BATCH_3.md`, `audits/BATCH_3_REPORT.md`, `audits/BATCH_3_OBSERVATIONS.md` — fix prompt + report + observations under the audits folder.
+
+### Known follow-ups (updated 2026-04-28)
 
 **From 2026-04-26 audit:** All P0/P1/P2 closed.
 
-**From 2026-04-27 god-mode audit — Batches 1+2 closed 10 items. Remaining:**
+**From 2026-04-27 god-mode audit — Batches 1+2+3 closed 13 items. Remaining:**
 
 **P0 (launch blocker, content authoring):**
 - Privacy Policy + Terms of Service pages absent. Stripe merchant agreement requires both. GDPR/CCPA disclosure also requires Privacy Policy. Author externally (template-based fine), wire into Footer + Stripe Checkout `consent_collection.terms_of_service: required`.
 
 **P1 (queued for future fix batches):**
-- **JWT sessions don't invalidate on password reset.** Old JWTs valid up to 30-day default after a reset. **Queued as Batch 3** — requires schema migration (`User.tokenVersion`).
 - **BuyButton double-charge race / no Stripe `idempotencyKey`.** Two concurrent `/api/checkout` POSTs both pass the COMPLETE-only guard, both create Stripe sessions, both can be paid → double charge. Queued for Batch 4.
 - **`hidden_evidence` AccessCode validator gap.** Validator enum excludes `"hidden_evidence"` even though redeem route + workspace renderer both branch on it. Admin can't create such codes via API today. Queued for Batch 4 (small).
 - **Stripe `payment_intent.payment_failed` orphan handling.** Handler can't find the Order (no `stripePaymentIntent` set yet on PENDING). Subscribe to `checkout.session.async_payment_failed` instead. Queued for Batch 4.
