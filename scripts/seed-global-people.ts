@@ -1,8 +1,11 @@
 import dotenv from "dotenv";
 import { prisma } from "../lib/prisma";
+import { assertSafeEnv } from "../lib/assert-safe-env";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
+
+assertSafeEnv("seed-global-people");
 
 type RichPersonSeed = {
   bureauId: string;
