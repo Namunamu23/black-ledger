@@ -45,7 +45,7 @@ export async function PATCH(
 
   await prisma.activationCode.update({
     where: { id: parsedCodeId },
-    data: { revokedAt: new Date(parsed.data.revokedAt) },
+    data: { revokedAt: new Date() },
   });
 
   return NextResponse.json({ ok: true }, { status: 200 });

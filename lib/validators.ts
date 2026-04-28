@@ -266,9 +266,7 @@ export const generateCodesBatchSchema = z.object({
   kitSerialPrefix: z.string().trim().max(40).optional().or(z.literal("")),
 });
 
-export const revokeCodeSchema = z.object({
-  revokedAt: z.string().datetime(),
-});
+export const revokeCodeSchema = z.object({}).passthrough();
 
 export const redeemAccessCodeSchema = z.object({
   code: z.string().trim().min(1).max(64),
