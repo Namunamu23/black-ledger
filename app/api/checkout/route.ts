@@ -82,6 +82,13 @@ export async function POST(request: Request) {
       mode: "payment",
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: email,
+      // Require explicit acceptance of the published Terms of Service before
+      // the customer can pay. The TOS URL is configured at the account level
+      // in the Stripe Dashboard (Settings → Public Details). Without that
+      // dashboard config, this flag will cause Stripe to reject the session.
+      consent_collection: {
+        terms_of_service: "required",
+      },
       metadata: {
         caseId: String(caseId),
         email,
