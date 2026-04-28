@@ -31,7 +31,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const createdCase = await prisma.caseFile.create({
+    let createdCase;
+    try {
+      createdCase = await prisma.caseFile.create({
   data: {
     slug: data.slug,
     title: data.title,
@@ -52,6 +54,16 @@ export async function POST(request: Request) {
     isActive: true,
   },
 });
+    } catch (error) {
+      const e = error as { code?: string };
+      if (e.code === "P2002") {
+        return NextResponse.json(
+          { message: "A case with that slug already exists." },
+          { status: 409 }
+        );
+      }
+      throw error;
+    }
 
     if (data.initialActivationCode) {
       await prisma.activationCode.create({
