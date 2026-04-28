@@ -1,5 +1,15 @@
 import type { NextAuthConfig } from "next-auth";
-import { prisma } from "@/lib/prisma";
+
+// This file is imported by middleware.ts, which runs on Next.js's edge
+// runtime. Edge runtime cannot load Prisma (or any code that imports
+// Node-only modules like node:path / node:url). Keeping this file
+// Prisma-free is what makes the middleware bundle valid on edge.
+//
+// The DB-checking session callback that verifies tokenVersion against
+// the live User row lives in auth.ts, which is only imported by route
+// handlers, pages, and server actions — all of which run on Node.
+// Middleware uses the trivial JWT → session mapping below to do its
+// coarse role/auth gating; route handlers run the full check via auth().
 
 export const authConfig: NextAuthConfig = {
   session: {
@@ -20,31 +30,14 @@ export const authConfig: NextAuthConfig = {
       return token;
     },
     async session({ session, token }) {
-      if (!session.user || token.id == null) {
-        return session;
+      // Edge-safe pass-through: copy JWT fields onto session.user so
+      // middleware can read role/id without a DB call. The version
+      // comparison happens in auth.ts's overriding session callback.
+      if (session.user && token.id != null) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.tokenVersion = token.tokenVersion;
       }
-
-      // Verify the JWT's tokenVersion matches the user's current version.
-      // A password reset increments user.tokenVersion, instantly invalidating
-      // every existing JWT for that user. Pre-existing JWTs from before the
-      // tokenVersion field was introduced have token.tokenVersion === undefined,
-      // which we treat as 0 — matching the @default(0) on the column — so
-      // existing sessions stay valid until they expire or the user resets.
-      const expectedVersion = (token.tokenVersion as number | undefined) ?? 0;
-      const dbUser = await prisma.user.findUnique({
-        where: { id: Number(token.id) },
-        select: { tokenVersion: true },
-      });
-
-      if (!dbUser || dbUser.tokenVersion !== expectedVersion) {
-        // Stale session — clear user fields so guards (`requireSession`,
-        // `requireAdmin`, `requireSessionJson`) treat the request as anonymous.
-        return { ...session, user: undefined as unknown as typeof session.user };
-      }
-
-      session.user.id = token.id;
-      session.user.role = token.role;
-      session.user.tokenVersion = dbUser.tokenVersion;
       return session;
     },
   },
