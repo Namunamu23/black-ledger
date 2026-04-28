@@ -1,7 +1,9 @@
-## Black Ledger — Project State (updated 2026-04-28)
+## Black Ledger — Project State (updated 2026-04-28, end of day)
 
 ### Current status
-Registration system + god-mode audit + 3 surgical fix batches + JWT session invalidation COMPLETE — 124+ commits on origin/main, all pushed and deployed. 161 Vitest tests passing across 21 files. Build clean (no edge-runtime warnings). PostgreSQL on Neon. Stripe Checkout live. Full registration + password reset + purchase deep-link flow implemented 2026-04-26. Two parallel god-mode audits + verification report run 2026-04-27; 13 verified surgical fixes shipped across Batch 1 (5), Batch 2 (5), Batch 3 (3 + 2 follow-up patches). JWT sessions now invalidate on password reset via `User.tokenVersion` increment + DB-checked session callback; verified end-to-end in production (stale JWT redirects to /login, fresh sign-in works). Live at https://theblackledger.app .
+Registration + god-mode audit + 3 surgical fix batches + JWT session invalidation + dependency hardening + legal compliance pages + Stripe Checkout consent enforcement COMPLETE — 130+ commits on origin/main, all pushed and deployed. 161 Vitest tests passing across 21 files. Build clean (no edge-runtime warnings, only the harmless `middleware → proxy` deprecation notice from Next 16). PostgreSQL on Neon, migrations linear (5 applied, latest is `20260427210000_add_user_token_version`). Stripe Checkout live with TOS+Privacy consent checkbox enforced. Live at https://theblackledger.app, error rate 0%.
+
+**Today's full arc (2026-04-27 → 2026-04-28):** Two parallel god-mode audits run + verification report (7/7 highest-value findings confirmed real before any fix work). Batch 1 (5 fixes — script guards + CSV escape + Stripe pin + server-stamped revokedAt). Batch 2 (5 fixes — success page email leak + webhook CSRF allowlist + P2002 catch + 2 rate limits + generic 409 message). Batch 3 (3 commits + 2 follow-ups — schema migration for `User.tokenVersion`, full JWT invalidation flow with 7-day maxAge, edge-safe split-config refactor for middleware, post-deploy Navbar guard fix). End-of-day: `npm audit fix` resolved 3 transitive vulnerabilities. Privacy Policy + Terms of Service authored and live at `/privacy` and `/terms`. Stripe sandbox dashboard configured with public details + product description. Stripe Checkout now enforces TOS/Privacy consent checkbox before payment via `consent_collection.terms_of_service: 'required'` — verified end-to-end on a real sandbox test purchase. Operator: Demetre Gatchava (დემეტრე ღაჭავა), individual based in Georgia.
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -228,14 +230,54 @@ Full professional audit + 4 fix waves applied and committed. 14 fixes across sec
 - `components/layout/Navbar.tsx` — `NavbarSession.user` is optional; all guards use `session?.user`.
 - `audits/FIX_PROMPT_BATCH_3.md`, `audits/BATCH_3_REPORT.md`, `audits/BATCH_3_OBSERVATIONS.md` — fix prompt + report + observations under the audits folder.
 
-### Known follow-ups (updated 2026-04-28)
+### Week 12 — Launch prep: legal pages + Stripe consent + dependency hardening (closed 2026-04-28, end of day)
+Approximately 6 commits + Stripe Dashboard configuration (sandbox mode). Targeted launch-blocker work after the audit fixes were complete.
+
+**Dependency hardening:**
+- **chore(deps)** — `npm audit fix` (without --force) resolved 3 transitive moderate vulnerabilities (fast-xml-parser via `@aws-sdk/xml-builder`, hono direct, plus one related transitive). The remaining 9 moderate vulnerabilities are unfixable without catastrophic major-version downgrades (Next.js → 9.3.3, Prisma → 6, Resend → 6.1.3) and are not exploitable in our production code path: @hono/node-server flows through `@prisma/dev` (developer tooling, not runtime); fast-xml-parser builder vulnerability in @aws-sdk only matters if you serialize untrusted input to XML (we don't); postcss XSS only applies at build-time CSS processing (no runtime user input); uuid bounds-check vulnerability in svix→resend chain only triggers if caller passes a `buf` argument (Resend's email path doesn't). Documented as accepted risk; re-audit before each major release. Verified: tsc clean, 161 tests pass, `next build` clean after the fix.
+
+**Legal pages:**
+- **feat(legal)** — Privacy Policy at `app/privacy/page.tsx`. 13 sections covering: data controller identity (Demetre Gatchava operating from Georgia), data collected (email, hashed password, session cookie, purchase metadata, IP for rate limiting, support messages), legal bases under Georgia's Personal Data Protection Law (contract performance, legitimate interests, legal obligation, consent), all third-party processors (Stripe, Resend, Vercel, Neon, Cloudflare R2, Upstash) with privacy-policy URLs, cross-border data transfer disclosure (all processors are US-based), cookie disclosure (single functional NextAuth session cookie only, no analytics/tracking/advertising), data retention, user rights (access, correction, deletion, portability, objection, consent withdrawal, complaint to the Personal Data Protection Service of Georgia), children policy (not directed at under 16), security practices, contact via support@theblackledger.app.
+- **feat(legal)** — Terms of Service at `app/terms/page.tsx`. 17 sections covering: operator identity, service description (digital fictional entertainment, mystery-solving case files), eligibility (18+ to purchase, 16+ to use), account responsibilities, payment via Stripe, limited personal-use license grant with explicit no-share / no-resell / no-reverse-engineer prohibitions, activation code single-use rules, **refund policy: 7-day window if activation code not redeemed (server-enforced via existing `claimedAt` timestamp on `ActivationCode`)**, IP ownership, user submissions, acceptable use, disclaimers (entertainment-only, fictional, no real investigations or legal/financial/medical advice), liability cap at greater of (12-month customer revenue, USD 100), indemnification, termination, **governing law: Georgia (country); jurisdiction: Tbilisi courts**, terms updates, contact via support@theblackledger.app.
+- **feat(layout)** — `components/layout/Footer.tsx` re-adds Privacy and Terms links at bottom-right of every page.
+
+**Stripe Checkout consent enforcement:**
+- **feat(checkout)** — `app/api/checkout/route.ts` adds `consent_collection: { terms_of_service: 'required' }` to the Stripe Checkout session creation call. Customers must check "I agree to Black Ledger's Terms of Service and Privacy Policy" before the Pay button enables. Stripe automatically enriches the consent line with the Privacy URL because both URLs are configured in the dashboard — even though our code only specifies `terms_of_service`, the user-facing checkbox shows both Terms AND Privacy as clickable links. Verified end-to-end on a real sandbox test purchase (4242 4242 4242 4242 test card, consent-test-1@example.com). The Pay button is properly disabled until the consent box is checked.
+
+**Stripe Dashboard configuration (sandbox mode only — live mode pending):**
+- Public details set at `Settings → Business → Branding → Public details` page (URL: `https://dashboard.stripe.com/test/settings/update/public/support-details`):
+  - Business name: `Black Ledger`
+  - Statement descriptor: `BLACK LEDGER` (appears on customer credit card statements)
+  - Customer support email: `support@theblackledger.app`
+  - Customer support URL: `https://theblackledger.app/support`
+  - Business website: `https://theblackledger.app`
+  - **Privacy Policy URL: `https://theblackledger.app/privacy`**
+  - **Terms of Service URL: `https://theblackledger.app/terms`**
+  - Customer support phone + address: filled with real data
+- Product description: filled out (Stripe required this for compliance verification — "Black Ledger is a digital mystery-solving entertainment product. We sell access to fictional investigation case files..." with the entertainment/fictional disclaimer matching the public Terms of Service language).
+- **Live mode is NOT yet configured.** This will need to happen as part of the Stripe Live Account Activation wizard (a separate, longer task involving bank details, ID verification, business legal entity registration, 2FA) — required before real customer payments can be taken. The same TOS+Privacy URLs will need to be set in live mode there.
+
+### Architecture additions (Week 12)
+- `app/privacy/page.tsx` — server component, max-w-3xl prose layout, 13 sections, last-updated date.
+- `app/terms/page.tsx` — server component, same layout pattern, 17 sections, last-updated date.
+- `components/layout/Footer.tsx` — Privacy / Terms links added bottom-right.
+- `app/api/checkout/route.ts` — `consent_collection.terms_of_service: 'required'` on session create.
+- `package.json` + `package-lock.json` — npm audit fix lockfile delta.
+- Stripe Dashboard sandbox public details + product description (configured externally, not in repo).
+
+### Known follow-ups (updated 2026-04-28, end of day)
 
 **From 2026-04-26 audit:** All P0/P1/P2 closed.
 
-**From 2026-04-27 god-mode audit — Batches 1+2+3 closed 13 items. Remaining:**
+**From 2026-04-27 god-mode audit — Batches 1+2+3 closed 13 items. Week 12 closed the audit's P0 (Privacy + Terms of Service pages now live and Stripe consent enforced). Remaining audit-driven items below.**
 
-**P0 (launch blocker, content authoring):**
-- Privacy Policy + Terms of Service pages absent. Stripe merchant agreement requires both. GDPR/CCPA disclosure also requires Privacy Policy. Author externally (template-based fine), wire into Footer + Stripe Checkout `consent_collection.terms_of_service: required`.
+**Pre-launch operational tasks (NOT code, but mission-critical before first real customer):**
+
+- **Resend DKIM/SPF/DMARC for `theblackledger.app`** — without verified DNS, all transactional emails (purchase confirmations with activation codes, password reset, support replies) will land in customer spam folders. Pure dashboard work in Resend + Namecheap, ~30-45 minutes including DNS propagation. Resend dashboard issues the DKIM CNAME records to add to Namecheap; verify via Gmail "Show Original" → DKIM/SPF/DMARC all pass.
+- **Stripe Live account activation** — the wizard reached at `https://dashboard.stripe.com/settings` (Live mode toggle) involves business type, personal details (ID verification), business details, products or services, public details (TOS + Privacy URLs need to be re-set here for live mode!), bank details for payouts, account security (2FA), review and submit. Probably 30-60 minutes.
+- **Georgian lawyer review of Privacy Policy + Terms of Service** — the pages drafted in Week 12 are starting points based on Georgia's Personal Data Protection Law and standard SaaS terms patterns; before real money, get a Georgian lawyer to review both `/privacy` and `/terms`. Budget ~$200-500. The legal substance is reasonable but specifics (liability cap, refund mechanics, exact wording on consent) should be vetted by someone licensed to give legal advice in Georgia.
+- **Optional but recommended: register an Individual Entrepreneur (IE) entity in Georgia** (`სამეწარმეო საქმიანობა`) for the 1% small business tax status and basic liability separation. Update operator name on Privacy/Terms pages from "Demetre Gatchava (individual)" to the registered IE name when complete.
+- **Clean up sandbox PENDING orders** — three test PENDING Order rows accumulated in Neon during smoke testing and consent verification (none paid, all abandoned). Harmless; can be cleaned via SQL `DELETE FROM "Order" WHERE status = 'PENDING' AND "createdAt" > '2026-04-27'` or just left as forever-PENDING until the cleanup cron is built (backlog item).
 
 **P1 (queued for future fix batches):**
 - **BuyButton double-charge race / no Stripe `idempotencyKey`.** Two concurrent `/api/checkout` POSTs both pass the COMPLETE-only guard, both create Stripe sessions, both can be paid → double charge. Queued for Batch 4.
@@ -273,8 +315,9 @@ Full professional audit + 4 fix waves applied and committed. 14 fixes across sec
 - Fix 3's P2002 catch in `app/api/admin/cases/route.ts` is functional but untested (no race-condition simulation).
 
 **Upcoming major milestones**
-- Domain/DNS setup (`theblackledger.app` — Namecheap, verified in Resend, no A/CNAME yet).
-- Privacy Policy + Terms of Service authored and live.
+- Resend DKIM/SPF/DMARC verified for `theblackledger.app` (DNS records in Namecheap).
+- Stripe Live account fully activated (bank, ID, business details, public details mirrored from sandbox).
+- Georgian lawyer review of Privacy Policy + Terms of Service complete.
 - First real kit sale.
 
 ### Prompt library location
