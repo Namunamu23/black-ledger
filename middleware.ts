@@ -8,6 +8,14 @@ const APP_ORIGIN =
   process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const STATE_MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+/**
+ * Routes that are exempt from CSRF origin checking because they verify
+ * authenticity at the request layer (Stripe webhook signature, etc.).
+ * Adding a new path here is a security-sensitive change: the route MUST
+ * implement its own authenticity check before exemption.
+ */
+const WEBHOOK_PATHS = new Set<string>(["/api/webhooks/stripe"]);
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth ?? null;
@@ -15,14 +23,14 @@ export default auth((req) => {
 
   // CSRF: state-mutating /api/ requests must come from our own origin.
   // /api/auth/* is excluded — NextAuth has its own CSRF token flow.
-  // /api/webhooks/* is excluded — third parties (Stripe, etc.) post from
+  // WEBHOOK_PATHS are excluded — third parties (Stripe, etc.) post from
   //   their own servers; signature verification happens inside the handler.
   // Safe methods (GET/HEAD) are skipped because they don't change state.
   if (
     STATE_MUTATING_METHODS.has(req.method) &&
     pathname.startsWith("/api/") &&
     !pathname.startsWith("/api/auth/") &&
-    !pathname.startsWith("/api/webhooks/")
+    !WEBHOOK_PATHS.has(pathname)
   ) {
     const origin = req.headers.get("origin");
 
