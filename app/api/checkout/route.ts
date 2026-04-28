@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         message:
-          "An activation code for this case has already been sent to this email address. Check your inbox or contact support.",
+          "We couldn't start checkout. If you've already purchased this case, please check your inbox or contact support.",
       },
       { status: 409 }
     );
