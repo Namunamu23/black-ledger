@@ -1,7 +1,7 @@
-## Black Ledger — Project State (updated 2026-04-26)
+## Black Ledger — Project State (updated 2026-04-27)
 
 ### Current status
-Registration system COMPLETE — 101 commits on origin/main, all pushed. 157 Vitest tests passing. Build clean. PostgreSQL on Neon. Stripe Checkout live. Full registration + password reset + purchase deep-link flow implemented 2026-04-26.
+Registration system + god-mode audit + 2 surgical fix batches COMPLETE — 117 commits on origin/main, all pushed. 160 Vitest tests passing across 21 files. Build clean. PostgreSQL on Neon. Stripe Checkout live. Full registration + password reset + purchase deep-link flow implemented 2026-04-26. Two parallel god-mode audits + verification report run 2026-04-27; 10 verified surgical fixes shipped across Batch 1 (5 fixes) and Batch 2 (5 fixes). Batch 3 (JWT session invalidation on password reset) queued — first schema-touching batch.
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -162,22 +162,95 @@ Full professional audit + 4 fix waves applied and committed. 14 fixes across sec
 - `app/reset-password/page.tsx` + `components/auth/ResetPasswordForm.tsx` — reads `?token=` param
 - `prisma/migrations/20260426200000_add_password_reset/migration.sql` — ALTERs User table
 
-### Known follow-ups
+### Week 10 — God-mode audit + Fix Batches 1 & 2 (closed 2026-04-27)
+16 commits — comprehensive parallel god-mode audit + verification + 10 surgical fixes shipped in two disciplined batches. All pushed to origin/main.
 
-**All P0, P1, P2 items from the 2026-04-26 audit are closed.**
+**Audit phase (3 commits):**
+- **docs(audit)** (e710f39) — Audit prompt published (`AUDIT_PROMPT.md` at repo root).
+- **docs(audit)** (2d51be2) — Two parallel god-mode audit reports v1 + v2 saved under `audits/`. Both run independently against the full project tree, ~180 source files each. v2 caught items v1 missed (checkout-success email leak, AccessCodeRedemption unique-key/`oneTimePerUser` flag contradiction, refund-after-solve loophole). v1 caught items v2 missed (JWT non-invalidation, BuyButton race, broad webhook CSRF carve-out).
+- **docs(audit)** (fc6bb58) — Verification report (`audits/2026-04-27-verification.md`) — independent ground-truth verification of the 7 highest-value findings against actual code before any fix work. **7/7 confirmed real**, both audits trustworthy on the points checked.
 
-**Remaining open items (low priority):**
-- `AccessCodeList` shows "record #5" style target label — enrich GET endpoint or pass label map from page.
-- No PATCH endpoint for retiring `AccessCodes` (setting `retiredAt`) — needed for admin code management UX.
-- Validator length inconsistency between old `adminCaseSchema` and per-section schemas (`debriefClosing: max(2000)` vs `max(3000)`).
+**Batch 1 — surgical hardening (5 fixes + report, 6 commits):**
+- **fix(scripts)** (b058c01) — `assertSafeEnv` guard on `seed-global-people.ts`.
+- **fix(scripts)** (8f7c343) — `assertSafeEnv` guard on `unarchive-case.ts`.
+- **fix(security)** (84985ee) — CSV formula-injection protection in activation-code export (`csvEscape` prefixes `=+-@\t\r` cells with `'`).
+- **fix(stripe)** (1e1b61c) — Pin Stripe SDK `apiVersion: "2026-04-22.dahlia"` (the SDK 22.1.0 `LatestApiVersion` literal) to prevent silent SDK-upgrade drift.
+- **fix(security)** (3ce8776) — Stamp `revokedAt` server-side on activation-code revoke. `revokeCodeSchema` reduced to `z.object({}).passthrough()`; route writes `new Date()` instead of `new Date(parsed.data.revokedAt)`.
+- **docs(audit)** (3820df7) — `audits/BATCH_1_REPORT.md` + `BATCH_1_OBSERVATIONS.md`.
+
+**Batch 2 — privacy + DoS hardening (5 fixes + prompt + report, 7 commits):**
+- **docs(audit)** (f716ff5) — Batch 2 fix prompt (`audits/FIX_PROMPT_BATCH_2.md`).
+- **fix(security)** (0399a57) — Strip buyer email from `/checkout/success` server page. Drops `email` from Prisma `select`, removes the `email` local, rewrites copy to "the email address you entered at checkout." Wave-1 stripped email from the API; this fix closes the matching server-page leak.
+- **fix(security)** (a34a12c) — Tighten webhook CSRF carve-out from `pathname.startsWith("/api/webhooks/")` to explicit `WEBHOOK_PATHS = new Set(["/api/webhooks/stripe"])`. Adding a future webhook now requires explicit allowlist registration with a security-sensitive change comment.
+- **fix(admin)** (d9b0510) — Catch `P2002` on `caseFile.create` and return 409 instead of 500. Precheck `findUnique` retained as fast path; catch is the race-safety net.
+- **fix(security)** (f991366) — Rate-limit `/api/checkout/status` (30/60s public) and `/api/admin/uploads/blurhash` (30/60s admin). Both routes previously had no rate-limit; pattern mirrors `app/api/admin/uploads/sign/route.ts`.
+- **fix(privacy)** (ec6a229) — Generalize duplicate-purchase 409 message from "An activation code for this case has already been sent to this email address" to "We couldn't start checkout. If you've already purchased this case, please check your inbox or contact support." Closes the email × caseId enumeration vector at the message-content layer. Status code (409), guard logic, and `existingOrder` lookup unchanged. **Structural fix (drop guard or move behind Stripe call) deferred to a later batch.**
+- **docs(audit)** (8ba5ca6) — `audits/BATCH_2_REPORT.md` + `BATCH_2_OBSERVATIONS.md`.
+
+**Test count drift noted:** CLAUDE.md previously said "157 Vitest tests"; actual baseline at start of Batch 1 was 21 files / 160 tests. Doc-only drift, no breakage. Updated above.
+
+### Architecture additions (Week 10)
+- `audits/` directory created at repo root, holds: `2026-04-27-godmode-audit-v1.md`, `2026-04-27-godmode-audit-v2.md`, `2026-04-27-verification.md`, `FIX_PROMPT_BATCH_1.md`, `FIX_PROMPT_BATCH_2.md`, `BATCH_1_REPORT.md`, `BATCH_1_OBSERVATIONS.md`, `BATCH_2_REPORT.md`, `BATCH_2_OBSERVATIONS.md`.
+- `middleware.ts` — `WEBHOOK_PATHS` Set-based allowlist replaces prefix carve-out.
+- `lib/stripe.ts` — `apiVersion` pinned.
+- `lib/validators.ts` — `revokeCodeSchema` reduced to `z.object({}).passthrough()`.
+- `app/api/admin/cases/[caseId]/codes/route.ts` — `csvEscape` adds formula-prefix protection.
+- `app/api/admin/cases/[caseId]/codes/[codeId]/route.ts` — server-stamps `revokedAt`.
+- `app/checkout/success/page.tsx` — no longer selects or renders buyer email.
+- `app/api/checkout/route.ts` — generic 409 message.
+- `app/api/checkout/status/route.ts` — rate-limited 30/60s.
+- `app/api/admin/uploads/blurhash/route.ts` — rate-limited 30/60s.
+- `app/api/admin/cases/route.ts` — P2002 catch on create.
+- `scripts/seed-global-people.ts`, `scripts/unarchive-case.ts` — `assertSafeEnv` guards added.
+
+### Known follow-ups (updated 2026-04-27)
+
+**From 2026-04-26 audit:** All P0/P1/P2 closed.
+
+**From 2026-04-27 god-mode audit — Batches 1+2 closed 10 items. Remaining:**
+
+**P0 (launch blocker, content authoring):**
+- Privacy Policy + Terms of Service pages absent. Stripe merchant agreement requires both. GDPR/CCPA disclosure also requires Privacy Policy. Author externally (template-based fine), wire into Footer + Stripe Checkout `consent_collection.terms_of_service: required`.
+
+**P1 (queued for future fix batches):**
+- **JWT sessions don't invalidate on password reset.** Old JWTs valid up to 30-day default after a reset. **Queued as Batch 3** — requires schema migration (`User.tokenVersion`).
+- **BuyButton double-charge race / no Stripe `idempotencyKey`.** Two concurrent `/api/checkout` POSTs both pass the COMPLETE-only guard, both create Stripe sessions, both can be paid → double charge. Queued for Batch 4.
+- **`hidden_evidence` AccessCode validator gap.** Validator enum excludes `"hidden_evidence"` even though redeem route + workspace renderer both branch on it. Admin can't create such codes via API today. Queued for Batch 4 (small).
+- **Stripe `payment_intent.payment_failed` orphan handling.** Handler can't find the Order (no `stripePaymentIntent` set yet on PENDING). Subscribe to `checkout.session.async_payment_failed` instead. Queued for Batch 4.
+- **`Order.userId` link missing + no refund webhook handler.** Refund-after-solve undetected. Schema migration + new `charge.refunded` handler. Larger work; Batch 5.
+- **Activation-code email goes to attacker-supplied address.** Architectural fix (require account creation pre-checkout, or deliver code via token-link). Needs product input.
+- **`AccessCodeRedemption` unique-key vs `oneTimePerUser` flag.** Schema enforces `@@unique([accessCodeId, userId])` unconditionally → `oneTimePerUser=false` is functionally a no-op. Product decision needed: drop the column or drop the unique constraint.
+- **No retry / sweeper for failed activation-code emails.** Cron infrastructure required. Order schema already has `emailSentAt` / `emailLastError` for tracking.
+- **No account-deletion flow (GDPR/CCPA).** New `DELETE /api/me` endpoint; cascades already wired at schema level.
+
+**P2/P3 backlog (low priority, ordered):**
+- `runtime = "nodejs"` not pinned on every API route (only on `/api/webhooks/stripe`).
+- CSP allows `'unsafe-inline'` and `'unsafe-eval'` in `script-src` — move to nonce-based.
+- No Sentry / structured logging — `console.error` to Vercel logs only.
+- No Vercel Cron for stuck PENDING orders, orphan R2 objects, unsent emails.
+- Forgot-password email-send timing leaks user existence.
+- Login lookup not constant-time (returns `null` immediately for missing email).
+- Order missing index on `(caseFileId, email, status)` — duplicate-purchase guard does seq scan as table grows.
+- Pre-existing odd indentation in `app/api/admin/cases/route.ts` `data: {}` block.
+- `RevokeButton` still sends now-ignored `revokedAt` (cosmetic only — server stamps).
+- `unarchive-case.ts` still hard-codes `CASE_ID = 3` (no CLI arg).
+- `AccessCodeList` shows "record #5" style target label — enrich GET endpoint.
+- No PATCH endpoint for retiring `AccessCodes` (setting `retiredAt`).
+- Validator length inconsistency between aggregate `adminCaseSchema` and per-section schemas.
 - `CaseAudit` not written for: workflow PATCH, batch-generate, revoke, AccessCode create.
-- Image upload: strict MIME allowlist added; full magic-byte validation not feasible at presigned-URL layer (server never sees bytes). Sharp will reject non-images at the blurhash step.
 - Archive button on `PublishCaseButton` has no confirmation dialog.
 - No `GlobalPerson` admin UI — create/edit via seed scripts only.
-- `/bureau/unlock` unauthenticated message says "We saved your code" — slightly misleading copy.
+- `/bureau/unlock` "We saved your code" copy is misleading.
+- `tsconfig` `target: ES2017` is dated.
+- `lucide-react ^1.8.0` version pin is unusual — verify package.
+- No `engines.node` field in `package.json`.
+- Stripe webhook does not verify `event.account` / `session.livemode` matches expectation.
+- New rate-limit branches added in Batch 2 (`/api/checkout/status`, `/api/admin/uploads/blurhash`) are functional but untested.
+- Fix 3's P2002 catch in `app/api/admin/cases/route.ts` is functional but untested (no race-condition simulation).
 
 **Upcoming major milestones**
 - Domain/DNS setup (`theblackledger.app` — Namecheap, verified in Resend, no A/CNAME yet).
+- Privacy Policy + Terms of Service authored and live.
 - First real kit sale.
 
 ### Prompt library location
