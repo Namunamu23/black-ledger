@@ -74,6 +74,7 @@ model User {
   createdAt              DateTime            @default(now())
   passwordResetToken     String?             @unique
   passwordResetExpiresAt DateTime?
+  tokenVersion           Int                 @default(0)
   ownedCases             UserCase[]
   claimedActivationCodes ActivationCode[]    @relation("ClaimedCodes")
   theorySubmissions      TheorySubmission[]
