@@ -70,10 +70,15 @@ export async function GET(
 }
 
 function csvEscape(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
+  // Prefix cells beginning with formula-trigger characters to prevent
+  // CSV-injection in Excel / Numbers / Google Sheets. The leading apostrophe
+  // is the standard mitigation; spreadsheets render the cell as text.
+  const needsPrefix = /^[=+\-@\t\r]/.test(value);
+  const safe = needsPrefix ? `'${value}` : value;
+  if (safe.includes(",") || safe.includes('"') || safe.includes("\n")) {
+    return `"${safe.replace(/"/g, '""')}"`;
   }
-  return value;
+  return safe;
 }
 
 export async function POST(
