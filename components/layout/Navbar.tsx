@@ -9,7 +9,12 @@ import { siteConfig } from "@/data/site";
 import SignOutButton from "@/components/auth/SignOutButton";
 
 type NavbarSession = {
-  user: {
+  // `user` is optional because the auth.ts session callback returns
+  // `{ ...session, user: undefined }` for stale JWTs (post-password-reset
+  // tokenVersion mismatch). The session object remains truthy, but user
+  // is cleared. Treating session-without-user as "not signed in" is
+  // correct — a guarded route would have redirected before reaching here.
+  user?: {
     email?: string | null;
     name?: string | null;
     role?: string;
@@ -20,9 +25,10 @@ type NavbarProps = {
   session?: NavbarSession;
 };
 
-function deriveOperativeId(session: NonNullable<NavbarSession>): string {
-  const raw =
-    session.user.email?.split("@")[0] ?? session.user.name ?? "operative";
+function deriveOperativeId(
+  user: NonNullable<NonNullable<NavbarSession>["user"]>
+): string {
+  const raw = user.email?.split("@")[0] ?? user.name ?? "operative";
   return raw.length > 16 ? raw.slice(0, 16) : raw;
 }
 
@@ -31,12 +37,15 @@ export default function Navbar({ session }: NavbarProps) {
   const [open, setOpen] = useState(false);
 
   // When the user is signed in, hide the /login nav item — it's redundant
-  // and would just bounce them back to the bureau.
-  const navItems = session
+  // and would just bounce them back to the bureau. Guard on `session?.user`
+  // (not just `session`) so an invalidated session — where `session` is
+  // truthy but `user` is undefined — falls through to the unauthenticated
+  // branch.
+  const navItems = session?.user
     ? siteConfig.navItems.filter((item) => item.href !== "/login")
     : siteConfig.navItems;
 
-  const operativeId = session ? deriveOperativeId(session) : null;
+  const operativeId = session?.user ? deriveOperativeId(session.user) : null;
 
   return (
     <header className="sticky top-0 z-50 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(8,8,8,0.92)] backdrop-blur-xl">
@@ -69,7 +78,7 @@ export default function Navbar({ session }: NavbarProps) {
             })}
           </nav>
 
-          {session ? (
+          {session?.user ? (
             <>
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[rgba(245,240,235,0.4)]">
                 OP · {operativeId}
@@ -124,7 +133,7 @@ export default function Navbar({ session }: NavbarProps) {
               );
             })}
 
-            {session ? (
+            {session?.user ? (
               <>
                 <div className="mt-3 px-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgba(245,240,235,0.4)]">
                   OP · {operativeId}
