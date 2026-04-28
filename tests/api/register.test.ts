@@ -365,6 +365,26 @@ describe("POST /api/reset-password", () => {
     expect(updateCall.data.passwordHash).toBe("hashed-password-xyz");
   });
 
+  it("increments tokenVersion to invalidate existing JWT sessions", async () => {
+    mocks.userFindUnique.mockResolvedValue({
+      id: 24,
+      passwordResetExpiresAt: FUTURE_EXPIRY,
+    });
+
+    await resetPOST(
+      makeRequest("/api/reset-password", {
+        token: VALID_TOKEN,
+        password: "newSecurePass1",
+      })
+    );
+
+    expect(mocks.userUpdate).toHaveBeenCalledOnce();
+    const updateCall = mocks.userUpdate.mock.calls[0]![0] as {
+      data: { tokenVersion: { increment: number } };
+    };
+    expect(updateCall.data.tokenVersion).toEqual({ increment: 1 });
+  });
+
   it("returns 400 for an expired token", async () => {
     mocks.userFindUnique.mockResolvedValue({
       id: 22,
