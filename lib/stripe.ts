@@ -17,7 +17,9 @@ export function getStripe(): Stripe {
   if (!secretKey) {
     throw new Error("STRIPE_SECRET_KEY is not set.");
   }
-  const client = new Stripe(secretKey);
+  const client = new Stripe(secretKey, {
+    apiVersion: "2026-04-22.dahlia", // pin to SDK 22.x default; bump deliberately on SDK upgrade
+  });
   if (process.env.NODE_ENV !== "production") {
     globalForStripe.stripe = client;
   }
