@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-helpers";
+import { rateLimit } from "@/lib/rate-limit";
 import { CaseWorkflowStatus } from "@/lib/enums";
 
 /**
@@ -49,6 +50,17 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
+  const limit = await rateLimit(request, { limit: 60, windowMs: 60_000 });
+  if (!limit.success) {
+    return NextResponse.json(
+      { message: "Too many requests." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) },
+      }
+    );
+  }
+
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
 

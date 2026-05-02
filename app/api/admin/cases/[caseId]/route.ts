@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { adminCaseContentSchema } from "@/lib/validators";
 import { requireAdmin } from "@/lib/auth-helpers";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(
   request: Request,
@@ -40,6 +41,17 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
+  const limit = await rateLimit(request, { limit: 60, windowMs: 60_000 });
+  if (!limit.success) {
+    return NextResponse.json(
+      { message: "Too many requests." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) },
+      }
+    );
+  }
+
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
   const userId = Number(guard.user.id);
