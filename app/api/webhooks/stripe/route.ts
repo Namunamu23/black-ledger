@@ -78,6 +78,30 @@ export async function POST(request: Request) {
     }
   }
 
+  // Hard idempotency: record the event.id as processed in a unique-keyed table.
+  // If the row already exists, this is a duplicate redelivery — return 200
+  // immediately without touching any business logic. This supplements the
+  // updateMany precondition in handleCheckoutCompleted (Batch 4 Fix 4), which
+  // is specific to the COMPLETE flip; ProcessedStripeEvent covers every event
+  // type (refunds, expiries, async-payment-failures, future events) the same way.
+  try {
+    await prisma.processedStripeEvent.create({
+      data: { id: event.id },
+    });
+  } catch (error) {
+    const maybe = error as { code?: string };
+    if (maybe.code === "P2002") {
+      console.log(`Stripe webhook duplicate event.id=${event.id} ignored.`);
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
+    // Anything else (DB unreachable, etc.) we surface as 500 so Stripe retries.
+    console.error("ProcessedStripeEvent insert failure:", error);
+    return NextResponse.json(
+      { message: "Idempotency tracking unavailable." },
+      { status: 500 }
+    );
+  }
+
   console.log(`Stripe webhook received: ${event.type} ${event.id}`);
 
   try {

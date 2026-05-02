@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => {
   const orderUpdateMany = vi.fn();
   const activationCodeFindUnique = vi.fn();
   const activationCodeCreate = vi.fn();
+  const processedStripeEventCreate = vi.fn();
   const transactionFn = vi.fn();
   const stripeSessionsCreate = vi.fn();
   const stripeConstructEvent = vi.fn();
@@ -34,6 +35,7 @@ const mocks = vi.hoisted(() => {
     orderUpdateMany,
     activationCodeFindUnique,
     activationCodeCreate,
+    processedStripeEventCreate,
     transactionFn,
     stripeSessionsCreate,
     stripeConstructEvent,
@@ -55,6 +57,7 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: mocks.activationCodeFindUnique,
       create: mocks.activationCodeCreate,
     },
+    processedStripeEvent: { create: mocks.processedStripeEventCreate },
     $transaction: mocks.transactionFn,
   },
 }));
@@ -100,6 +103,14 @@ beforeEach(() => {
   // when no concurrent delivery has already won. Tests that exercise the
   // race override this in their own `mockResolvedValue`.
   mocks.orderUpdateMany.mockResolvedValue({ count: 1 });
+
+  // Default: the ProcessedStripeEvent insert (Batch 5 Fix 2) succeeds — i.e.
+  // this is a first delivery, not a duplicate. Tests that exercise the
+  // duplicate-redelivery branch override with a P2002 rejection.
+  mocks.processedStripeEventCreate.mockResolvedValue({
+    id: "evt_test_default",
+    createdAt: new Date(),
+  });
 
   // Default: $transaction runs the callback against the same fakes.
   // `order.create` is now exposed inside the tx callback for the
