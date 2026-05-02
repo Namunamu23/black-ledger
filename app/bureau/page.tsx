@@ -126,6 +126,12 @@ export default async function BureauPage() {
               <Link href="/bureau/archive" className={BTN_OUTLINE_SM}>
                 Archive
               </Link>
+              <Link
+                href="/account/delete"
+                className="inline-flex items-center rounded-2xl border border-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-500 transition hover:border-red-500/40 hover:text-red-300"
+              >
+                Delete account
+              </Link>
               <SignOutButton />
             </div>
           </div>
