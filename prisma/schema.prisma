@@ -481,4 +481,22 @@ model Order {
   emailLastError      String?
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
+
+  // Index for the duplicate-purchase guard at app/api/checkout/route.ts:60-67.
+  // The guard runs on every checkout attempt; without this index it does a
+  // sequential scan as Order grows.
+  @@index([caseFileId, email, status])
+}
+
+// Records each Stripe webhook event.id that has been processed. The
+// webhook handler inserts a row at the very top of POST; on a P2002
+// (unique constraint violation), the event is a duplicate redelivery
+// and the handler returns 200 immediately. This is a stronger
+// idempotency primitive than the COMPLETE-status check — it covers
+// every event type, not just checkout.session.completed, and it
+// catches concurrent redeliveries that race past the existing
+// updateMany precondition (Batch 4 Fix 4).
+model ProcessedStripeEvent {
+  id        String   @id
+  createdAt DateTime @default(now())
 }
