@@ -328,3 +328,18 @@ Week 4 prompts (16–19) are outline-level — flesh out before pasting.
 Admin: mycart19@gmail.com
 Investigator: test@blackledger.com / Test1234!
 Activation code for case #1: ALDERS-D6A5FBA9 (may be claimed — generate a new one if needed)
+
+
+### Week 13 — Batch 4 fixes (closed 2026-05-01)
+8 commits on origin/main. Seven surgical no-migration fixes from the parallel god-mode audit pair (2026-05-01-godmode-audit{,-cowork}.md):
+
+- ef888d8  fix(security): narrow Prisma select on /bureau/database to stop RSC payload leak
+- 9653e52  fix(admin): allow hidden_evidence as AccessCode unlocksTarget
+- 2c824c5  fix(stripe): use checkout.session.async_payment_failed for async failures
+- c418223  fix(stripe): close webhook concurrent-delivery race with updateMany precondition
+- 280d69f  fix(privacy): make /api/register and /api/waitlist uniform-201 to prevent email enumeration
+- 28350b1  fix(security): validate event.livemode on Stripe webhook to catch mode misconfiguration
+- 6aad4e8  fix(admin): catch P2002 on slug update to return 409 instead of 500
+- 6f85434  docs(audit): batch 4 report + observations
+
+P0 RSC leak in /bureau/database closed. Audit dossier pair + Batch 4 report all under audits/. Test count: 161 unchanged. Operator action: Stripe Dashboard webhook subscription must change from `payment_intent.payment_failed` to `checkout.session.async_payment_failed` before Fix 3 takes effect — pending until Stripe Live activation.
