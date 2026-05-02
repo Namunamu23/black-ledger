@@ -115,6 +115,9 @@ export async function POST(request: Request) {
       case "checkout.session.async_payment_failed":
         await handleCheckoutAsyncPaymentFailed(event.data.object as Stripe.Checkout.Session);
         break;
+      case "charge.refunded":
+        await handleChargeRefunded(event.data.object as Stripe.Charge);
+        break;
       default:
         // Ignore unhandled event types — Stripe will keep delivering the
         // ones we subscribed to in the dashboard.
@@ -363,6 +366,72 @@ async function handleCheckoutAsyncPaymentFailed(session: Stripe.Checkout.Session
     where: { id: order.id },
     data: { status: OrderStatus.FAILED },
   });
+}
+
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  // Find the Order via stripePaymentIntent (set by handleCheckoutCompleted's
+  // success transaction, Batch 4 Fix 4). For refunds on never-completed
+  // Orders, the lookup returns null and we no-op — there's nothing to revoke.
+  const paymentIntentId =
+    typeof charge.payment_intent === "string"
+      ? charge.payment_intent
+      : charge.payment_intent?.id ?? null;
+  if (!paymentIntentId) {
+    console.warn(
+      `[REFUND] charge.refunded missing payment_intent id; charge.id=${charge.id}`
+    );
+    return;
+  }
+
+  const order = await prisma.order.findFirst({
+    where: { stripePaymentIntent: paymentIntentId },
+    include: {
+      activationCode: { select: { id: true, claimedByUserId: true } },
+    },
+  });
+
+  if (!order) {
+    console.warn(
+      `[REFUND] No Order matched stripePaymentIntent=${paymentIntentId}; ` +
+        `charge.id=${charge.id} amount_refunded=${charge.amount_refunded}`
+    );
+    return;
+  }
+
+  // Single transaction: mark Order REFUNDED, revoke ActivationCode, and
+  // (if the code was already claimed) delete the UserCase to revoke the
+  // bureau entitlement. We deliberately do NOT touch TheorySubmission or
+  // CheckpointAttempt rows — those have historical value and the user is
+  // no longer reading them. Schema cascades on UserCase already remove
+  // dependent UserCaseEvent rows.
+  await prisma.$transaction(async (tx) => {
+    await tx.order.update({
+      where: { id: order.id },
+      data: { status: OrderStatus.REFUNDED },
+    });
+
+    if (order.activationCode) {
+      await tx.activationCode.update({
+        where: { id: order.activationCode.id },
+        data: { revokedAt: new Date() },
+      });
+
+      if (order.activationCode.claimedByUserId !== null) {
+        await tx.userCase.deleteMany({
+          where: {
+            userId: order.activationCode.claimedByUserId,
+            caseFileId: order.caseFileId,
+          },
+        });
+      }
+    }
+  });
+
+  console.log(
+    `[REFUND] Order #${order.id} refunded; ` +
+      `code revoked=${order.activationCode ? "yes" : "no"}; ` +
+      `userCase deleted=${order.activationCode?.claimedByUserId ? "yes" : "no"}`
+  );
 }
 
 function escapeHtml(s: string): string {
