@@ -40,9 +40,12 @@ export async function POST(request: Request) {
     const maybeError = error as { code?: string };
 
     if (maybeError.code === "P2002") {
+      // Silent absorb — duplicate waitlist signups are no-ops, not errors.
+      // Returning 409 leaks waitlist membership at the rate-limit ceiling
+      // (3/60s/IP). Mirror /api/register and /api/forgot-password's stance.
       return NextResponse.json(
-        { message: "That email is already on the waitlist." },
-        { status: 409 }
+        { message: "You’re on the waitlist." },
+        { status: 201 }
       );
     }
 

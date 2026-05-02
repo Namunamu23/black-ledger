@@ -35,10 +35,15 @@ export async function POST(request: Request) {
     });
 
     if (existing) {
-      return NextResponse.json(
-        { message: "An account with this email already exists." },
-        { status: 409 }
-      );
+      // Silent absorb. Returning 409 with "An account with this email already
+      // exists" lets an attacker enumerate registered emails at the rate-limit
+      // ceiling (3/60s/IP). Mirrors /api/forgot-password's uniform-200 design.
+      // The legitimate user who innocently registers twice gets the same shape
+      // they'd get on first registration; if they cannot then sign in, the
+      // password-reset flow is the recovery path. A future batch may add an
+      // email-of-record ("someone tried to register with this email") to close
+      // the UX gap; this batch is the correct privacy posture.
+      return NextResponse.json({ message: "Account created." }, { status: 201 });
     }
 
     const passwordHash = await hash(password, 12);

@@ -126,7 +126,7 @@ describe("POST /api/register", () => {
     expect(mocks.hashFn).toHaveBeenCalledWith("securePass1", 12);
   });
 
-  it("returns 409 when email is already registered", async () => {
+  it("silently absorbs a duplicate email with 201 (no enumeration via 409)", async () => {
     mocks.userFindUnique.mockResolvedValue({ id: 7 }); // existing user
 
     const res = await registerPOST(
@@ -136,7 +136,10 @@ describe("POST /api/register", () => {
       })
     );
 
-    expect(res.status).toBe(409);
+    // Mirrors /api/forgot-password's uniform-200 stance: an attacker
+    // probing whether an email is registered cannot tell from the
+    // response status whether the account already existed.
+    expect(res.status).toBe(201);
     expect(mocks.userCreate).not.toHaveBeenCalled();
   });
 
