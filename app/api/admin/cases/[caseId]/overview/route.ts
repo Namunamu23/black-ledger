@@ -73,33 +73,50 @@ export async function PATCH(
     }
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.caseFile.update({ where: { id: parsedCaseId }, data });
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.caseFile.update({ where: { id: parsedCaseId }, data });
 
-    if (slugChanged) {
-      // Upsert (not create) so a self-revert (A → B → A) updates the
-      // existing oldSlug row instead of throwing P2002 on the unique
-      // index. The pre-checks above prevent stealing another case's
-      // history row.
-      await tx.caseSlugHistory.upsert({
-        where: { oldSlug: existing.slug },
-        update: { caseFileId: parsedCaseId },
-        create: {
+      if (slugChanged) {
+        // Upsert (not create) so a self-revert (A → B → A) updates the
+        // existing oldSlug row instead of throwing P2002 on the unique
+        // index. The pre-checks above prevent stealing another case's
+        // history row.
+        await tx.caseSlugHistory.upsert({
+          where: { oldSlug: existing.slug },
+          update: { caseFileId: parsedCaseId },
+          create: {
+            caseFileId: parsedCaseId,
+            oldSlug: existing.slug,
+          },
+        });
+      }
+
+      await tx.caseAudit.create({
+        data: {
           caseFileId: parsedCaseId,
-          oldSlug: existing.slug,
+          userId,
+          action: "UPDATE_OVERVIEW",
+          diff: { caseFile: submittedKeys },
         },
       });
-    }
-
-    await tx.caseAudit.create({
-      data: {
-        caseFileId: parsedCaseId,
-        userId,
-        action: "UPDATE_OVERVIEW",
-        diff: { caseFile: submittedKeys },
-      },
     });
-  });
+  } catch (error) {
+    const maybe = error as { code?: string };
+    if (maybe.code === "P2002") {
+      // Concurrent admin save raced past the slug pre-check. Return 409
+      // with a reload hint instead of a generic 500. Mirrors the legacy
+      // aggregate PUT's outer catch in this same case-id route family.
+      return NextResponse.json(
+        {
+          message:
+            "Another admin save changed this case while you were editing. Please reload and try again.",
+        },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 
   return NextResponse.json({ ok: true }, { status: 200 });
 }

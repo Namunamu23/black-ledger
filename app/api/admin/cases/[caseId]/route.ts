@@ -480,6 +480,19 @@ export async function PUT(
       { status: 200 }
     );
   } catch (error) {
+    const maybe = error as { code?: string };
+    if (maybe.code === "P2002") {
+      // Concurrent admin save raced past the slug pre-check. Return 409 with
+      // a reload hint instead of a generic 500. Mirrors Batch 2's pattern in
+      // app/api/admin/cases/route.ts (POST P2002 catch on case create).
+      return NextResponse.json(
+        {
+          message:
+            "Another admin save changed this case while you were editing. Please reload and try again.",
+        },
+        { status: 409 }
+      );
+    }
     console.error("Admin case update error:", error);
 
     return NextResponse.json(
