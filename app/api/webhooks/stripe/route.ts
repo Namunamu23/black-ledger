@@ -54,6 +54,30 @@ export async function POST(request: Request) {
     );
   }
 
+  // Defense in depth: cross-check that the event's livemode flag matches
+  // the Stripe key the handler is using. Misconfiguration (test secret on
+  // live deploy or vice versa) would otherwise silently process events
+  // from the wrong mode — particularly dangerous after Stripe Live flips,
+  // because a leaked test webhook secret would mint live ActivationCodes.
+  // Guarded: when STRIPE_SECRET_KEY is unset the check is skipped (the
+  // signature-verification block above already 503s on missing secret in
+  // production; this is purely a test-env carve-out).
+  if (process.env.STRIPE_SECRET_KEY) {
+    const isTestKey = process.env.STRIPE_SECRET_KEY.startsWith("sk_test_");
+    const expectLive = !isTestKey;
+    if (event.livemode !== expectLive) {
+      console.error(
+        `[STRIPE-MODE-MISMATCH] event.livemode=${event.livemode} ` +
+        `expected=${expectLive} event.id=${event.id} ` +
+        `event.type=${event.type}`
+      );
+      return NextResponse.json(
+        { message: "Event mode mismatch." },
+        { status: 400 }
+      );
+    }
+  }
+
   console.log(`Stripe webhook received: ${event.type} ${event.id}`);
 
   try {

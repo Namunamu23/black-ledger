@@ -247,6 +247,10 @@ describe("POST /api/webhooks/stripe", () => {
     mocks.stripeConstructEvent.mockReturnValue({
       id: "evt_test_1",
       type: "checkout.session.completed",
+      // livemode false because tests set STRIPE_SECRET_KEY=sk_test_*; the
+      // handler's mode-mismatch guard (Batch 4 Fix 6) compares this against
+      // the secret prefix and rejects mismatched events with 400.
+      livemode: false,
       data: {
         object: {
           id: "cs_test_complete",
@@ -311,6 +315,7 @@ describe("POST /api/webhooks/stripe", () => {
     mocks.stripeConstructEvent.mockReturnValue({
       id: "evt_test_2",
       type: "checkout.session.completed",
+      livemode: false,
       data: { object: { id: "cs_test_complete", payment_intent: "pi_test_1" } },
     });
     mocks.orderFindUnique.mockResolvedValue({
@@ -341,6 +346,7 @@ describe("POST /api/webhooks/stripe", () => {
     mocks.stripeConstructEvent.mockReturnValue({
       id: "evt_test_recovery",
       type: "checkout.session.completed",
+      livemode: false,
       data: {
         object: {
           id: "cs_test_orphan",
@@ -438,6 +444,7 @@ describe("POST /api/webhooks/stripe", () => {
     mocks.stripeConstructEvent.mockReturnValue({
       id: "evt_test_no_meta",
       type: "checkout.session.completed",
+      livemode: false,
       data: {
         object: {
           id: "cs_test_no_meta",
