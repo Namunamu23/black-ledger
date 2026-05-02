@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 import { peoplePatchSchema } from "@/lib/validators";
 
+export const runtime = "nodejs";
+
 /**
  * Diff/upsert PATCH for a case's CasePerson collection.
  *

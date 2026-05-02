@@ -6,6 +6,8 @@ import { getStripe } from "@/lib/stripe";
 import { checkoutSchema } from "@/lib/validators";
 import { CaseWorkflowStatus } from "@/lib/enums";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const limit = await rateLimit(request, { limit: 5, windowMs: 60_000 });
   if (!limit.success) {

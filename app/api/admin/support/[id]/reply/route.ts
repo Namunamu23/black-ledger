@@ -7,6 +7,8 @@ import { rateLimit } from "@/lib/rate-limit";
 import { supportReplySchema } from "@/lib/validators";
 import { getResend, getResendFrom } from "@/lib/resend";
 
+export const runtime = "nodejs";
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

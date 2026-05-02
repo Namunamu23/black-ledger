@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 import { createAccessCodeSchema } from "@/lib/validators";
 
+export const runtime = "nodejs";
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ caseId: string }> }

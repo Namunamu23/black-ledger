@@ -5,6 +5,8 @@ import { forgotPasswordSchema } from "@/lib/validators";
 import { rateLimit } from "@/lib/rate-limit";
 import { getResend, getResendFrom } from "@/lib/resend";
 
+export const runtime = "nodejs";
+
 // Always-200 message — never disclose whether an email is registered.
 const GENERIC_OK = "If that email is registered, a reset link has been sent.";
 

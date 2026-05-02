@@ -9,6 +9,8 @@ import {
 } from "@/lib/user-case-state";
 import { rateLimit } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }

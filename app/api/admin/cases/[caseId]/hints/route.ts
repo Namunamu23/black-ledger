@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 import { hintsPatchSchema } from "@/lib/validators";
 
+export const runtime = "nodejs";
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> }

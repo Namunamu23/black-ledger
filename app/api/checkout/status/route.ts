@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 export async function GET(request: Request) {
   const limit = await rateLimit(request, { limit: 30, windowMs: 60_000 });
   if (!limit.success) {

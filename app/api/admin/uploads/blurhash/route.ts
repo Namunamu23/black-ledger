@@ -15,6 +15,8 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 import { blurhashRequestSchema } from "@/lib/validators";
 
+export const runtime = "nodejs";
+
 const TARGET_WIDTH = 32;
 
 async function generateBlurhash(publicUrl: string): Promise<string | null> {

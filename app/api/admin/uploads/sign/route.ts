@@ -22,6 +22,8 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 import { uploadSignSchema } from "@/lib/validators";
 
+export const runtime = "nodejs";
+
 const PRESIGN_EXPIRY_SECONDS = 60 * 15;
 const MAX_SANITIZED_FILENAME_LENGTH = 80;
 

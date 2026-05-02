@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 function generateCode(prefix: string) {
   const cleanPrefix = prefix
     .replace(/[^a-zA-Z0-9]/g, "")

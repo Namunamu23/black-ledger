@@ -4,6 +4,8 @@ import { adminCaseSchema } from "@/lib/validators";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const limit = await rateLimit(request, { limit: 60, windowMs: 60_000 });
   if (!limit.success) {

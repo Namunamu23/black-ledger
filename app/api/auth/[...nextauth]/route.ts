@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { handlers } from "@/auth";
 import { rateLimit } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 export const GET = handlers.GET;
 
 export async function POST(request: NextRequest) {

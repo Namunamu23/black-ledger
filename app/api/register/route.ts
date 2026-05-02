@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validators";
 import { rateLimit } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const limit = await rateLimit(request, { limit: 3, windowMs: 60_000 });
   if (!limit.success) {

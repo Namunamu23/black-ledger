@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 import { generateCodesBatchSchema } from "@/lib/validators";
 
+export const runtime = "nodejs";
+
 const RANDOM_PART_LENGTH = 10;
 
 /**

@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 import { CaseWorkflowStatus } from "@/lib/enums";
 
+export const runtime = "nodejs";
+
 /**
  * Legal workflow transitions. The lifecycle is forward-only:
  *

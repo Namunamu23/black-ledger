@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { activationCodeSchema } from "@/lib/validators";
 import { rateLimit } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const limit = await rateLimit(request, { limit: 5, windowMs: 60_000 });
   if (!limit.success) {

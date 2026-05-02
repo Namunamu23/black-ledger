@@ -4,6 +4,8 @@ import { adminCaseContentSchema } from "@/lib/validators";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { rateLimit } from "@/lib/rate-limit";
 
+export const runtime = "nodejs";
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> }

@@ -9,6 +9,8 @@ import {
   type UserCaseEvent,
 } from "@/lib/user-case-state";
 
+export const runtime = "nodejs";
+
 const CHECKPOINT_JACCARD_THRESHOLD = 0.45;
 const MIN_NORMALIZED_LENGTH = 3;
 

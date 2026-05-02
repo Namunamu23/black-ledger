@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { redeemAccessCodeSchema } from "@/lib/validators";
 
+export const runtime = "nodejs";
+
 type UnlocksTarget = { type: string; id: number };
 
 async function resolveContent(unlocksTarget: unknown) {
