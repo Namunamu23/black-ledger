@@ -1,9 +1,21 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validators";
 import { authConfig } from "./auth.config";
+
+// Lazily-computed bcrypt hash of a fixed placeholder. Used by the
+// authorize callback to match wall-clock timing on the user-not-found
+// path. The hash is computed once on first sign-in attempt and cached
+// in module scope; subsequent attempts read the cached value.
+let _constantTimeFakeHash: string | null = null;
+async function getConstantTimeFakeHash(): Promise<string> {
+  if (_constantTimeFakeHash === null) {
+    _constantTimeFakeHash = await hash("__no_user_constant_time_placeholder__", 12);
+  }
+  return _constantTimeFakeHash;
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -23,14 +35,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           where: { email: parsed.data.email },
         });
 
-        if (!user) return null;
+        // Constant-time. If the user doesn't exist, run a bcrypt compare
+        // against a lazily-computed fake hash so the wall-clock cost matches
+        // the user-exists case. Without this, a timing attack distinguishes
+        // "this email is registered" from "this email is not."
+        //
+        // The fake-hash pre-image is a fixed constant — even if an attacker
+        // submits its plaintext, `!user` short-circuits the return-null below
+        // before any session is issued, so this leaks nothing.
+        const hashToCompare = user?.passwordHash ?? (await getConstantTimeFakeHash());
+        const passwordMatches = await compare(parsed.data.password, hashToCompare);
 
-        const passwordMatches = await compare(
-          parsed.data.password,
-          user.passwordHash
-        );
-
-        if (!passwordMatches) return null;
+        if (!user || !passwordMatches) return null;
 
         return {
           id: String(user.id),
