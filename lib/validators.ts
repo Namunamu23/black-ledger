@@ -294,3 +294,15 @@ export const solutionPatchSchema = z.object({
   debriefSectionTitle: z.string().trim().max(160).nullable().optional(),
   debriefIntro: z.string().trim().max(2000).nullable().optional(),
 });
+
+// Account deletion. The confirmation phrase is a UX safeguard against
+// accidental deletion by an unattended browser; it is not a security
+// control (a compromised session can type the phrase). Re-auth via the
+// password is the actual gate. The literal validator emits the default
+// zod error ("Invalid literal value, expected 'delete my account'") on
+// mismatch — the form-side UI prevents submit until both fields are
+// correctly populated, so the literal's default message is acceptable.
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, "Password is required to delete your account."),
+  confirmation: z.literal("delete my account"),
+});
