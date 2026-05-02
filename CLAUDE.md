@@ -366,3 +366,4 @@ Migration applied: `20260501000000_add_processed_stripe_event_and_order_index` (
 - 2e0e2a9  docs(audit): batch 6 report + observations
 
 Investigator self-deletion via password + literal "delete my account" re-auth, rate-limited 3/60s. ADMIN self-deletion refused with 403 (CaseAudit.userId is RESTRICT-FK'd plus operator-review concern). Schema cascades handle UserCase / TheorySubmission / CheckpointAttempt / AccessCodeRedemption; ActivationCode.claimedByUserId SetNulls; Order rows persist as buyer-of-record. Test count: 161 → 168. No migration. No dashboard actions required. Four follow-ups flagged in audits/BATCH_6_OBSERVATIONS.md (admin-deletion path needs CaseAudit re-parenting; ActivationCode revoke-on-user-delete is a product call; no post-deletion confirmation email yet; customer-facing 7-day refund flow still open).
+
