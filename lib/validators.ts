@@ -276,7 +276,7 @@ export const createAccessCodeSchema = z.object({
   code: z.string().trim().min(1).max(64),
   kind: z.enum(["BUREAU_REF", "ARTIFACT_QR", "WITNESS_TIP", "AUDIO_FILE"]),
   unlocksTarget: z.object({
-    type: z.enum(["record", "person", "hint"]),
+    type: z.enum(["record", "person", "hint", "hidden_evidence"]),
     id: z.number().int().positive(),
   }),
   requiresStage: z.number().int().min(0).nullable().optional(),

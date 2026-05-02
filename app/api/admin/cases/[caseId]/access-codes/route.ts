@@ -78,6 +78,12 @@ export async function POST(
       select: { caseFileId: true },
     });
     targetExists = row?.caseFileId === parsedCaseId;
+  } else if (type === "hidden_evidence") {
+    const row = await prisma.hiddenEvidence.findUnique({
+      where: { id },
+      select: { caseFileId: true },
+    });
+    targetExists = row?.caseFileId === parsedCaseId;
   }
 
   if (!targetExists) {
