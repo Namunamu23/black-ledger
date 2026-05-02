@@ -12,11 +12,36 @@ export default async function BureauGlobalDatabasePage() {
   }
 
   const people = await prisma.globalPerson.findMany({
-    include: {
-      aliases: true,
+    // Explicit select — every field listed here crosses the server→client
+    // boundary into the <GlobalPeopleSearch> client component's RSC payload.
+    // Do NOT add a field here without checking that the client component
+    // reads it; do NOT switch any nested relation back to `include`. The
+    // matching PersonSearchItem type in components/bureau/GlobalPeopleSearch.tsx
+    // is the authoritative shape contract for what the client renders.
+    select: {
+      id: true,
+      bureauId: true,
+      firstName: true,
+      lastName: true,
+      fullName: true,
+      dateOfBirth: true,
+      knownLocation: true,
+      status: true,
+      personType: true,
+      classification: true,
+      riskLevel: true,
+      relevanceLevel: true,
+      profileSummary: true,
+      gender: true,
+      accessLevel: true,
+      sourceReliability: true,
+      confidenceLevel: true,
+      watchlistFlag: true,
+      aliases: { select: { alias: true } },
       caseAppearances: {
-        include: {
-          caseFile: true,
+        select: {
+          role: true,
+          caseFile: { select: { title: true, slug: true } },
         },
       },
     },
