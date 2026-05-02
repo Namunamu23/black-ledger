@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => {
   const orderFindFirst = vi.fn();
   const orderCreate = vi.fn();
   const orderUpdate = vi.fn();
+  const orderUpdateMany = vi.fn();
   const activationCodeFindUnique = vi.fn();
   const activationCodeCreate = vi.fn();
   const transactionFn = vi.fn();
@@ -30,6 +31,7 @@ const mocks = vi.hoisted(() => {
     orderFindFirst,
     orderCreate,
     orderUpdate,
+    orderUpdateMany,
     activationCodeFindUnique,
     activationCodeCreate,
     transactionFn,
@@ -47,6 +49,7 @@ vi.mock("@/lib/prisma", () => ({
       findFirst: mocks.orderFindFirst,
       create: mocks.orderCreate,
       update: mocks.orderUpdate,
+      updateMany: mocks.orderUpdateMany,
     },
     activationCode: {
       findUnique: mocks.activationCodeFindUnique,
@@ -93,16 +96,23 @@ beforeEach(() => {
   });
   resetRateLimit();
 
+  // Default: the concurrency precondition (Fix 4 / Batch 4) reads `count: 1`
+  // when no concurrent delivery has already won. Tests that exercise the
+  // race override this in their own `mockResolvedValue`.
+  mocks.orderUpdateMany.mockResolvedValue({ count: 1 });
+
   // Default: $transaction runs the callback against the same fakes.
   // `order.create` is now exposed inside the tx callback for the
   // P1-5 recovery branch (handleCheckoutCompleted creates the Order
-  // inline if findUnique returned null).
+  // inline if findUnique returned null). `order.updateMany` was added
+  // for the concurrency precondition (Batch 4 Fix 4).
   mocks.transactionFn.mockImplementation(async (callback: any) => {
     return await callback({
       activationCode: { create: mocks.activationCodeCreate },
       order: {
         create: mocks.orderCreate,
         update: mocks.orderUpdate,
+        updateMany: mocks.orderUpdateMany,
       },
     });
   });
@@ -272,12 +282,18 @@ describe("POST /api/webhooks/stripe", () => {
     expect(codeArgs.data.caseFileId).toBe(7);
     expect(codeArgs.data.source).toBe("PURCHASE");
 
-    // Two updates: first inside the tx marking Order COMPLETE,
+    // Concurrency precondition (Batch 4 Fix 4): the PENDING → COMPLETE flip
+    // happens via updateMany inside the tx, gated on status === PENDING.
+    expect(mocks.orderUpdateMany).toHaveBeenCalledOnce();
+    const claimArgs = mocks.orderUpdateMany.mock.calls[0][0];
+    expect(claimArgs.where).toEqual({ id: 11, status: "PENDING" });
+    expect(claimArgs.data.status).toBe("COMPLETE");
+
+    // Two updates: first inside the tx writing payment_intent + code link,
     // second post-email recording emailSentAt (BUG-05).
     expect(mocks.orderUpdate).toHaveBeenCalledTimes(2);
     const updateArgs = mocks.orderUpdate.mock.calls[0][0];
     expect(updateArgs.where).toEqual({ id: 11 });
-    expect(updateArgs.data.status).toBe("COMPLETE");
     expect(updateArgs.data.stripePaymentIntent).toBe("pi_test_1");
     expect(updateArgs.data.activationCodeId).toBe(99);
 
@@ -387,12 +403,20 @@ describe("POST /api/webhooks/stripe", () => {
       source: "PURCHASE",
     });
 
-    // Two updates: COMPLETE inside tx, then emailSentAt post-email (BUG-05).
+    // Concurrency precondition (Batch 4 Fix 4): the PENDING → COMPLETE flip
+    // happens via updateMany inside the tx, gated on status === PENDING.
+    expect(mocks.orderUpdateMany).toHaveBeenCalledOnce();
+    expect(mocks.orderUpdateMany.mock.calls[0][0]).toMatchObject({
+      where: { id: 555, status: "PENDING" },
+      data: { status: "COMPLETE" },
+    });
+
+    // Two updates: payment_intent + code link inside tx, then emailSentAt
+    // post-email (BUG-05).
     expect(mocks.orderUpdate).toHaveBeenCalledTimes(2);
     expect(mocks.orderUpdate.mock.calls[0][0]).toMatchObject({
       where: { id: 555 },
       data: {
-        status: "COMPLETE",
         stripePaymentIntent: "pi_test_recovery",
         activationCodeId: 99,
       },

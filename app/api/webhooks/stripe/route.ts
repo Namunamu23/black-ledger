@@ -73,6 +73,11 @@ export async function POST(request: Request) {
         break;
     }
   } catch (error) {
+    if (error instanceof Error && error.message === "ALREADY_COMPLETED_BY_CONCURRENT_DELIVERY") {
+      // Another concurrent invocation already completed this Order and sent
+      // the email. Idempotent return — do not re-mint a code or re-send the email.
+      return NextResponse.json({ received: true }, { status: 200 });
+    }
     console.error(`Stripe webhook handler error (${event.type}):`, error);
     return NextResponse.json(
       { message: "Handler failure." },
@@ -179,6 +184,21 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           },
         });
 
+    // Concurrency precondition: only one transaction can flip PENDING → COMPLETE.
+    // Without this gate, two near-simultaneous Stripe redeliveries of the same
+    // checkout.session.completed event both pass the COMPLETE check above
+    // (because both read status === PENDING), both enter this transaction, and
+    // both mint a fresh ActivationCode — leaking a second valid orphaned code
+    // and sending a duplicate Resend email. The updateMany returning count: 0
+    // is the only safe signal that another invocation already won.
+    const claimed = await tx.order.updateMany({
+      where: { id: orderRow.id, status: OrderStatus.PENDING },
+      data: { status: OrderStatus.COMPLETE },
+    });
+    if (claimed.count === 0) {
+      throw new Error("ALREADY_COMPLETED_BY_CONCURRENT_DELIVERY");
+    }
+
     const activationCode = await tx.activationCode.create({
       data: {
         code,
@@ -190,7 +210,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return tx.order.update({
       where: { id: orderRow.id },
       data: {
-        status: OrderStatus.COMPLETE,
         stripePaymentIntent: paymentIntentId,
         activationCodeId: activationCode.id,
       },
