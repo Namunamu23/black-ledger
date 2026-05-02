@@ -64,8 +64,8 @@ export async function POST(request: Request) {
       case "checkout.session.expired":
         await handleCheckoutExpired(event.data.object as Stripe.Checkout.Session);
         break;
-      case "payment_intent.payment_failed":
-        await handlePaymentFailed(event.data.object as Stripe.PaymentIntent);
+      case "checkout.session.async_payment_failed":
+        await handleCheckoutAsyncPaymentFailed(event.data.object as Stripe.Checkout.Session);
         break;
       default:
         // Ignore unhandled event types — Stripe will keep delivering the
@@ -281,9 +281,14 @@ async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
   });
 }
 
-async function handlePaymentFailed(intent: Stripe.PaymentIntent) {
-  const order = await prisma.order.findFirst({
-    where: { stripePaymentIntent: intent.id },
+async function handleCheckoutAsyncPaymentFailed(session: Stripe.Checkout.Session) {
+  // Look up the Order via session id (always indexed) rather than
+  // payment_intent (only written by the success path). This closes the
+  // "PENDING orders accumulate forever" failure mode of the prior
+  // payment_intent.payment_failed subscription, where the lookup key
+  // was never set on a never-succeeded order.
+  const order = await prisma.order.findUnique({
+    where: { stripeSessionId: session.id },
     select: { id: true, status: true },
   });
   if (!order || order.status === OrderStatus.COMPLETE) return;
