@@ -343,3 +343,17 @@ Activation code for case #1: ALDERS-D6A5FBA9 (may be claimed — generate a new 
 - 6f85434  docs(audit): batch 4 report + observations
 
 P0 RSC leak in /bureau/database closed. Audit dossier pair + Batch 4 report all under audits/. Test count: 161 unchanged. Operator action: Stripe Dashboard webhook subscription must change from `payment_intent.payment_failed` to `checkout.session.async_payment_failed` before Fix 3 takes effect — pending until Stripe Live activation.
+
+
+
+### Week 14 — Batch 5 fixes (closed 2026-05-01)
+6 commits on origin/main + migration applied to Neon. Payment & refund correctness:
+
+- a0a0ece  feat(schema): add ProcessedStripeEvent + Order index for idempotency and performance
+- 9cb1be1  fix(stripe): record event.id as processed inside webhook for hard cross-delivery idempotency
+- c12084c  fix(checkout): pass Stripe idempotencyKey + reuse recent PENDING session URL
+- 2bb40ec  feat(stripe): handle charge.refunded — revoke activation code and delete UserCase
+- 4b8e2d4  feat(ops): nightly cron sweeps stuck PENDING orders to FAILED
+- 4a44f29  docs(audit): batch 5 report + observations
+
+Migration applied: `20260501000000_add_processed_stripe_event_and_order_index` (new ProcessedStripeEvent table + Order(caseFileId,email,status) index). Order.userId deliberately deferred — User reachable via Order.activationCode.claimedByUserId. Test count: 161 unchanged. Operator actions completed: CRON_SECRET set on Vercel; charge.refunded subscribed in Stripe Dashboard.
