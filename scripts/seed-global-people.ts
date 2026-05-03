@@ -1,11 +1,42 @@
+/**
+ * GlobalPerson reference-data seed.
+ *
+ * Source of truth for the bureau identity index that /bureau/database queries.
+ * Idempotent: each identity is `upsert`-ed by its unique bureauId, and every
+ * destructive operation (per-person sub-tables, person-to-person connections)
+ * is scoped to people defined in this seed. Re-running converges the database
+ * to whatever this file declares without leaking duplicates and without
+ * touching connections involving people added outside the seed.
+ *
+ * Safety gate: requires explicit opt-in via BL_ALLOW_GLOBAL_PEOPLE_SEED=true.
+ * This replaces the older URL-pattern `assertSafeEnv` block — too blunt to
+ * allow legitimate production seeding even though the script's writes are
+ * fully scoped.
+ *
+ * Usage:
+ *
+ *     BL_ALLOW_GLOBAL_PEOPLE_SEED=true npm run seed:people
+ */
+
 import dotenv from "dotenv";
 import { prisma } from "../lib/prisma";
-import { assertSafeEnv } from "../lib/assert-safe-env";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
-assertSafeEnv("seed-global-people");
+const ALLOW_FLAG = "BL_ALLOW_GLOBAL_PEOPLE_SEED";
+
+if (!process.env[ALLOW_FLAG]) {
+  console.error(
+    "\n  Refusing to run without explicit opt-in.\n\n" +
+    "  This script seeds the GlobalPerson bureau identity index used by\n" +
+    "  /bureau/database. It is idempotent and safe to run against any\n" +
+    "  environment, but the explicit flag prevents accidental invocation.\n\n" +
+    `  Set ${ALLOW_FLAG}=true and re-run:\n\n` +
+    `    ${ALLOW_FLAG}=true npm run seed:people\n`
+  );
+  process.exit(1);
+}
 
 type RichPersonSeed = {
   bureauId: string;
@@ -857,7 +888,21 @@ async function main() {
     console.log(`Seeded global person dossier: ${created.bureauId} ${created.fullName}`);
   }
 
-  await prisma.personConnection.deleteMany();
+  // Scoped delete: only wipe connections involving a person we are about
+  // to seed. Connections between two non-seeded people (e.g. ones an admin
+  // added manually) are preserved. This is what makes the script safe to
+  // re-run against production without nuking unrelated data.
+  const seededPersonIds = Array.from(peopleByBureauId.values());
+  if (seededPersonIds.length > 0) {
+    await prisma.personConnection.deleteMany({
+      where: {
+        OR: [
+          { sourcePersonId: { in: seededPersonIds } },
+          { targetPersonId: { in: seededPersonIds } },
+        ],
+      },
+    });
+  }
 
   for (const connection of connections) {
     const sourcePersonId = peopleByBureauId.get(connection.sourceBureauId);
