@@ -367,3 +367,13 @@ Migration applied: `20260501000000_add_processed_stripe_event_and_order_index` (
 
 Investigator self-deletion via password + literal "delete my account" re-auth, rate-limited 3/60s. ADMIN self-deletion refused with 403 (CaseAudit.userId is RESTRICT-FK'd plus operator-review concern). Schema cascades handle UserCase / TheorySubmission / CheckpointAttempt / AccessCodeRedemption; ActivationCode.claimedByUserId SetNulls; Order rows persist as buyer-of-record. Test count: 161 → 168. No migration. No dashboard actions required. Four follow-ups flagged in audits/BATCH_6_OBSERVATIONS.md (admin-deletion path needs CaseAudit re-parenting; ActivationCode revoke-on-user-delete is a product call; no post-deletion confirmation email yet; customer-facing 7-day refund flow still open).
 
+### Week 16 — Batch 7 fixes (closed 2026-05-02)
+5 commits on origin/main. Defense-in-depth hardening — admin rate limits, runtime pin sweep, constant-time login, CSP cleanup:
+
+- 45c2c06  fix(security): rate-limit admin mutation routes (60/60s per ip+route)
+- f4eac26  chore(runtime): pin runtime = "nodejs" on every Prisma-using API route
+- ebf3369  fix(security): constant-time bcrypt compare on login to close email-enumeration timing leak
+- b10dd68  chore(csp): drop unused fonts.gstatic.com from font-src
+- 88163a5  docs(audit): batch 7 report + observations
+
+13 admin mutation routes now rate-limited at 60/60s per (ip, route). 29 API routes now pinned to nodejs runtime explicitly. Login flow now bcrypt-compares against a lazy-cached fake hash on the user-not-found path so wall-clock timing is uniform. Dead `https://fonts.gstatic.com` entry removed from CSP `font-src` (next/font/google self-hosts at build time). Test count: 168 unchanged. No migration. No new deps. No env changes. Deferred to later batches: forgot-password timing leak (would break existing Resend-assertion test); Sentry/structured logging (needs npm install); `/bureau/database` pagination + `app/layout.tsx` perf refactor (UX-touching, separate from hardening).
