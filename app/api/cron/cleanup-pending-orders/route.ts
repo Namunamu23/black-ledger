@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { OrderStatus } from "@/lib/enums";
@@ -16,8 +17,33 @@ export async function GET(request: Request) {
     );
   }
 
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${cronSecret}`) {
+  const authHeader = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${cronSecret}`;
+  const expectedBuf = Buffer.from(expected);
+  const gotBuf = Buffer.from(authHeader);
+
+  // Constant-time comparison. Buffers must be the same length for
+  // timingSafeEqual; the length pre-check handles that without leaking
+  // timing itself (the length is observable to an attacker via
+  // content-length, but the secret bytes are not).
+  if (
+    gotBuf.length !== expectedBuf.length ||
+    !timingSafeEqual(gotBuf, expectedBuf)
+  ) {
+    return NextResponse.json({ message: "Forbidden." }, { status: 403 });
+  }
+
+  // Defense in depth: confirm the request actually came from Vercel cron.
+  // User-Agent is trivially forgeable, so this only blocks unsophisticated
+  // probes — but it raises the bar at zero cost. The console.warn lets
+  // ops notice if Vercel ever changes its UA string in a future platform
+  // update (we'd see a flood of 403s with a new UA value to investigate
+  // rather than silent successful 403s).
+  const userAgent = request.headers.get("user-agent");
+  if (userAgent !== "vercel-cron/1.0") {
+    console.warn(
+      `[CRON] Rejecting cleanup-pending-orders with unexpected user-agent: ${userAgent ?? "(none)"}`
+    );
     return NextResponse.json({ message: "Forbidden." }, { status: 403 });
   }
 
