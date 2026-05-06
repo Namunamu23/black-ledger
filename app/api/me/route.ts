@@ -76,17 +76,31 @@ export async function DELETE(request: Request) {
   //   User → TheorySubmission (cascade)
   //   User → CheckpointAttempt (cascade)
   //   User → AccessCodeRedemption (cascade)
-  //   User → ActivationCode.claimedByUserId (SetNull — preserves the code,
-  //                                          unowns it so it could be re-used
-  //                                          by another account if not also
-  //                                          revokedAt-stamped, which it is
-  //                                          NOT today; out of scope here)
+  //   User → ActivationCode.claimedByUserId (SetNull — preserves the code
+  //                                          row but un-claims it)
   //
   // Order has no FK to User by design (Batch 5 deferred Order.userId), so
   // financial records persist after user deletion — Order.email remains as
   // the buyer-of-record identifier, satisfying tax-retention obligations
   // documented in the Privacy Policy §8.
-  await prisma.user.delete({ where: { id: userId } });
+  //
+  // We also explicitly stamp `revokedAt` on every activation code the user
+  // had claimed BEFORE deleting. Without this, the SetNull cascade leaves
+  // codes with `claimedAt` set + `claimedByUserId` null, which the activate
+  // route treats as "unclaimed" and lets a fresh account re-redeem (the
+  // re-claim loop documented as Batch 6 Observation 2 and re-flagged in the
+  // 2026-05-06 audit as F-03).
+  //
+  // Both writes are wrapped in a single transaction so a partial failure
+  // (DB hiccup mid-delete) leaves the user's data intact rather than the
+  // codes pre-revoked but the user still present.
+  await prisma.$transaction([
+    prisma.activationCode.updateMany({
+      where: { claimedByUserId: userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+    prisma.user.delete({ where: { id: userId } }),
+  ]);
 
   return NextResponse.json({ message: "Account deleted." }, { status: 200 });
 }

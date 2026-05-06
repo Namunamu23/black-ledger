@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   authFn: vi.fn(),
   userFindUnique: vi.fn(),
   userDelete: vi.fn(),
+  activationCodeUpdateMany: vi.fn(),
+  transaction: vi.fn(),
   compareFn: vi.fn(),
 }));
 
@@ -29,6 +31,10 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: mocks.userFindUnique,
       delete: mocks.userDelete,
     },
+    activationCode: {
+      updateMany: mocks.activationCodeUpdateMany,
+    },
+    $transaction: mocks.transaction,
   },
 }));
 
@@ -81,8 +87,17 @@ beforeEach(() => {
   // Default: password matches
   mocks.compareFn.mockResolvedValue(true);
 
-  // Default: delete succeeds
+  // Default: delete + revoke succeeds
   mocks.userDelete.mockResolvedValue({ id: 42 });
+  mocks.activationCodeUpdateMany.mockResolvedValue({ count: 0 });
+
+  // $transaction in array form runs the supplied operations. The individual
+  // calls (prisma.activationCode.updateMany(...), prisma.user.delete(...))
+  // are mocks already; we just resolve the array to mirror the real client.
+  mocks.transaction.mockImplementation(async (ops: unknown) => {
+    if (Array.isArray(ops)) return Promise.all(ops);
+    return [];
+  });
 });
 
 // ===========================================================================
@@ -154,6 +169,32 @@ describe("DELETE /api/me", () => {
     expect(res.status).toBe(200);
     expect(mocks.userDelete).toHaveBeenCalledOnce();
     expect(mocks.userDelete.mock.calls[0]![0]).toEqual({ where: { id: 42 } });
+  });
+
+  it("revokes the user's claimed activation codes inside the same transaction (F-03 re-claim loop)", async () => {
+    mocks.activationCodeUpdateMany.mockResolvedValue({ count: 2 });
+
+    const res = await deleteMe(
+      makeRequest({ password: "secret", confirmation: "delete my account" })
+    );
+
+    expect(res.status).toBe(200);
+
+    // updateMany scoped to the deleting user's claimed codes that are not
+    // already revoked (preserves prior revocation timestamps).
+    expect(mocks.activationCodeUpdateMany).toHaveBeenCalledOnce();
+    const where = mocks.activationCodeUpdateMany.mock.calls[0]![0]!.where;
+    expect(where).toEqual({ claimedByUserId: 42, revokedAt: null });
+    const data = mocks.activationCodeUpdateMany.mock.calls[0]![0]!.data;
+    expect(data.revokedAt).toBeInstanceOf(Date);
+
+    // Both the revoke and the user.delete must have been bundled into a
+    // single $transaction call so a partial failure leaves data intact.
+    expect(mocks.transaction).toHaveBeenCalledOnce();
+    const txArg = mocks.transaction.mock.calls[0]![0];
+    expect(Array.isArray(txArg)).toBe(true);
+
+    expect(mocks.userDelete).toHaveBeenCalledOnce();
   });
 
   it("returns 200 without calling delete when the user row is already gone", async () => {
