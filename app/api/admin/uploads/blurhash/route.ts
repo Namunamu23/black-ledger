@@ -27,7 +27,14 @@ async function generateBlurhash(publicUrl: string): Promise<string | null> {
     const arrayBuffer = await response.arrayBuffer();
     const inputBuffer = Buffer.from(arrayBuffer);
 
-    const { data, info } = await sharp(inputBuffer)
+    const { data, info } = await sharp(inputBuffer, {
+      // Cap input at 1 megapixel (1024×1024). Anything larger is overkill
+      // for a blurhash placeholder anyway — the algorithm is designed for
+      // tiny low-frequency previews. Without this cap, Sharp's default
+      // 268-megapixel limit lets a 16384×16384 input consume ~3GB of memory
+      // before the resize clips, OOM-ing the Vercel function.
+      limitInputPixels: 1_048_576,
+    })
       .resize({ width: TARGET_WIDTH, fit: "inside" })
       .ensureAlpha()
       .raw()
