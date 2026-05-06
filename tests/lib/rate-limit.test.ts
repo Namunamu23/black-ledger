@@ -67,3 +67,79 @@ describe("rateLimit (in-memory backend)", () => {
     expect(otherIpExhausted.success).toBe(false);
   });
 });
+
+describe("rateLimit IP extraction (F-06 hardening)", () => {
+  beforeEach(() => {
+    _resetForTesting();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("in test mode honors leftmost x-forwarded-for so existing tests keep their per-IP isolation", async () => {
+    const opts = { limit: 1, windowMs: 60_000 };
+
+    // Same XFF leftmost token → same bucket → second request 429.
+    const a = await rateLimit(
+      new Request("http://localhost/api/x", {
+        headers: { "x-forwarded-for": "9.9.9.9, 10.0.0.1" },
+      }),
+      opts
+    );
+    expect(a.success).toBe(true);
+    const b = await rateLimit(
+      new Request("http://localhost/api/x", {
+        headers: { "x-forwarded-for": "9.9.9.9, 10.0.0.2" },
+      }),
+      opts
+    );
+    expect(b.success).toBe(false);
+  });
+
+  it("in production mode ignores spoofed x-forwarded-for and buckets by x-real-ip only", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const opts = { limit: 1, windowMs: 60_000 };
+
+    // Two requests with DIFFERENT spoofed XFF but the SAME x-real-ip should
+    // share a bucket — i.e. the spoof must not buy a fresh quota.
+    const first = await rateLimit(
+      new Request("http://localhost/api/x", {
+        headers: {
+          "x-forwarded-for": "1.2.3.4",
+          "x-real-ip": "203.0.113.7",
+        },
+      }),
+      opts
+    );
+    expect(first.success).toBe(true);
+
+    const second = await rateLimit(
+      new Request("http://localhost/api/x", {
+        headers: {
+          "x-forwarded-for": "1.2.3.5",
+          "x-real-ip": "203.0.113.7",
+        },
+      }),
+      opts
+    );
+    expect(second.success).toBe(false);
+
+    // And missing x-real-ip with a spoofed x-forwarded-for collapses to
+    // the literal "unknown" bucket — separate from the 203.0.113.7 bucket.
+    const unknownA = await rateLimit(
+      new Request("http://localhost/api/x", {
+        headers: { "x-forwarded-for": "8.8.8.8" },
+      }),
+      opts
+    );
+    expect(unknownA.success).toBe(true);
+    const unknownB = await rateLimit(
+      new Request("http://localhost/api/x", {
+        headers: { "x-forwarded-for": "9.9.9.9" },
+      }),
+      opts
+    );
+    expect(unknownB.success).toBe(false);
+  });
+});

@@ -86,12 +86,32 @@ function consumeFromMemory(
 }
 
 function extractIp(request: Request): string {
-  const xff = request.headers.get("x-forwarded-for");
-  if (xff) {
-    const first = xff.split(",")[0]?.trim();
-    if (first) return first;
+  // Production source of truth on Vercel: x-real-ip is set by the platform
+  // edge to the verified client IP. Vercel overwrites any client-supplied
+  // x-real-ip at the edge, so this header cannot be forged. Reading it
+  // first means rate-limit buckets correspond to real client IPs in
+  // production, defeating the X-Forwarded-For spoofing bypass that the
+  // 2026-05-06 audit (F-06) flagged on the prior leftmost-token read.
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) {
+    const trimmed = realIp.trim();
+    if (trimmed) return trimmed;
   }
-  return request.headers.get("x-real-ip") ?? "unknown";
+
+  // Dev fallback: when x-real-ip is absent (local development, no proxy),
+  // honor the leftmost x-forwarded-for token. In production behind Vercel
+  // x-real-ip is always set so this branch never executes there. In dev
+  // we accept the leftmost XFF token because dev tools (curl, Postman,
+  // Vitest's mock requests) commonly use it for per-IP test isolation.
+  if (process.env.NODE_ENV !== "production") {
+    const xff = request.headers.get("x-forwarded-for");
+    if (xff) {
+      const first = xff.split(",")[0]?.trim();
+      if (first) return first;
+    }
+  }
+
+  return "unknown";
 }
 
 export async function rateLimit(
