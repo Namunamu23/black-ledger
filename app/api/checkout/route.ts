@@ -174,7 +174,12 @@ export async function POST(request: Request) {
       await prisma.order.create({
         data: {
           stripeSessionId: session.id,
-          email,
+          // Normalize at the write site so Order.email is always lowercase
+          // regardless of upstream validators. The duplicate-purchase guard
+          // uses mode: "insensitive" today, but a future caller submitting
+          // a non-Zod-parsed email through a different path could otherwise
+          // land mixed-case rows here. F-29 (2026-05-06 audit).
+          email: email.trim().toLowerCase(),
           caseFileId: caseId,
         },
       });

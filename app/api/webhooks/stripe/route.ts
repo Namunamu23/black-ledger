@@ -229,7 +229,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       : await tx.order.create({
           data: {
             stripeSessionId: session.id,
-            email: buyerEmail,
+            // Normalize at the recovery write site. buyerEmail came from
+            // session.metadata.email which the checkout route lowercases at
+            // its own Order.create site, but defense-in-depth: do not rely
+            // on upstream normalization. F-29 (2026-05-06 audit).
+            email: buyerEmail.trim().toLowerCase(),
             caseFileId: caseFile.id,
             status: OrderStatus.PENDING,
           },
