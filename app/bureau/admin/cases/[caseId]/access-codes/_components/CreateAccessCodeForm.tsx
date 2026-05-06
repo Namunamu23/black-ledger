@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-type TargetType = "record" | "person" | "hint";
+type TargetType = "record" | "person" | "hint" | "hidden_evidence";
 type Kind = "BUREAU_REF" | "ARTIFACT_QR" | "WITNESS_TIP" | "AUDIO_FILE";
 type Status = "idle" | "saving" | "saved" | "error";
 
@@ -11,6 +11,7 @@ type Props = {
   people: { id: number; name: string }[];
   records: { id: number; title: string }[];
   hints: { id: number; title: string }[];
+  hiddenEvidence: { id: number; title: string }[];
   onCreated: () => void;
 };
 
@@ -28,6 +29,7 @@ export default function CreateAccessCodeForm({
   people,
   records,
   hints,
+  hiddenEvidence,
   onCreated,
 }: Props) {
   const [code, setCode] = useState("");
@@ -46,8 +48,11 @@ export default function CreateAccessCodeForm({
     if (targetType === "person") {
       return people.map((p) => ({ id: p.id, label: p.name }));
     }
-    return hints.map((h) => ({ id: h.id, label: h.title }));
-  }, [targetType, records, people, hints]);
+    if (targetType === "hint") {
+      return hints.map((h) => ({ id: h.id, label: h.title }));
+    }
+    return hiddenEvidence.map((h) => ({ id: h.id, label: h.title }));
+  }, [targetType, records, people, hints, hiddenEvidence]);
 
   function handleTargetTypeChange(next: TargetType) {
     setTargetType(next);
@@ -172,6 +177,7 @@ export default function CreateAccessCodeForm({
               <option value="record">Record</option>
               <option value="person">Person</option>
               <option value="hint">Hint</option>
+              <option value="hidden_evidence">Hidden evidence</option>
             </select>
           </label>
         </div>

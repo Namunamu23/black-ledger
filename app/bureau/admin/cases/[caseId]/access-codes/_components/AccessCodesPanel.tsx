@@ -21,6 +21,7 @@ type Props = {
   people: { id: number; name: string }[];
   records: { id: number; title: string }[];
   hints: { id: number; title: string }[];
+  hiddenEvidence: { id: number; title: string }[];
   initialCodes: AccessCodeWithCount[];
 };
 
@@ -35,6 +36,7 @@ export default function AccessCodesPanel({
   people,
   records,
   hints,
+  hiddenEvidence,
   initialCodes,
 }: Props) {
   const [codes, setCodes] = useState<AccessCodeWithCount[]>(initialCodes);
@@ -63,6 +65,7 @@ export default function AccessCodesPanel({
         people={people}
         records={records}
         hints={hints}
+        hiddenEvidence={hiddenEvidence}
         onCreated={refetch}
       />
       <AccessCodeList codes={codes} />

@@ -33,6 +33,13 @@ export default async function AdminAccessCodesPage({ params }: PageProps) {
         select: { id: true, title: true },
         orderBy: [{ unlockStage: "asc" }, { sortOrder: "asc" }],
       },
+      // F-15: surface hidden_evidence rows so admins can target them from
+      // the UI. The API + redeem route + workspace renderer already accept
+      // hidden_evidence; this closes the UI gap.
+      hiddenEvidence: {
+        select: { id: true, title: true },
+        orderBy: { revealOrder: "asc" },
+      },
     },
   });
   if (!caseFile) {
@@ -89,6 +96,7 @@ export default async function AdminAccessCodesPage({ params }: PageProps) {
                 people={caseFile.people}
                 records={caseFile.records}
                 hints={caseFile.hints}
+                hiddenEvidence={caseFile.hiddenEvidence}
                 initialCodes={initialCodes}
               />
             </div>
