@@ -125,8 +125,15 @@ export async function POST(request: Request) {
       .update(email)
       .digest("hex")
       .slice(0, 16);
-    const bucket = Math.floor(Date.now() / (15 * 60 * 1000));
-    const idempotencyKey = `checkout-case-${caseId}-${emailHash}-${bucket}`;
+    // Stripe persists idempotency keys for ~24 hours by default, which matches
+    // the practical lifetime of a Stripe Checkout session (default 3-hour
+    // session expiry, with retries thereafter producing the same outcome).
+    // Two requests with the same (caseId, emailHash) within 24 hours collapse
+    // to one Stripe session regardless of how many tabs the user has open or
+    // how long they wait between clicks. Combined with the existing
+    // PENDING-session-reuse short-circuit higher in this handler, this closes
+    // the F-07 stale-tab double-mint window.
+    const idempotencyKey = `checkout-case-${caseId}-${emailHash}`;
 
     const session = await getStripe().checkout.sessions.create(
       {
