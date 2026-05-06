@@ -103,6 +103,7 @@ describe("POST /api/cases/[slug]/checkpoint — strict matcher", () => {
       return await callback({
         userCase: { updateMany: mocks.userCaseUpdateMany },
         userCaseEvent: { create: mocks.userCaseEventCreate },
+        checkpointAttempt: { create: mocks.checkpointAttemptCreate },
       });
     });
   });

@@ -136,17 +136,20 @@ export async function POST(
       checkpoint.acceptedAnswers
     );
 
-    await prisma.checkpointAttempt.create({
-      data: {
-        userId,
-        caseFileId: userCase.caseFileId,
-        stage: userCase.currentStage,
-        answer: parsed.data.answer,
-        isCorrect,
-      },
-    });
-
     if (!isCorrect) {
+      // Wrong answer: log the attempt outside any transaction (no stage
+      // advance to roll back) and return 400. Wrong-answer attempts are
+      // useful audit data — we want to know players are guessing.
+      await prisma.checkpointAttempt.create({
+        data: {
+          userId,
+          caseFileId: userCase.caseFileId,
+          stage: userCase.currentStage,
+          answer: parsed.data.answer,
+          isCorrect: false,
+        },
+      });
+
       return NextResponse.json(
         { message: "That answer does not unlock the next stage yet." },
         { status: 400 }
@@ -176,6 +179,21 @@ export async function POST(
       if (advanced.count === 0) {
         throw new Error("STAGE_CONFLICT");
       }
+
+      // Correct-answer attempt is written INSIDE the transaction so that a
+      // STAGE_CONFLICT rollback also rolls back the attempt log. This way
+      // the audit trail only records correct attempts that actually
+      // advanced the stage — concurrent losers don't leave false-positive
+      // "succeeded" rows behind. F-17 (2026-05-06 audit).
+      await tx.checkpointAttempt.create({
+        data: {
+          userId,
+          caseFileId: userCase.caseFileId,
+          stage: userCase.currentStage,
+          answer: parsed.data.answer,
+          isCorrect: true,
+        },
+      });
 
       await tx.userCaseEvent.create({
         data: {
