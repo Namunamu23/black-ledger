@@ -58,6 +58,10 @@ export async function POST(
     await getResend().emails.send({
       from: getResendFrom(),
       to: message.email,
+      // Customer replies to this email land at the monitored support
+      // mailbox rather than the no-reply From address. Mirrors the
+      // activation-email pattern (F-20).
+      replyTo: "support@theblackledger.app",
       subject: `Re: Your message to ${appName}`,
       text: [
         `Hi ${message.name},`,

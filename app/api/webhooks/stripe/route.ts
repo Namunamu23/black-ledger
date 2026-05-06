@@ -285,6 +285,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     await getResend().emails.send({
       from: getResendFrom(),
       to: buyerEmail,
+      // Customers who hit Reply on this email land at our monitored support
+      // mailbox, not the no-reply From address. Required by CAN-SPAM
+      // (US transactional best practice) and GDPR transactional-email
+      // hygiene. Closes F-20 from the 2026-05-06 audit.
+      replyTo: "support@theblackledger.app",
       subject: "Your Black Ledger activation code",
       text: [
         `Your kit for "${caseTitle}" is ready to play.`,
