@@ -43,24 +43,33 @@ export async function PATCH(
     );
   }
 
-  const existing = await prisma.activationCode.findUnique({
-    where: { id: parsedCodeId },
-  });
-  if (!existing || existing.caseFileId !== parsedCaseId) {
-    return NextResponse.json(
-      { message: "Activation code not found." },
-      { status: 404 }
-    );
-  }
-
-  if (existing.revokedAt !== null) {
-    return NextResponse.json({ message: "Already revoked" }, { status: 409 });
-  }
-
-  await prisma.activationCode.update({
-    where: { id: parsedCodeId },
+  // Atomic: only revoke if not already revoked AND the code belongs to this
+  // case. count===0 means either the code doesn't exist, the case ownership
+  // doesn't match, OR it's already revoked. Distinguish those cases via a
+  // follow-up findUnique only on miss, to give the admin a clear 404-vs-409
+  // (and avoid leaking the existence of codes belonging to other cases).
+  const result = await prisma.activationCode.updateMany({
+    where: {
+      id: parsedCodeId,
+      caseFileId: parsedCaseId,
+      revokedAt: null,
+    },
     data: { revokedAt: new Date() },
   });
+
+  if (result.count === 0) {
+    const exists = await prisma.activationCode.findUnique({
+      where: { id: parsedCodeId },
+      select: { id: true, caseFileId: true, revokedAt: true },
+    });
+    if (!exists || exists.caseFileId !== parsedCaseId) {
+      return NextResponse.json(
+        { message: "Activation code not found." },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json({ message: "Already revoked" }, { status: 409 });
+  }
 
   return NextResponse.json({ ok: true }, { status: 200 });
 }

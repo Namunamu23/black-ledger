@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => {
   const activationCodeFindUnique = vi.fn();
   const activationCodeCreateMany = vi.fn();
   const activationCodeUpdate = vi.fn();
+  const activationCodeUpdateMany = vi.fn();
   const authFn = vi.fn();
   return {
     caseFileFindUnique,
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => {
     activationCodeFindUnique,
     activationCodeCreateMany,
     activationCodeUpdate,
+    activationCodeUpdateMany,
     authFn,
   };
 });
@@ -32,6 +34,7 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: mocks.activationCodeFindUnique,
       createMany: mocks.activationCodeCreateMany,
       update: mocks.activationCodeUpdate,
+      updateMany: mocks.activationCodeUpdateMany,
     },
   },
 }));
@@ -120,14 +123,8 @@ describe("POST /api/admin/cases/[caseId]/codes — batch generate", () => {
 });
 
 describe("PATCH /api/admin/cases/[caseId]/codes/[codeId] — revoke", () => {
-  it("revokes a code (revokedAt is set on the row)", async () => {
-    mocks.activationCodeFindUnique.mockResolvedValue({
-      id: 42,
-      caseFileId: 1,
-      code: "ALDER-ABCD1234",
-      revokedAt: null,
-    });
-    mocks.activationCodeUpdate.mockResolvedValue({ id: 42, revokedAt: new Date() });
+  it("revokes a code via an atomic updateMany scoped to (id, caseFileId, revokedAt: null)", async () => {
+    mocks.activationCodeUpdateMany.mockResolvedValue({ count: 1 });
 
     const ts = new Date("2026-04-20T03:00:00.000Z").toISOString();
     const response = await codePATCH(makePatchRequest(42, { revokedAt: ts }), {
@@ -135,17 +132,27 @@ describe("PATCH /api/admin/cases/[caseId]/codes/[codeId] — revoke", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(mocks.activationCodeUpdate).toHaveBeenCalledOnce();
-    const updateArgs = mocks.activationCodeUpdate.mock.calls[0][0];
-    expect(updateArgs.where).toEqual({ id: 42 });
+    expect(mocks.activationCodeUpdateMany).toHaveBeenCalledOnce();
+    const updateArgs = mocks.activationCodeUpdateMany.mock.calls[0][0];
+    expect(updateArgs.where).toEqual({
+      id: 42,
+      caseFileId: 1,
+      revokedAt: null,
+    });
     expect(updateArgs.data.revokedAt).toBeInstanceOf(Date);
+    // Server stamps the timestamp; it must not honor a client-supplied value.
+    expect(updateArgs.data.revokedAt.toISOString()).not.toBe(ts);
+    // No fallback findUnique on success (the precondition matched).
+    expect(mocks.activationCodeFindUnique).not.toHaveBeenCalled();
+    // Old single-row update path must be gone.
+    expect(mocks.activationCodeUpdate).not.toHaveBeenCalled();
   });
 
-  it("returns 409 when the code is already revoked", async () => {
+  it("returns 409 when the code is already revoked (updateMany count=0, fallback finds the row)", async () => {
+    mocks.activationCodeUpdateMany.mockResolvedValue({ count: 0 });
     mocks.activationCodeFindUnique.mockResolvedValue({
       id: 42,
       caseFileId: 1,
-      code: "ALDER-ABCD1234",
       revokedAt: new Date("2026-04-19T00:00:00.000Z"),
     });
 
@@ -155,6 +162,20 @@ describe("PATCH /api/admin/cases/[caseId]/codes/[codeId] — revoke", () => {
     );
 
     expect(response.status).toBe(409);
+    expect(mocks.activationCodeUpdateMany).toHaveBeenCalledOnce();
+    expect(mocks.activationCodeUpdate).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the code does not exist (updateMany count=0, fallback misses)", async () => {
+    mocks.activationCodeUpdateMany.mockResolvedValue({ count: 0 });
+    mocks.activationCodeFindUnique.mockResolvedValue(null);
+
+    const response = await codePATCH(
+      makePatchRequest(999, { revokedAt: new Date().toISOString() }),
+      { params: codeParams("999") }
+    );
+
+    expect(response.status).toBe(404);
     expect(mocks.activationCodeUpdate).not.toHaveBeenCalled();
   });
 });
