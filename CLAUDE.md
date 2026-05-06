@@ -314,6 +314,11 @@ Approximately 6 commits + Stripe Dashboard configuration (sandbox mode). Targete
 - New rate-limit branches added in Batch 2 (`/api/checkout/status`, `/api/admin/uploads/blurhash`) are functional but untested.
 - Fix 3's P2002 catch in `app/api/admin/cases/route.ts` is functional but untested (no race-condition simulation).
 
+**Deferred product / architecture decisions (revisit triggers):**
+
+- **Self-serve refund flow (`/api/refund-request`)** — DEFERRED. Decision made 2026-05-06: today's manual flow (customer emails support@..., operator verifies + processes Stripe refund, charge.refunded webhook revokes code) is fine at current volume. Revisit when monthly order volume reaches roughly 50–100 OR when refund handling becomes a support burden. Until then, Terms §7 specifies the manual flow with required info (purchase email, order number or activation code, brief reason). Implementation sketch when we revisit: authenticated `POST /api/refund-request` → asserts `Order.createdAt > now - 7 days` AND `ActivationCode.claimedAt === null` → calls `stripe.refunds.create` → fires the existing `charge.refunded` handler. ~200 lines + UI.
+- **Authenticated purchase flow (account-before-checkout)** — DEFERRED. Decision made 2026-05-06: keep guest checkout via Stripe Checkout with email-delivered activation code. Per-recipient activation-email throttle (3/hour to the same normalized email) ships as the interim spam-relay defense in Batch 9 — see F-13 in `audits/2026-05-06-godmode-audit.md`. Revisit the architectural fix (require account creation pre-checkout, deliver code via authenticated link) when: (a) the throttle proves insufficient and Resend account reputation suffers, OR (b) we need to store the buyer's identity for refund automation, OR (c) we need a customer dashboard with order history. Today: BuyButton flow remains as-is.
+
 **Upcoming major milestones**
 - Resend DKIM/SPF/DMARC verified for `theblackledger.app` (DNS records in Namecheap).
 - Stripe Live account fully activated (bank, ID, business details, public details mirrored from sandbox).
