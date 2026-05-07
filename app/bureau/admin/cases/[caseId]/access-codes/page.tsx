@@ -60,7 +60,6 @@ export default async function AdminAccessCodesPage({ params }: PageProps) {
     kind: c.kind,
     unlocksTarget: c.unlocksTarget,
     requiresStage: c.requiresStage,
-    oneTimePerUser: c.oneTimePerUser,
     retiredAt: c.retiredAt ? c.retiredAt.toISOString() : null,
     createdAt: c.createdAt.toISOString(),
     redemptions: c.redemptions,

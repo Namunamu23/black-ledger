@@ -37,7 +37,6 @@ export default function CreateAccessCodeForm({
   const [targetType, setTargetType] = useState<TargetType>("record");
   const [targetId, setTargetId] = useState<number | "">("");
   const [requiresStageRaw, setRequiresStageRaw] = useState("");
-  const [oneTimePerUser, setOneTimePerUser] = useState(true);
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
 
@@ -89,7 +88,6 @@ export default function CreateAccessCodeForm({
             kind,
             unlocksTarget: { type: targetType, id: Number(targetId) },
             requiresStage: parsedStage,
-            oneTimePerUser,
           }),
         }
       );
@@ -207,30 +205,19 @@ export default function CreateAccessCodeForm({
           </select>
         </label>
 
-        <div className="grid gap-4 md:grid-cols-[1fr_auto]">
-          <label className="grid gap-2">
-            <span className="text-xs uppercase tracking-[0.25em] text-zinc-500">
-              Requires stage (blank = no gate)
-            </span>
-            <input
-              type="number"
-              min={0}
-              value={requiresStageRaw}
-              onChange={(e) => setRequiresStageRaw(e.target.value)}
-              placeholder="Leave blank to unlock at any stage"
-              className="rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none"
-            />
-          </label>
-
-          <label className="flex items-end gap-3 pb-3 text-sm text-zinc-300">
-            <input
-              type="checkbox"
-              checked={oneTimePerUser}
-              onChange={(e) => setOneTimePerUser(e.target.checked)}
-            />
-            One-time per user
-          </label>
-        </div>
+        <label className="grid gap-2">
+          <span className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+            Requires stage (blank = no gate)
+          </span>
+          <input
+            type="number"
+            min={0}
+            value={requiresStageRaw}
+            onChange={(e) => setRequiresStageRaw(e.target.value)}
+            placeholder="Leave blank to unlock at any stage"
+            className="rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none"
+          />
+        </label>
       </div>
 
       <div className="mt-6 flex items-center gap-4">

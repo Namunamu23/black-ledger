@@ -10,7 +10,6 @@ export type AccessCodeWithCount = {
   kind: string;
   unlocksTarget: unknown;
   requiresStage: number | null;
-  oneTimePerUser: boolean;
   retiredAt: string | null;
   createdAt: string;
   redemptions: { id: number }[];

@@ -280,7 +280,6 @@ export const createAccessCodeSchema = z.object({
     id: z.number().int().positive(),
   }),
   requiresStage: z.number().int().min(0).nullable().optional(),
-  oneTimePerUser: z.boolean().optional(),
 });
 
 export const solutionPatchSchema = z.object({

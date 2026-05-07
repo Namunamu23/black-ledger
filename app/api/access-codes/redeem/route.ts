@@ -116,23 +116,6 @@ export async function POST(request: Request) {
     );
   }
 
-  if (accessCode.oneTimePerUser) {
-    const existing = await prisma.accessCodeRedemption.findFirst({
-      where: { accessCodeId: accessCode.id, userId },
-    });
-    if (existing) {
-      const content = await resolveContent(accessCode.unlocksTarget);
-      return NextResponse.json(
-        {
-          alreadyRedeemed: true,
-          unlocksTarget: accessCode.unlocksTarget,
-          content,
-        },
-        { status: 200 }
-      );
-    }
-  }
-
   try {
     await prisma.accessCodeRedemption.create({
       data: {
@@ -144,9 +127,11 @@ export async function POST(request: Request) {
   } catch (error) {
     // P2002 = unique constraint violation on (accessCodeId, userId).
     // Race condition: a concurrent request created the redemption first,
-    // OR the user is replaying a non-oneTimePerUser code. Either way the
+    // OR the user is replaying a code they already have. Either way the
     // user already has the unlock — surface it as alreadyRedeemed instead
-    // of a 500.
+    // of a 500. The schema's @@unique([accessCodeId, userId]) is the only
+    // truth here; the previous oneTimePerUser branch was a no-op above
+    // this catch.
     const maybe = error as { code?: string };
     if (maybe.code === "P2002") {
       const content = await resolveContent(accessCode.unlocksTarget);

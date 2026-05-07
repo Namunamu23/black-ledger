@@ -58,7 +58,6 @@ const NULL_STAGE_CODE = {
   caseFileId: 7,
   unlocksTarget: { type: "record", id: 42 },
   requiresStage: null,
-  oneTimePerUser: false,
   retiredAt: null,
 };
 

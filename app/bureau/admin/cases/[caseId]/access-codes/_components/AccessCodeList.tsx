@@ -100,11 +100,6 @@ function AccessCodeRow({ code }: { code: AccessCodeWithCount }) {
               Retired
             </span>
           ) : null}
-          {code.oneTimePerUser ? (
-            <span className="rounded-full border border-zinc-700 bg-zinc-950 px-3 py-1 text-xs text-zinc-400">
-              One-time / user
-            </span>
-          ) : null}
         </div>
 
         <div className="mt-3 font-mono text-lg text-white">{code.code}</div>

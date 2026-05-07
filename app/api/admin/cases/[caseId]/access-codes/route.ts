@@ -115,7 +115,6 @@ export async function POST(
         caseFileId: parsedCaseId,
         unlocksTarget: parsed.data.unlocksTarget,
         requiresStage: parsed.data.requiresStage ?? null,
-        oneTimePerUser: parsed.data.oneTimePerUser ?? false,
       },
     });
     return NextResponse.json(created, { status: 201 });
