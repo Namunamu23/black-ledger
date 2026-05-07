@@ -1064,7 +1064,6 @@ async function main() {
         code: "TESTQR01",
         kind: "ARTIFACT_QR",
         unlocksTarget: { type: "record", id: firstRecord.id },
-        oneTimePerUser: true,
       }),
       jar: adminJar,
     });
@@ -1083,7 +1082,6 @@ async function main() {
         code: "TESTQR01",
         kind: "ARTIFACT_QR",
         unlocksTarget: { type: "record", id: firstRecord.id },
-        oneTimePerUser: true,
       }),
       jar: adminJar,
     });
@@ -1318,15 +1316,12 @@ async function main() {
   await expect(
     "redeem with admin cookie → 200 (admin is also a valid user)",
     async () => {
-      // Use a fresh AccessCode so we don't collide with TESTQR01's
-      // oneTimePerUser pre-check.
       const ac = await prisma.accessCode.create({
         data: {
           code: "ADMINREDEEM01",
           kind: "BUREAU_REF",
           caseFileId: caseId,
           unlocksTarget: { type: "record", id: firstRecord.id },
-          oneTimePerUser: false,
         },
       });
       const r = await http("/api/access-codes/redeem", {

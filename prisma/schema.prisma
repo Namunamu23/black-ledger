@@ -439,7 +439,6 @@ model AccessCode {
   caseFile       CaseFile  @relation("CaseAccessCodes", fields: [caseFileId], references: [id], onDelete: Cascade)
   unlocksTarget  Json
   requiresStage  Int?
-  oneTimePerUser Boolean   @default(false)
   retiredAt      DateTime?
   createdAt      DateTime  @default(now())
   redemptions    AccessCodeRedemption[]

@@ -129,9 +129,8 @@ export async function POST(request: Request) {
     // Race condition: a concurrent request created the redemption first,
     // OR the user is replaying a code they already have. Either way the
     // user already has the unlock — surface it as alreadyRedeemed instead
-    // of a 500. The schema's @@unique([accessCodeId, userId]) is the only
-    // truth here; the previous oneTimePerUser branch was a no-op above
-    // this catch.
+    // of a 500. The schema's @@unique([accessCodeId, userId]) is the
+    // sole source of truth for one-redemption-per-user.
     const maybe = error as { code?: string };
     if (maybe.code === "P2002") {
       const content = await resolveContent(accessCode.unlocksTarget);
