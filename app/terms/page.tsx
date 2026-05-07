@@ -187,8 +187,8 @@ export default function TermsPage() {
               7. Refund Policy
             </h2>
             <p className="mb-4">
-              Because Black Ledger sells digital products, our refund
-              policy is:
+              Because Black Ledger sells digital products (activation codes
+              that unlock case files), our refund policy is as follows:
             </p>
             <ul className="list-disc space-y-2 pl-6">
               <li>
@@ -201,22 +201,43 @@ export default function TermsPage() {
                 the case file is considered delivered and the sale is final.
               </li>
               <li>
-                To request a refund, email{" "}
+                To request a refund within the 7-day window, email{" "}
                 <a
                   href="mailto:support@theblackledger.app"
                   className="text-amber-400 underline hover:text-amber-300"
                 >
                   support@theblackledger.app
-                </a>{" "}
-                with your purchase email and the order or session reference.
-                We will verify the unredeemed status of the activation
-                code and process the refund through Stripe to the original
-                payment method.
+                </a>
+                . Please include in your email:
+                <ol className="mt-2 list-decimal space-y-1 pl-6">
+                  <li>the email address you used at checkout;</li>
+                  <li>
+                    your order number or activation code (the activation
+                    code was sent to you in the purchase confirmation email);
+                    and
+                  </li>
+                  <li>a brief reason for the refund request.</li>
+                </ol>
+              </li>
+              <li>
+                We process refund requests manually. We will verify the
+                unredeemed status of the activation code, and if the
+                request is within the 7-day window and the code is
+                unredeemed, we will process the refund through Stripe to
+                the original payment method. Once a refund has been
+                processed, the activation code is automatically revoked
+                and any associated bureau access is marked as refunded.
               </li>
               <li>
                 Outside of the 7-day window, or once the activation code
                 has been redeemed, refunds are at our sole discretion and
                 are typically not granted.
+              </li>
+              <li>
+                In the case of a partial refund (for example, a goodwill
+                credit on a damaged physical kit component), bureau access
+                to the case remains active. Only a full refund revokes
+                access.
               </li>
               <li>
                 If a transaction is determined to be fraudulent, we may
