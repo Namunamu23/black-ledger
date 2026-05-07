@@ -58,6 +58,7 @@ export const OrderStatus = {
   COMPLETE: "COMPLETE",
   FAILED: "FAILED",
   REFUNDED: "REFUNDED",
+  PARTIALLY_REFUNDED: "PARTIALLY_REFUNDED",
 } as const;
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 

@@ -16,11 +16,16 @@ const mocks = vi.hoisted(() => {
   const caseFileFindUnique = vi.fn();
   const orderFindUnique = vi.fn();
   const orderFindFirst = vi.fn();
+  const orderCount = vi.fn();
   const orderCreate = vi.fn();
   const orderUpdate = vi.fn();
   const orderUpdateMany = vi.fn();
   const activationCodeFindUnique = vi.fn();
   const activationCodeCreate = vi.fn();
+  const activationCodeUpdate = vi.fn();
+  const activationCodeUpdateMany = vi.fn();
+  const userCaseDeleteMany = vi.fn();
+  const userCaseUpdateMany = vi.fn();
   const processedStripeEventCreate = vi.fn();
   const transactionFn = vi.fn();
   const stripeSessionsCreate = vi.fn();
@@ -30,11 +35,16 @@ const mocks = vi.hoisted(() => {
     caseFileFindUnique,
     orderFindUnique,
     orderFindFirst,
+    orderCount,
     orderCreate,
     orderUpdate,
     orderUpdateMany,
     activationCodeFindUnique,
     activationCodeCreate,
+    activationCodeUpdate,
+    activationCodeUpdateMany,
+    userCaseDeleteMany,
+    userCaseUpdateMany,
     processedStripeEventCreate,
     transactionFn,
     stripeSessionsCreate,
@@ -49,6 +59,7 @@ vi.mock("@/lib/prisma", () => ({
     order: {
       findUnique: mocks.orderFindUnique,
       findFirst: mocks.orderFindFirst,
+      count: mocks.orderCount,
       create: mocks.orderCreate,
       update: mocks.orderUpdate,
       updateMany: mocks.orderUpdateMany,
@@ -56,6 +67,12 @@ vi.mock("@/lib/prisma", () => ({
     activationCode: {
       findUnique: mocks.activationCodeFindUnique,
       create: mocks.activationCodeCreate,
+      update: mocks.activationCodeUpdate,
+      updateMany: mocks.activationCodeUpdateMany,
+    },
+    userCase: {
+      deleteMany: mocks.userCaseDeleteMany,
+      updateMany: mocks.userCaseUpdateMany,
     },
     processedStripeEvent: { create: mocks.processedStripeEventCreate },
     $transaction: mocks.transactionFn,
@@ -116,14 +133,24 @@ beforeEach(() => {
   // `order.create` is now exposed inside the tx callback for the
   // P1-5 recovery branch (handleCheckoutCompleted creates the Order
   // inline if findUnique returned null). `order.updateMany` was added
-  // for the concurrency precondition (Batch 4 Fix 4).
+  // for the concurrency precondition (Batch 4 Fix 4). `userCase` and
+  // `activationCode.update*` were added for the F-02 charge.refunded
+  // handler (Batch 9 Fix 2).
   mocks.transactionFn.mockImplementation(async (callback: any) => {
     return await callback({
-      activationCode: { create: mocks.activationCodeCreate },
+      activationCode: {
+        create: mocks.activationCodeCreate,
+        update: mocks.activationCodeUpdate,
+        updateMany: mocks.activationCodeUpdateMany,
+      },
       order: {
         create: mocks.orderCreate,
         update: mocks.orderUpdate,
         updateMany: mocks.orderUpdateMany,
+      },
+      userCase: {
+        deleteMany: mocks.userCaseDeleteMany,
+        updateMany: mocks.userCaseUpdateMany,
       },
     });
   });
@@ -490,5 +517,215 @@ describe("POST /api/webhooks/stripe", () => {
     expect(mocks.orderCreate).not.toHaveBeenCalled();
     expect(mocks.activationCodeCreate).not.toHaveBeenCalled();
     expect(mocks.resendSend).not.toHaveBeenCalled();
+  });
+});
+
+describe("charge.refunded handler (F-02)", () => {
+  it("full refund — Order → REFUNDED, code revoked, UserCase soft-revoked, no deleteMany", async () => {
+    mocks.stripeConstructEvent.mockReturnValue({
+      id: "evt_refund_full",
+      type: "charge.refunded",
+      livemode: false,
+      data: {
+        object: {
+          id: "ch_test_full",
+          payment_intent: "pi_test_refund_full",
+          amount: 3000,
+          amount_refunded: 3000,
+        },
+      },
+    });
+    mocks.orderFindFirst.mockResolvedValue({
+      id: 42,
+      caseFileId: 7,
+      activationCode: { id: 99, claimedByUserId: 11 },
+    });
+
+    const response = await webhookPOST(
+      makeWebhookRequest('{"type":"charge.refunded"}')
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.transactionFn).toHaveBeenCalledOnce();
+
+    // Order flip to REFUNDED via updateMany with status precondition.
+    const orderCall = mocks.orderUpdateMany.mock.calls.find((args) =>
+      args[0]?.data?.status === "REFUNDED"
+    );
+    expect(orderCall).toBeDefined();
+    expect(orderCall?.[0].where).toMatchObject({
+      id: 42,
+      status: { in: ["COMPLETE", "PARTIALLY_REFUNDED"] },
+    });
+
+    // ActivationCode revoke via updateMany with revokedAt: null precondition.
+    expect(mocks.activationCodeUpdateMany).toHaveBeenCalledOnce();
+    expect(mocks.activationCodeUpdateMany.mock.calls[0][0]).toMatchObject({
+      where: { id: 99, revokedAt: null },
+    });
+    expect(
+      mocks.activationCodeUpdateMany.mock.calls[0][0].data.revokedAt
+    ).toBeInstanceOf(Date);
+
+    // UserCase soft-revoke via updateMany; deleteMany must NOT be called.
+    expect(mocks.userCaseUpdateMany).toHaveBeenCalledOnce();
+    expect(mocks.userCaseUpdateMany.mock.calls[0][0]).toMatchObject({
+      where: { userId: 11, caseFileId: 7, revokedAt: null },
+    });
+    expect(
+      mocks.userCaseUpdateMany.mock.calls[0][0].data.revokedAt
+    ).toBeInstanceOf(Date);
+    expect(mocks.userCaseDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("partial refund — Order → PARTIALLY_REFUNDED, entitlement preserved", async () => {
+    mocks.stripeConstructEvent.mockReturnValue({
+      id: "evt_refund_partial",
+      type: "charge.refunded",
+      livemode: false,
+      data: {
+        object: {
+          id: "ch_test_partial",
+          payment_intent: "pi_test_refund_partial",
+          amount: 3000,
+          amount_refunded: 500,
+        },
+      },
+    });
+    mocks.orderFindFirst.mockResolvedValue({
+      id: 43,
+      caseFileId: 7,
+      activationCode: { id: 100, claimedByUserId: 12 },
+    });
+
+    const response = await webhookPOST(
+      makeWebhookRequest('{"type":"charge.refunded"}')
+    );
+
+    expect(response.status).toBe(200);
+
+    // Partial branch: no transaction, just the single status flip.
+    expect(mocks.transactionFn).not.toHaveBeenCalled();
+    expect(mocks.orderUpdateMany).toHaveBeenCalledOnce();
+    expect(mocks.orderUpdateMany.mock.calls[0][0]).toMatchObject({
+      where: { id: 43, status: { in: ["COMPLETE"] } },
+      data: { status: "PARTIALLY_REFUNDED" },
+    });
+
+    // Entitlement intact.
+    expect(mocks.activationCodeUpdate).not.toHaveBeenCalled();
+    expect(mocks.activationCodeUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.userCaseUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.userCaseDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("idempotent full refund — second delivery matches zero rows everywhere, no errors", async () => {
+    mocks.stripeConstructEvent.mockReturnValue({
+      id: "evt_refund_full_again",
+      type: "charge.refunded",
+      livemode: false,
+      data: {
+        object: {
+          id: "ch_test_full_again",
+          payment_intent: "pi_test_refund_idempotent",
+          amount: 3000,
+          amount_refunded: 3000,
+        },
+      },
+    });
+    mocks.orderFindFirst.mockResolvedValue({
+      id: 44,
+      caseFileId: 7,
+      activationCode: { id: 101, claimedByUserId: 13 },
+    });
+    // Re-delivery: every precondition matches zero rows.
+    mocks.orderUpdateMany.mockResolvedValue({ count: 0 });
+    mocks.activationCodeUpdateMany.mockResolvedValue({ count: 0 });
+    mocks.userCaseUpdateMany.mockResolvedValue({ count: 0 });
+
+    const response = await webhookPOST(
+      makeWebhookRequest('{"type":"charge.refunded"}')
+    );
+
+    // No exception, transaction still ran, all updateMany calls were fired
+    // but each found zero matching rows. Status code must remain 200.
+    expect(response.status).toBe(200);
+    expect(mocks.transactionFn).toHaveBeenCalledOnce();
+    expect(mocks.orderUpdateMany).toHaveBeenCalled();
+    expect(mocks.activationCodeUpdateMany).toHaveBeenCalled();
+    expect(mocks.userCaseUpdateMany).toHaveBeenCalled();
+    expect(mocks.userCaseDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("partial then full — second event flips PARTIALLY_REFUNDED → REFUNDED and revokes", async () => {
+    // First: a partial-refund event arrives. Order ends up PARTIALLY_REFUNDED.
+    mocks.stripeConstructEvent.mockReturnValueOnce({
+      id: "evt_partial_first",
+      type: "charge.refunded",
+      livemode: false,
+      data: {
+        object: {
+          id: "ch_partial_first",
+          payment_intent: "pi_seq",
+          amount: 3000,
+          amount_refunded: 500,
+        },
+      },
+    });
+    mocks.orderFindFirst.mockResolvedValueOnce({
+      id: 45,
+      caseFileId: 7,
+      activationCode: { id: 102, claimedByUserId: 14 },
+    });
+
+    let response = await webhookPOST(
+      makeWebhookRequest('{"type":"charge.refunded"}')
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.transactionFn).not.toHaveBeenCalled();
+    const partialOrderCall = mocks.orderUpdateMany.mock.calls.find(
+      (args) => args[0]?.data?.status === "PARTIALLY_REFUNDED"
+    );
+    expect(partialOrderCall).toBeDefined();
+
+    // Second: an additional refund completes the original charge — full refund.
+    mocks.stripeConstructEvent.mockReturnValueOnce({
+      id: "evt_full_after_partial",
+      type: "charge.refunded",
+      livemode: false,
+      data: {
+        object: {
+          id: "ch_full_after_partial",
+          payment_intent: "pi_seq",
+          amount: 3000,
+          amount_refunded: 3000,
+        },
+      },
+    });
+    mocks.orderFindFirst.mockResolvedValueOnce({
+      id: 45,
+      caseFileId: 7,
+      activationCode: { id: 102, claimedByUserId: 14 },
+    });
+
+    response = await webhookPOST(
+      makeWebhookRequest('{"type":"charge.refunded"}')
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.transactionFn).toHaveBeenCalledOnce();
+
+    // The full-refund branch matched on { COMPLETE, PARTIALLY_REFUNDED } so
+    // the second event flips PARTIALLY_REFUNDED → REFUNDED.
+    const refundOrderCall = mocks.orderUpdateMany.mock.calls.find((args) =>
+      args[0]?.data?.status === "REFUNDED"
+    );
+    expect(refundOrderCall).toBeDefined();
+    expect(refundOrderCall?.[0].where.status.in).toContain("PARTIALLY_REFUNDED");
+
+    expect(mocks.activationCodeUpdateMany).toHaveBeenCalledOnce();
+    expect(mocks.userCaseUpdateMany).toHaveBeenCalledOnce();
+    expect(mocks.userCaseDeleteMany).not.toHaveBeenCalled();
   });
 });

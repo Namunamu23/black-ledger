@@ -407,39 +407,71 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     return;
   }
 
-  // Single transaction: mark Order REFUNDED, revoke ActivationCode, and
-  // (if the code was already claimed) delete the UserCase to revoke the
-  // bureau entitlement. We deliberately do NOT touch TheorySubmission or
-  // CheckpointAttempt rows — those have historical value and the user is
-  // no longer reading them. Schema cascades on UserCase already remove
-  // dependent UserCaseEvent rows.
+  // Branch on full vs partial refund (F-02, 2026-05-06 audit, recommendation B).
+  // Stripe fires charge.refunded for ANY refund — partial or full. A partial
+  // refund (e.g. $5 goodwill credit on a $30 charge) should NOT revoke
+  // entitlement; only flag the Order so operators can see "this customer
+  // received a partial credit" in the support inbox.
+  const isFullRefund = charge.amount_refunded === charge.amount;
+
+  if (!isFullRefund) {
+    // Partial refund — flag the Order, preserve entitlement and progress.
+    // Idempotent via the status precondition: a re-delivered partial-refund
+    // event finds status PARTIALLY_REFUNDED already and is a no-op (the
+    // updateMany below matches zero rows on retry).
+    const result = await prisma.order.updateMany({
+      where: { id: order.id, status: { in: [OrderStatus.COMPLETE] } },
+      data: { status: OrderStatus.PARTIALLY_REFUNDED },
+    });
+    console.log(
+      `[REFUND] Order #${order.id} partial refund ` +
+        `(${charge.amount_refunded}/${charge.amount}); ` +
+        `entitlement preserved; status updated rows=${result.count}.`
+    );
+    return;
+  }
+
+  // Full refund — soft-revoke entitlement.
+  //   1. Mark Order REFUNDED (idempotent via status precondition).
+  //   2. Revoke ActivationCode (idempotent via revokedAt precondition).
+  //   3. Soft-revoke UserCase via revokedAt (preserves TheorySubmission +
+  //      CheckpointAttempt history for the customer's read-only view per
+  //      the workspace banner; idempotent via revokedAt precondition).
+  // We deliberately do NOT deleteMany — the prior implementation destroyed
+  // progress alongside revoking access, which made support conversations
+  // ("where did my case go?") harder than necessary.
   await prisma.$transaction(async (tx) => {
-    await tx.order.update({
-      where: { id: order.id },
+    await tx.order.updateMany({
+      where: {
+        id: order.id,
+        status: { in: [OrderStatus.COMPLETE, OrderStatus.PARTIALLY_REFUNDED] },
+      },
       data: { status: OrderStatus.REFUNDED },
     });
 
     if (order.activationCode) {
-      await tx.activationCode.update({
-        where: { id: order.activationCode.id },
+      await tx.activationCode.updateMany({
+        where: { id: order.activationCode.id, revokedAt: null },
         data: { revokedAt: new Date() },
       });
 
       if (order.activationCode.claimedByUserId !== null) {
-        await tx.userCase.deleteMany({
+        await tx.userCase.updateMany({
           where: {
             userId: order.activationCode.claimedByUserId,
             caseFileId: order.caseFileId,
+            revokedAt: null,
           },
+          data: { revokedAt: new Date() },
         });
       }
     }
   });
 
   console.log(
-    `[REFUND] Order #${order.id} refunded; ` +
+    `[REFUND] Order #${order.id} full refund; ` +
       `code revoked=${order.activationCode ? "yes" : "no"}; ` +
-      `userCase deleted=${order.activationCode?.claimedByUserId ? "yes" : "no"}`
+      `userCase soft-revoked=${order.activationCode?.claimedByUserId ? "yes" : "no"}`
   );
 }
 
