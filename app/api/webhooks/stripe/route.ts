@@ -277,6 +277,38 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (!updatedOrder.activationCode) return;
 
+  // Per-recipient throttle: at most 3 activation emails per hour to the
+  // same normalized email. F-13 (2026-05-06 audit). The activation code is
+  // already minted; if the email is throttled, the customer can recover it
+  // via support (operator can manually resend via the support reply
+  // endpoint). Defends against paid-spam-relay attacks where an attacker
+  // mints many paid checkouts to a victim's email. We count Orders where
+  // emailSentAt is non-null and within the last hour — i.e. emails that
+  // were actually delivered, not just orders created.
+  const ONE_HOUR_AGO = new Date(Date.now() - 60 * 60 * 1000);
+  const recentSendsToBuyer = await prisma.order.count({
+    where: {
+      email: buyerEmail.trim().toLowerCase(),
+      status: OrderStatus.COMPLETE,
+      emailSentAt: { gt: ONE_HOUR_AGO },
+    },
+  });
+
+  if (recentSendsToBuyer >= 3) {
+    await prisma.order.update({
+      where: { id: updatedOrder.id },
+      data: {
+        emailLastError: `Throttled: ${recentSendsToBuyer} activation emails to this address in last 1h`,
+      },
+    });
+    console.warn(
+      `[EMAIL-THROTTLE] Skipped activation email for ${buyerEmail}; ` +
+        `${recentSendsToBuyer} sends in last 1h. Order #${updatedOrder.id} has the activation code; ` +
+        `customer must contact support to receive it.`
+    );
+    return;
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   // Deep-link includes ?activate=CODE so the activation form is pre-filled
   // when the user lands on the bureau page after clicking the email link.

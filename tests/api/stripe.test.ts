@@ -121,6 +121,11 @@ beforeEach(() => {
   // race override this in their own `mockResolvedValue`.
   mocks.orderUpdateMany.mockResolvedValue({ count: 1 });
 
+  // Default: the per-recipient activation-email throttle (F-13, Batch 9 Fix 4)
+  // sees zero recent sends. Tests that exercise the throttle threshold
+  // override this with a count >= 3.
+  mocks.orderCount.mockResolvedValue(0);
+
   // Default: the ProcessedStripeEvent insert (Batch 5 Fix 2) succeeds — i.e.
   // this is a first delivery, not a duplicate. Tests that exercise the
   // duplicate-redelivery branch override with a P2002 rejection.
@@ -517,6 +522,79 @@ describe("POST /api/webhooks/stripe", () => {
     expect(mocks.orderCreate).not.toHaveBeenCalled();
     expect(mocks.activationCodeCreate).not.toHaveBeenCalled();
     expect(mocks.resendSend).not.toHaveBeenCalled();
+  });
+
+  it("throttles the activation email when 3+ sends to the same address in 1h (F-13)", async () => {
+    // Pre-condition: three recent COMPLETE orders to this email already had
+    // emailSentAt stamped within the last hour. The fourth purchase mints
+    // the code as usual but skips the email and records emailLastError.
+    mocks.stripeConstructEvent.mockReturnValue({
+      id: "evt_throttle",
+      type: "checkout.session.completed",
+      livemode: false,
+      data: {
+        object: {
+          id: "cs_throttle",
+          payment_intent: "pi_throttle",
+        },
+      },
+    });
+    mocks.orderFindUnique.mockResolvedValue({
+      id: 77,
+      stripeSessionId: "cs_throttle",
+      status: "PENDING",
+      email: "victim@example.com",
+      caseFileId: 7,
+      caseFile: { id: 7, slug: "alder-street-review", title: "Alder Street Review" },
+    });
+    mocks.activationCodeFindUnique.mockResolvedValue(null);
+    mocks.activationCodeCreate.mockResolvedValue({ id: 555, code: "ALDER-XYZTHRO0" });
+    mocks.orderUpdate.mockResolvedValue({
+      id: 77,
+      activationCode: { code: "ALDER-XYZTHRO0" },
+      caseFile: { title: "Alder Street Review" },
+    });
+    // Throttle threshold met: 3 recent sends to this address.
+    mocks.orderCount.mockResolvedValue(3);
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const response = await webhookPOST(
+        makeWebhookRequest('{"type":"checkout.session.completed"}')
+      );
+
+      expect(response.status).toBe(200);
+
+      // Code is still minted (entitlement is preserved; only the email is
+      // skipped) and Order is still flipped to COMPLETE.
+      expect(mocks.activationCodeCreate).toHaveBeenCalledOnce();
+
+      // Throttle counted on the normalized buyer email.
+      expect(mocks.orderCount).toHaveBeenCalledOnce();
+      const countArgs = mocks.orderCount.mock.calls[0][0];
+      expect(countArgs.where.email).toBe("victim@example.com");
+      expect(countArgs.where.status).toBe("COMPLETE");
+
+      // Email was NOT sent.
+      expect(mocks.resendSend).not.toHaveBeenCalled();
+
+      // emailLastError was recorded so the operator sees the throttled
+      // order in the support inbox UI. The first orderUpdate call is the
+      // payment_intent + activationCodeId write inside the tx; the second
+      // is this throttle's emailLastError write.
+      expect(mocks.orderUpdate).toHaveBeenCalledTimes(2);
+      const errArgs = mocks.orderUpdate.mock.calls[1][0];
+      expect(errArgs.where).toEqual({ id: 77 });
+      expect(errArgs.data.emailLastError).toMatch(/Throttled/);
+
+      // Warn line emitted for monitoring.
+      const throttleLog = warnSpy.mock.calls.find((args) =>
+        String(args[0]).includes("[EMAIL-THROTTLE]")
+      );
+      expect(throttleLog).toBeDefined();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 });
 
