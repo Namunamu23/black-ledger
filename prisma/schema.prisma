@@ -55,6 +55,7 @@ enum OrderStatus {
   COMPLETE
   FAILED
   REFUNDED
+  PARTIALLY_REFUNDED
 }
 
 enum HiddenEvidenceKind {
@@ -169,6 +170,7 @@ model UserCase {
   firstOpenedAt DateTime?
   lastViewedAt  DateTime?
   completedAt   DateTime?
+  revokedAt     DateTime?
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
