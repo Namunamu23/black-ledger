@@ -294,6 +294,35 @@ export default async function BureauCasePage({ params }: PageProps) {
           </div>
         </Card>
 
+        {ownedCase.revokedAt ? (
+          <Card
+            variant="dossier"
+            padding="lg"
+            className="mt-6 border-amber-700/60 bg-amber-950/20"
+          >
+            <div className="flex flex-col gap-2 text-amber-100">
+              <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-amber-300">
+                Case Refunded
+              </span>
+              <h2 className="text-lg font-semibold text-white">
+                This case has been refunded.
+              </h2>
+              <p className="text-sm leading-6 text-amber-200/80">
+                Your progress is preserved here for your records, but the case
+                is no longer playable. New theories and checkpoint answers
+                cannot be submitted. If you believe this was a mistake, contact{" "}
+                <a
+                  href="mailto:support@theblackledger.app"
+                  className="text-amber-300 underline hover:text-amber-200"
+                >
+                  support@theblackledger.app
+                </a>
+                .
+              </p>
+            </div>
+          </Card>
+        ) : null}
+
         {/* Progress + (optional) solved summary */}
         <div
           className={`mt-4 grid gap-4 ${
@@ -335,7 +364,7 @@ export default async function BureauCasePage({ params }: PageProps) {
         </div>
 
         {/* Checkpoint */}
-        {currentCheckpoint ? (
+        {currentCheckpoint && !ownedCase.revokedAt ? (
           <div className="mt-6">
             <Card
               variant="dossier"
@@ -563,7 +592,7 @@ export default async function BureauCasePage({ params }: PageProps) {
             <h2 className="mt-4 text-2xl font-semibold text-white">
               Submit your current conclusion
             </h2>
-            {theoryUnlocked ? (
+            {theoryUnlocked && !ownedCase.revokedAt ? (
               <>
                 <p className="mt-3 text-sm leading-7 text-zinc-400">
                   Final-stage review is unlocked. Your submission will now be

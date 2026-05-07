@@ -60,6 +60,13 @@ export async function POST(
       );
     }
 
+    if (ownedCase.revokedAt) {
+      return NextResponse.json(
+        { message: "This case has been refunded and is no longer playable." },
+        { status: 410 }
+      );
+    }
+
     if (ownedCase.currentStage < ownedCase.caseFile.maxStage) {
       return NextResponse.json(
         { message: "Theory submission unlocks only at the final stage." },

@@ -154,6 +154,34 @@ describe("POST /api/cases/[slug]/theory — UserCase state transitions", () => {
     expect(updateArgs.data.completedAt).toBeInstanceOf(Date);
   });
 
+  it("returns 410 and writes nothing when the UserCase has been refunded (F-02)", async () => {
+    mocks.userCaseFindFirst.mockResolvedValue({
+      id: 42,
+      status: "FINAL_REVIEW",
+      currentStage: 3,
+      caseFileId: 7,
+      completedAt: null,
+      revokedAt: new Date("2026-05-06T10:00:00Z"),
+      caseFile: { id: 7, slug: "alder-street-review", maxStage: 3, ...SOLUTION },
+    });
+
+    const response = await POST(
+      makeRequest({
+        suspectName: "Anya Volkov",
+        motive: "She committed insurance fraud as a cover-up",
+        evidenceSummary: "The lighter was found at the scene of the fire",
+      }),
+      { params: params() }
+    );
+
+    expect(response.status).toBe(410);
+    const body = (await response.json()) as { message: string };
+    expect(body.message).toContain("refunded");
+    expect(mocks.theorySubmissionCreate).not.toHaveBeenCalled();
+    expect(mocks.userCaseUpdate).not.toHaveBeenCalled();
+    expect(mocks.transactionFn).not.toHaveBeenCalled();
+  });
+
   it("uses a single $transaction wrapping the submission insert and the userCase update", async () => {
     mocks.userCaseFindFirst.mockResolvedValue({
       id: 42,

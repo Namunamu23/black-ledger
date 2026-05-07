@@ -168,4 +168,22 @@ describe("POST /api/cases/[slug]/checkpoint — strict matcher", () => {
 
     expect(response.status).toBe(409);
   });
+
+  it("returns 410 and writes nothing when the UserCase has been refunded (F-02)", async () => {
+    mocks.userCaseFindFirst.mockResolvedValue({
+      ...ALDER_USER_CASE,
+      revokedAt: new Date("2026-05-06T10:00:00Z"),
+    });
+
+    const response = await POST(makeRequest("badge access log"), {
+      params: params(),
+    });
+
+    expect(response.status).toBe(410);
+    const body = (await response.json()) as { message: string };
+    expect(body.message).toContain("refunded");
+    expect(mocks.userCaseUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.checkpointAttemptCreate).not.toHaveBeenCalled();
+    expect(mocks.transactionFn).not.toHaveBeenCalled();
+  });
 });

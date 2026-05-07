@@ -113,6 +113,13 @@ export async function POST(
       );
     }
 
+    if (userCase.revokedAt) {
+      return NextResponse.json(
+        { message: "This case has been refunded and is no longer playable." },
+        { status: 410 }
+      );
+    }
+
     if (userCase.currentStage >= userCase.caseFile.maxStage) {
       return NextResponse.json(
         { message: "All progression checkpoints are already complete." },
