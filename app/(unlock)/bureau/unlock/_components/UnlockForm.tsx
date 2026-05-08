@@ -14,8 +14,22 @@ type HintContent = {
   type: "hint";
   hint: { id: number; title: string; content: string } | null;
 };
+type HiddenEvidenceContent = {
+  type: "hidden_evidence";
+  hiddenEvidence: {
+    id: number;
+    title: string;
+    body: string;
+    kind: string;
+  } | null;
+};
 type FallbackContent = { type: string; raw: unknown };
-type Content = RecordContent | PersonContent | HintContent | FallbackContent;
+type Content =
+  | RecordContent
+  | PersonContent
+  | HintContent
+  | HiddenEvidenceContent
+  | FallbackContent;
 
 type SuccessPayload = {
   alreadyRedeemed: boolean;
@@ -182,6 +196,26 @@ function UnlockedContent({ content }: { content: Content }) {
         </h2>
         <p className="mt-4 whitespace-pre-line text-base leading-7 text-zinc-200">
           {content.person.summary}
+        </p>
+      </article>
+    );
+  }
+
+  if (content.type === "hidden_evidence") {
+    if (!content.hiddenEvidence) {
+      return (
+        <p className="text-sm text-zinc-400">
+          The unlocked evidence is no longer available.
+        </p>
+      );
+    }
+    return (
+      <article>
+        <h2 className="text-2xl font-semibold text-white">
+          {content.hiddenEvidence.title}
+        </h2>
+        <p className="mt-4 whitespace-pre-line text-base leading-7 text-zinc-200">
+          {content.hiddenEvidence.body}
         </p>
       </article>
     );
