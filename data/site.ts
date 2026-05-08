@@ -104,7 +104,7 @@ export const siteConfig = {
     {
       question: "How long does one case take?",
       answer:
-        "Case 001 is designed for roughly 90 to 150 minutes depending on pace, group size, and how deeply you review the file.",
+        "Most cases run 90 to 150 minutes depending on pace, group size, and how deeply you review the file. Per-case timing is shown on each case detail page.",
     },
   ],
 
