@@ -178,3 +178,28 @@ describe("POST /api/access-codes/redeem — ownership check is unconditional", (
     expect(mocks.userCaseFindFirst).not.toHaveBeenCalled();
   });
 });
+
+describe("POST /api/access-codes/redeem — code normalization (Batch 12 UX-15)", () => {
+  it("uppercases a lowercase code before the DB lookup so smudge-misread QR codes still resolve", async () => {
+    mocks.accessCodeFindUnique.mockResolvedValue(NULL_STAGE_CODE);
+    mocks.userCaseFindFirst.mockResolvedValue({ id: 555, currentStage: 1 });
+    mocks.redemptionCreate.mockResolvedValue({ id: 2 });
+    mocks.caseRecordFindUnique.mockResolvedValue({
+      id: 42,
+      title: "Badge Access Log",
+      body: "Access record body content.",
+    });
+
+    const response = await POST(
+      makeRequest({ code: "alder-a1b2c3d4" }, "lowercase-ip")
+    );
+
+    expect(response.status).toBe(200);
+
+    // Critical: the route looked up the UPPERCASED form, mirroring
+    // activationCodeSchema's longstanding normalization.
+    expect(mocks.accessCodeFindUnique).toHaveBeenCalledOnce();
+    const lookupArgs = mocks.accessCodeFindUnique.mock.calls[0][0];
+    expect(lookupArgs).toMatchObject({ where: { code: "ALDER-A1B2C3D4" } });
+  });
+});

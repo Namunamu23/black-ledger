@@ -269,11 +269,11 @@ export const generateCodesBatchSchema = z.object({
 export const revokeCodeSchema = z.object({}).passthrough();
 
 export const redeemAccessCodeSchema = z.object({
-  code: z.string().trim().min(1).max(64),
+  code: z.string().trim().toUpperCase().min(1).max(64),
 });
 
 export const createAccessCodeSchema = z.object({
-  code: z.string().trim().min(1).max(64),
+  code: z.string().trim().toUpperCase().min(1).max(64),
   kind: z.enum(["BUREAU_REF", "ARTIFACT_QR", "WITNESS_TIP", "AUDIO_FILE"]),
   unlocksTarget: z.object({
     type: z.enum(["record", "person", "hint", "hidden_evidence"]),
