@@ -16,7 +16,7 @@ export default async function ForgotPasswordPage() {
           <PageHero
             eyebrow="Account"
             title="Forgot your password?"
-            text="Enter the email address linked to your account and we'll send you a reset link. The link expires in one hour."
+            text="Enter your account email. If we have a record of it, we'll send a reset link within a few minutes. The link expires in one hour."
           />
 
           <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
