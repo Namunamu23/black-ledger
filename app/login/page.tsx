@@ -27,10 +27,10 @@ export default async function LoginPage({
           >
             <div className="flex flex-wrap gap-4">
               <Link
-                href="/cases/alder-street-review"
+                href="/cases"
                 className="inline-flex items-center rounded-2xl border border-zinc-700 px-6 py-3 font-semibold text-white transition hover:bg-zinc-900"
               >
-                View Case 001
+                Browse Cases
               </Link>
             </div>
           </PageHero>
