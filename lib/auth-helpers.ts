@@ -1,7 +1,7 @@
 /**
  * Auth guards used by server components, layouts, and API routes.
  *
- * Four flavors:
+ * Five flavors:
  *   - requireSession(): for pages/layouts that should redirect to /login
  *     when there is no session. Returns the typed Session on success;
  *     never returns undefined (redirect() throws a NEXT_REDIRECT signal
@@ -21,6 +21,11 @@
  *     typed Session on success, or a 401 NextResponse the caller should return
  *     as-is. Use the `result instanceof NextResponse` discriminator.
  *
+ *   - redirectIfAuthenticated(): inverse of requireSession, for the auth-form
+ *     pages (/login, /register, /forgot-password, /reset-password). Sends an
+ *     already-signed-in visitor to a sanitized callbackUrl (or /bureau) rather
+ *     than rendering a sign-in UI for someone who is already signed in.
+ *
  * Pages that use notFound() instead of redirect on missing session, and
  * non-admin API routes that return 401 JSON, do not use these helpers —
  * their patterns differ in intentional ways.
@@ -31,6 +36,7 @@ import { NextResponse } from "next/server";
 import type { Session } from "next-auth";
 import { auth } from "@/auth";
 import { UserRole } from "@/lib/enums";
+import { pickPostLoginPath } from "@/lib/post-login-path";
 
 export async function requireSession(): Promise<Session> {
   const session = await auth();
@@ -60,4 +66,13 @@ export async function requireSessionJson(): Promise<Session | NextResponse> {
     return NextResponse.json({ message: "Unauthorized." }, { status: 401 });
   }
   return session;
+}
+
+export async function redirectIfAuthenticated(
+  callbackUrl?: string | null
+): Promise<void> {
+  const session = await auth();
+  if (session?.user) {
+    redirect(pickPostLoginPath(callbackUrl ?? null));
+  }
 }

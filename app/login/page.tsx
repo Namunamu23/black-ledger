@@ -2,8 +2,20 @@ import { Suspense } from "react";
 import Link from "next/link";
 import PageHero from "@/components/ui/PageHero";
 import LoginForm from "@/components/auth/LoginForm";
+import { redirectIfAuthenticated } from "@/lib/auth-helpers";
 
-export default function LoginPage() {
+type SearchParams = Promise<{ callbackUrl?: string | string[] }>;
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const callbackUrl =
+    typeof params.callbackUrl === "string" ? params.callbackUrl : null;
+  await redirectIfAuthenticated(callbackUrl);
+
   return (
     <main className="bg-zinc-950 text-white">
       <section className="py-20">

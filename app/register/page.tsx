@@ -2,12 +2,24 @@ import { Suspense } from "react";
 import Link from "next/link";
 import PageHero from "@/components/ui/PageHero";
 import RegisterForm from "@/components/auth/RegisterForm";
+import { redirectIfAuthenticated } from "@/lib/auth-helpers";
 
 export const metadata = {
   title: "Create Account",
 };
 
-export default function RegisterPage() {
+type SearchParams = Promise<{ callbackUrl?: string | string[] }>;
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const callbackUrl =
+    typeof params.callbackUrl === "string" ? params.callbackUrl : null;
+  await redirectIfAuthenticated(callbackUrl);
+
   return (
     <main className="bg-zinc-950 text-white">
       <section className="py-20">

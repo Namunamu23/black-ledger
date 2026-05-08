@@ -1,11 +1,14 @@
 import PageHero from "@/components/ui/PageHero";
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
+import { redirectIfAuthenticated } from "@/lib/auth-helpers";
 
 export const metadata = {
   title: "Forgot Password",
 };
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  await redirectIfAuthenticated();
+
   return (
     <main className="bg-zinc-950 text-white">
       <section className="py-20">

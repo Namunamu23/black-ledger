@@ -1,12 +1,15 @@
 import { Suspense } from "react";
 import PageHero from "@/components/ui/PageHero";
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
+import { redirectIfAuthenticated } from "@/lib/auth-helpers";
 
 export const metadata = {
   title: "Reset Password",
 };
 
-export default function ResetPasswordPage() {
+export default async function ResetPasswordPage() {
+  await redirectIfAuthenticated();
+
   return (
     <main className="bg-zinc-950 text-white">
       <section className="py-20">
