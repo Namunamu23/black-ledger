@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TheoryResultLabel } from "@/lib/enums";
 import { THEORY_RESULT_LABEL } from "@/lib/labels";
 
@@ -21,6 +22,7 @@ export default function TheorySubmissionForm({
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState("");
   const [resultLabel, setResultLabel] = useState<TheoryResultLabel | "">("");
+  const router = useRouter();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,6 +63,7 @@ export default function TheorySubmissionForm({
         motive: "",
         evidenceSummary: "",
       });
+      router.refresh();
     } catch {
       setStatus("error");
       setMessage("Something went wrong. Please try again.");
