@@ -171,6 +171,37 @@ describe("DELETE /api/me", () => {
     expect(mocks.userDelete.mock.calls[0]![0]).toEqual({ where: { id: 42 } });
   });
 
+  it("accepts uppercase confirmation 'DELETE MY ACCOUNT' (Batch 11 relaxation)", async () => {
+    const res = await deleteMe(
+      makeRequest({ password: "secret", confirmation: "DELETE MY ACCOUNT" })
+    );
+
+    expect(res.status).toBe(200);
+    expect(mocks.userDelete).toHaveBeenCalledOnce();
+    expect(mocks.userDelete.mock.calls[0]![0]).toEqual({ where: { id: 42 } });
+  });
+
+  it("accepts mixed-case confirmation with surrounding whitespace (Batch 11 relaxation)", async () => {
+    const res = await deleteMe(
+      makeRequest({
+        password: "secret",
+        confirmation: "  Delete My Account  ",
+      })
+    );
+
+    expect(res.status).toBe(200);
+    expect(mocks.userDelete).toHaveBeenCalledOnce();
+  });
+
+  it("still rejects a non-canonical phrase variant ('delete account')", async () => {
+    const res = await deleteMe(
+      makeRequest({ password: "secret", confirmation: "delete account" })
+    );
+
+    expect(res.status).toBe(400);
+    expect(mocks.userDelete).not.toHaveBeenCalled();
+  });
+
   it("revokes the user's claimed activation codes inside the same transaction (F-03 re-claim loop)", async () => {
     mocks.activationCodeUpdateMany.mockResolvedValue({ count: 2 });
 

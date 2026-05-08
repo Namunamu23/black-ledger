@@ -11,7 +11,7 @@ export default function DeleteAccountForm() {
 
   const canSubmit =
     password.length > 0 &&
-    confirmation === "delete my account" &&
+    confirmation.trim().toLowerCase() === "delete my account" &&
     status !== "loading";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

@@ -303,5 +303,13 @@ export const solutionPatchSchema = z.object({
 // correctly populated, so the literal's default message is acceptable.
 export const deleteAccountSchema = z.object({
   password: z.string().min(1, "Password is required to delete your account."),
-  confirmation: z.literal("delete my account"),
+  // Case-insensitive + outer-whitespace-tolerant. Internal whitespace is
+  // NOT collapsed — "delete  my  account" (double-spaced) still fails.
+  // The phrase confirmation is a friction layer against accidental
+  // deletion; the password re-auth is the actual security gate, so this
+  // relaxation is purely a UX improvement.
+  confirmation: z
+    .string()
+    .transform((s) => s.trim().toLowerCase())
+    .pipe(z.literal("delete my account")),
 });
