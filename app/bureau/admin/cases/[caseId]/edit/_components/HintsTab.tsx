@@ -143,7 +143,15 @@ export default function HintsTab({ caseId, data }: Props) {
               </div>
               <button
                 type="button"
-                onClick={() => remove(index)}
+                onClick={() => {
+                  if (
+                    !window.confirm(
+                      "Remove this hint? This will be saved when you click Save Changes."
+                    )
+                  )
+                    return;
+                  remove(index);
+                }}
                 className="rounded-2xl border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-400"
               >
                 Remove Hint
