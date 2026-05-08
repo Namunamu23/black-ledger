@@ -146,7 +146,7 @@ export default function GlobalPeopleSearchTerminal() {
               ))}
               {truncated ? (
                 <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 px-5 py-3 text-center font-mono text-[11px] uppercase tracking-[0.22em] text-amber-300">
-                  Showing 10 of N · refine query to narrow
+                  Showing top 10 results · refine query to see more
                 </div>
               ) : null}
             </div>
