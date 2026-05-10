@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import TheorySubmissionForm from "@/components/bureau/TheorySubmissionForm";
 import CheckpointForm from "@/components/bureau/CheckpointForm";
-import { CASE_STATUS_LABEL, THEORY_RESULT_LABEL } from "@/lib/labels";
+import { CASE_STATUS_LABEL } from "@/lib/labels";
 import RevealedEvidence, {
   type ResolvedEvidence,
 } from "./_components/RevealedEvidence";
@@ -195,13 +195,6 @@ export default async function BureauCasePage({ params }: PageProps) {
     NOT_STARTED: "neutral",
   };
   const statusTone = statusToneMap[status] ?? "neutral";
-
-  // ---- Theory result pill tone ----
-  const resultToneMap: Record<string, "success" | "warning" | "danger"> = {
-    CORRECT: "success",
-    PARTIAL: "warning",
-    INCORRECT: "danger",
-  };
 
   const caseSerial = "BL-" + slug.toUpperCase().replace(/-/g, "").slice(0, 8);
 
@@ -637,18 +630,14 @@ export default async function BureauCasePage({ params }: PageProps) {
                         {submission.suspectName}
                       </span>
                       <Pill
-                        tone={resultToneMap[submission.resultLabel] ?? "neutral"}
-                        label={THEORY_RESULT_LABEL[submission.resultLabel]}
+                        tone={submission.resultLabel === "CORRECT" ? "success" : "warning"}
+                        label={submission.resultLabel === "CORRECT" ? "Closure Standard Met" : "Revision Required"}
                       />
                     </div>
-                    <TerminalReadout
-                      tone="neutral"
-                      label="SCORE"
-                      lines={[`${submission.score}/3`]}
-                      className="mt-3"
-                    />
                     <p className="mt-2 text-sm text-zinc-400">
-                      {submission.feedback}
+                      {submission.resultLabel === "CORRECT"
+                        ? submission.feedback
+                        : "The file is not ready for closure. The Bureau could not verify a complete chain of suspect, motive, and supporting evidence."}
                     </p>
                     <p className="mt-2 font-mono text-[10px] text-zinc-600">
                       {new Date(submission.createdAt).toLocaleString()}

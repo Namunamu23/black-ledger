@@ -146,12 +146,17 @@ export async function POST(
       });
     });
 
+    const publicVerdict =
+      evaluation.resultLabel === "CORRECT" ? "CASE_CLOSED" : "REVISION_REQUIRED";
+
     return NextResponse.json(
       {
-        message: "Theory submitted successfully.",
-        resultLabel: evaluation.resultLabel,
+        message:
+          publicVerdict === "CASE_CLOSED"
+            ? "Theory accepted."
+            : "Theory reviewed.",
+        publicVerdict,
         feedback: evaluation.feedback,
-        score: evaluation.score,
       },
       { status: 201 }
     );

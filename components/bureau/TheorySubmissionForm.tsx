@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TheoryResultLabel } from "@/lib/enums";
-import { THEORY_RESULT_LABEL } from "@/lib/labels";
 
 type TheorySubmissionFormProps = {
   slug: string;
 };
+
+type PublicVerdict = "CASE_CLOSED" | "REVISION_REQUIRED";
 
 export default function TheorySubmissionForm({
   slug,
@@ -20,8 +20,8 @@ export default function TheorySubmissionForm({
 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [verdict, setVerdict] = useState<"" | PublicVerdict>("");
   const [feedback, setFeedback] = useState("");
-  const [resultLabel, setResultLabel] = useState<TheoryResultLabel | "">("");
   const router = useRouter();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -30,7 +30,7 @@ export default function TheorySubmissionForm({
     setStatus("loading");
     setMessage("");
     setFeedback("");
-    setResultLabel("");
+    setVerdict("");
 
     try {
       const response = await fetch(`/api/cases/${slug}/theory`, {
@@ -43,9 +43,8 @@ export default function TheorySubmissionForm({
 
       const data = (await response.json()) as {
         message?: string;
-        resultLabel?: TheoryResultLabel;
+        publicVerdict?: PublicVerdict;
         feedback?: string;
-        score?: number;
       };
 
       if (!response.ok) {
@@ -57,7 +56,7 @@ export default function TheorySubmissionForm({
       setStatus("success");
       setMessage(data.message ?? "Theory submitted.");
       setFeedback(data.feedback ?? "");
-      setResultLabel(data.resultLabel ?? "");
+      setVerdict(data.publicVerdict ?? "");
       setForm({
         suspectName: "",
         motive: "",
@@ -71,11 +70,9 @@ export default function TheorySubmissionForm({
   }
 
   const resultColor =
-    resultLabel === TheoryResultLabel.CORRECT
+    verdict === "CASE_CLOSED"
       ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
-      : resultLabel === TheoryResultLabel.PARTIAL
-      ? "text-amber-300 border-amber-500/30 bg-amber-500/10"
-      : "text-red-400 border-red-500/30 bg-red-500/10";
+      : "text-amber-300 border-amber-500/30 bg-amber-500/10";
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
@@ -110,6 +107,10 @@ export default function TheorySubmissionForm({
         required
       />
 
+      <p className="text-xs leading-5 text-zinc-500">
+        Submit only when your suspect, motive, and evidence form one complete chain. This review does not confirm individual pieces of a theory — only whether the whole case meets the Bureau&apos;s closure standard.
+      </p>
+
       <button
         type="submit"
         disabled={status === "loading"}
@@ -131,7 +132,11 @@ export default function TheorySubmissionForm({
       {feedback ? (
         <div className={`rounded-2xl border p-4 text-sm leading-7 ${resultColor}`}>
           <div className="text-xs uppercase tracking-[0.2em]">
-            {resultLabel ? THEORY_RESULT_LABEL[resultLabel] : ""}
+            {verdict === "CASE_CLOSED"
+              ? "Closure Standard Met"
+              : verdict === "REVISION_REQUIRED"
+              ? "Revision Required"
+              : ""}
           </div>
           <div className="mt-2">{feedback}</div>
         </div>
