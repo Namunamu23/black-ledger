@@ -71,12 +71,12 @@ export const theorySubmissionSchema = z.object({
   motive: z
     .string()
     .trim()
-    .min(10, "Motive must be at least 10 characters.")
+    .min(30, "Describe the motive in a sentence or two.")
     .max(1000, "Motive is too long."),
   evidenceSummary: z
     .string()
     .trim()
-    .min(10, "Evidence summary must be at least 10 characters.")
+    .min(50, "Summarize the evidence — mention specific records, witnesses, or timeline details.")
     .max(2000, "Evidence summary is too long."),
 });
 

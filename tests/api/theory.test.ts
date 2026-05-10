@@ -116,7 +116,7 @@ describe("POST /api/cases/[slug]/theory — UserCase state transitions", () => {
       makeRequest({
         suspectName: "Wrong Person",
         motive: "completely unrelated motive that should not score",
-        evidenceSummary: "absolutely no evidence at all here",
+        evidenceSummary: "absolutely no evidence at all here for this entire case",
       }),
       { params: params() }
     );
@@ -142,7 +142,8 @@ describe("POST /api/cases/[slug]/theory — UserCase state transitions", () => {
         suspectName: "Anya Volkov",
         motive:
           "She committed insurance fraud as a cover-up for the embezzlement",
-        evidenceSummary: "The lighter was found at the scene of the fire",
+        evidenceSummary:
+          "The lighter was found at the scene of the fire near the body",
       }),
       { params: params() }
     );
@@ -168,8 +169,9 @@ describe("POST /api/cases/[slug]/theory — UserCase state transitions", () => {
     const response = await POST(
       makeRequest({
         suspectName: "Anya Volkov",
-        motive: "She committed insurance fraud as a cover-up",
-        evidenceSummary: "The lighter was found at the scene of the fire",
+        motive: "She committed insurance fraud as a cover-up scheme",
+        evidenceSummary:
+          "The lighter was found at the scene of the fire near her car",
       }),
       { params: params() }
     );
@@ -195,8 +197,9 @@ describe("POST /api/cases/[slug]/theory — UserCase state transitions", () => {
     await POST(
       makeRequest({
         suspectName: "Wrong Person",
-        motive: "completely unrelated motive text",
-        evidenceSummary: "totally unrelated evidence text",
+        motive: "completely unrelated motive text that meets minimum length",
+        evidenceSummary:
+          "totally unrelated evidence text that does not match the case at all",
       }),
       { params: params() }
     );
