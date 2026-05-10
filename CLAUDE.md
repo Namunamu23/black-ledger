@@ -329,6 +329,22 @@ Approximately 6 commits + Stripe Dashboard configuration (sandbox mode). Targete
 See black-ledger-prompts.md (uploaded to Cowork session) for Prompts 07–25.
 Week 4 prompts (16–19) are outline-level — flesh out before pasting.
 
+### Theory submission — closure-standard rule (Batch 13)
+
+Final-theory feedback **must never confirm isolated correctness**. The Bureau's review is binary at the public layer: either the case meets closure standard (suspect + motive + evidence form a complete chain) or it does not. The system never tells the player "you got the suspect right but need to improve the motive."
+
+Why: per-component feedback is a brute-force exploit. A player iterating the suspect field with junk motive/evidence text can enumerate the answer in N submissions where N = number of suspects. Sealed feedback closes the leak completely.
+
+Author discipline per case:
+
+- **`solutionSuspect`**: primary name plus genuine aliases only. Pipe-separate (`Mara Kessler|Kessler|M. Kessler`). Do not include junk variants ("Mara Kesler" with typos) — those are the player's responsibility to get right.
+- **`solutionMotive`**: canonical motive phrases with discriminative tokens. Pipe-separate genuine paraphrases only. Avoid generic words ("money", "jealousy", "argument") that overlap with many incorrect motives.
+- **`solutionEvidence`**: required proof concepts, not vague terms. Mention specific records, witnesses, or timeline details that distinguish the correct theory from plausible alternatives.
+- **Hints**: 3–5 non-diagnostic hints per case that nudge investigation behavior, not answer components. Examples: "Reconstruct the final hour before the incident." "Compare motive against access — a reason is not enough without opportunity." "Find the record that turns suspicion into proof." Do NOT write hints like "Look at the third suspect" or "The motive is fraud-related."
+- **Debrief**: explains the exact correct chain after the case is solved. The debrief is where the per-component reasoning lives — the player only sees it after CASE_CLOSED.
+
+Internal storage of `suspectCorrect` / `motiveCorrect` / `evidenceCorrect` flags on `TheorySubmission` continues — those are useful for analytics and admin views. Only the player-facing `feedback` string and the API response are sealed.
+
 ### Test credentials (local dev only)
 Admin: mycart19@gmail.com
 Investigator: test@blackledger.com / Test1234!
