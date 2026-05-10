@@ -64,37 +64,14 @@ function evaluateFreeText(
 }
 
 function buildFeedback({
-  suspectCorrect,
-  motiveCorrect,
-  evidenceCorrect,
+  resultLabel,
 }: {
-  suspectCorrect: boolean;
-  motiveCorrect: boolean;
-  evidenceCorrect: boolean;
+  resultLabel: "CORRECT" | "PARTIAL" | "INCORRECT";
 }) {
-  if (suspectCorrect && motiveCorrect && evidenceCorrect) {
-    return "You correctly identified the suspect, motive, and key evidence.";
+  if (resultLabel === "CORRECT") {
+    return "Your theory satisfies the closure standard. The suspect, motive, and supporting evidence form a complete chain.";
   }
-
-  const correctParts: string[] = [];
-  const missingParts: string[] = [];
-
-  if (suspectCorrect) correctParts.push("suspect");
-  else missingParts.push("suspect");
-
-  if (motiveCorrect) correctParts.push("motive");
-  else missingParts.push("motive");
-
-  if (evidenceCorrect) correctParts.push("evidence");
-  else missingParts.push("evidence");
-
-  if (correctParts.length > 0) {
-    return `You were correct on ${correctParts.join(
-      ", "
-    )}, but still need to improve ${missingParts.join(", ")}.`;
-  }
-
-  return "Your current theory does not match the expected suspect, motive, or evidence strongly enough yet.";
+  return "The file is not ready for closure. The Bureau could not verify a complete chain of suspect, motive, and supporting evidence. Reopen the record, pressure-test the timeline, and make sure every claim is tied to case evidence.";
 }
 
 /**
@@ -131,6 +108,15 @@ function buildFeedback({
  * The numeric `score` (0–3) counts full-credit dimensions only. Partial credit
  * is exposed via the boolean `motivePartial` and `evidencePartial` flags so
  * callers and the UI can surface it without losing the integer score contract.
+ *
+ * Public feedback policy (Batch 13):
+ *   The string returned in `feedback` is non-diagnostic. It does NOT name
+ *   which of suspect/motive/evidence matched. This closes a brute-force
+ *   exploit where a player iterating the suspect field with junk
+ *   motive/evidence text could enumerate the answer in N submissions.
+ *   Internal flags (suspectCorrect, motiveCorrect, evidenceCorrect) are
+ *   preserved on the return value for analytics, state-machine drive,
+ *   and admin-side surfaces — only the player-facing string is sealed.
  */
 export function evaluateTheorySubmission({
   suspectName,
@@ -176,11 +162,7 @@ export function evaluateTheorySubmission({
     resultLabel = "PARTIAL";
   }
 
-  const feedback = buildFeedback({
-    suspectCorrect,
-    motiveCorrect,
-    evidenceCorrect,
-  });
+  const feedback = buildFeedback({ resultLabel });
 
   return {
     suspectCorrect,
