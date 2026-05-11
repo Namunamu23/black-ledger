@@ -22,6 +22,7 @@ export default async function CaseDebriefPage({ params }: PageProps) {
     where: {
       userId,
       status: "SOLVED",
+      revokedAt: null,
       caseFile: { slug },
     },
     include: {

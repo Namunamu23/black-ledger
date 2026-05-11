@@ -30,7 +30,7 @@ export default async function BureauPage() {
 
   const ownedCases = Number.isInteger(userId)
     ? await prisma.userCase.findMany({
-        where: { userId },
+        where: { userId, revokedAt: null },
         include: { caseFile: true },
         orderBy: { activatedAt: "desc" },
       })
