@@ -87,22 +87,22 @@ export default function CaseDatabaseSearch({
     <div className="grid gap-8">
       <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6">
         <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-          Bureau Search
+          Query Terminal
         </div>
 
         <h2 className="mt-4 text-3xl font-semibold text-white">
-          Search unlocked case data
+          Query the case index
         </h2>
 
         <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-300">
-          Search people, evidence records, and unlocked hints for this case.
-          Results only include content available through Stage {currentStage}.
+          Indexed subjects, records, and analyst notes available through
+          Stage {currentStage}. Search by name, keyword, or record fragment.
         </p>
 
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search names, records, evidence, or keywords..."
+          placeholder="Names, records, evidence, keywords…"
           className="mt-6 w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none placeholder:text-zinc-500"
         />
 

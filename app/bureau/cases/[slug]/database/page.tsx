@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Reveal from "@/components/ui/Reveal";
 import CaseDatabaseSearch from "@/components/bureau/CaseDatabaseSearch";
 import { CASE_STATUS_LABEL } from "@/lib/labels";
+import { BUREAU_MESSAGES } from "@/data/bureau-messages";
 
 type PageProps = {
   params: Promise<{
@@ -64,7 +65,7 @@ export default async function CaseDatabasePage({ params }: PageProps) {
         <div className="mx-auto max-w-6xl px-6">
           <Reveal>
             <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-              Bureau Database
+              {BUREAU_MESSAGES.caseDatabase.eyebrow}
             </div>
 
             <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
@@ -72,8 +73,7 @@ export default async function CaseDatabasePage({ params }: PageProps) {
             </h1>
 
             <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-300">
-              Search the unlocked case database for people, evidence records,
-              and bureau hints.
+              {BUREAU_MESSAGES.caseDatabase.body(currentStage)}
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
