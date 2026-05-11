@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import SectionHeader from "@/components/ui/SectionHeader";
 import Reveal from "@/components/ui/Reveal";
@@ -121,26 +122,26 @@ export default async function AdminCasesPage() {
                         </div>
 
                         <div className="flex flex-wrap gap-3 lg:justify-end">
-  <a
+  <Link
     href={`/bureau/admin/cases/${caseFile.id}/edit`}
     className="rounded-2xl border border-zinc-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-950"
   >
     Edit Content
-  </a>
+  </Link>
 
-  <a
+  <Link
     href={`/bureau/admin/cases/${caseFile.id}/preview`}
     className="rounded-2xl border border-zinc-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-950"
   >
     Preview
-  </a>
+  </Link>
 
-  <a
+  <Link
     href={`/bureau/admin/cases/${caseFile.id}/codes`}
     className="rounded-2xl border border-zinc-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-zinc-950"
   >
     Manage Codes
-  </a>
+  </Link>
 
   <PublishCaseButton
     caseId={caseFile.id}

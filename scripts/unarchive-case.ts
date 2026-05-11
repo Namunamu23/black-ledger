@@ -7,7 +7,16 @@ import { prisma } from "../lib/prisma";
 
 assertSafeEnv("unarchive-case");
 
-const CASE_ID = 3; // change this if needed
+const argRaw = process.argv[2];
+if (!argRaw) {
+  console.error("Usage: tsx scripts/unarchive-case.ts <caseId>");
+  process.exit(1);
+}
+const CASE_ID = Number.parseInt(argRaw, 10);
+if (!Number.isInteger(CASE_ID) || CASE_ID <= 0) {
+  console.error(`Invalid case id: ${argRaw}`);
+  process.exit(1);
+}
 
 async function main() {
   const cases = await prisma.caseFile.findMany({

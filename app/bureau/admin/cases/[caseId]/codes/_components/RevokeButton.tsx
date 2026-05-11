@@ -26,7 +26,7 @@ export default function RevokeButton({ caseId, codeId, code }: Props) {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ revokedAt: new Date().toISOString() }),
+          body: JSON.stringify({}),
         }
       );
 
