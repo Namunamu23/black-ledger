@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, Pill, StampBadge } from "@/components/ui";
 import BuyButton from "@/components/bureau/BuyButton";
+import { caseSerial } from "@/lib/case-serial";
 
 type CasePublicViewProps = {
   caseFile: {
@@ -87,7 +88,7 @@ export default function CasePublicView({
 
           <div className="p-6">
             <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-zinc-500">
-              BL-001 / Standalone Investigation
+              {caseSerial(caseFile)} / Standalone Investigation
             </div>
             <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
               {caseFile.title}
@@ -163,38 +164,61 @@ export default function CasePublicView({
           </Card>
 
           <Card variant="dossier" padding="lg">
-            <Pill tone="success" label="Available Now" />
-            <h2 className="mt-4 text-xl font-semibold text-white">
-              Get the investigation kit
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-400">
-              Order includes the physical case file and lifetime digital
-              bureau access. Ships within 3–5 business days.
-            </p>
             {canBuy ? (
-              <BuyButton caseId={caseFile.id} />
+              <>
+                <Pill tone="success" label="Available Now" />
+                <h2 className="mt-4 text-xl font-semibold text-white">
+                  Get the investigation kit
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-zinc-400">
+                  Order includes the physical case file and lifetime digital
+                  bureau access. Ships within 3–5 business days.
+                </p>
+                <BuyButton caseId={caseFile.id} />
+                <div className="mt-4 flex items-center gap-3">
+                  <hr className="flex-1 border-zinc-800" />
+                  <span className="font-mono text-[10px] text-zinc-600">OR</span>
+                  <hr className="flex-1 border-zinc-800" />
+                </div>
+                <Link
+                  href="/login"
+                  className="inline-flex w-full items-center justify-center rounded-2xl border border-zinc-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                >
+                  Sign in to Bureau
+                </Link>
+                <p className="mt-3 text-center text-xs text-zinc-600">
+                  Already purchased? Sign in and enter your activation code.
+                </p>
+              </>
             ) : (
-              <Link
-                href="/support"
-                className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-amber-400 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300"
-              >
-                Order Investigation Kit
-              </Link>
+              <>
+                <Pill tone="success" label="On Your Desk" />
+                <h2 className="mt-4 text-xl font-semibold text-white">
+                  This file is assigned to your station
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-zinc-400">
+                  You already own this case. Continue your investigation in the
+                  bureau.
+                </p>
+                <Link
+                  href={`/bureau/cases/${caseFile.slug}`}
+                  className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-amber-400 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300"
+                >
+                  Open Workspace
+                </Link>
+                <div className="mt-4 flex items-center gap-3">
+                  <hr className="flex-1 border-zinc-800" />
+                  <span className="font-mono text-[10px] text-zinc-600">OR</span>
+                  <hr className="flex-1 border-zinc-800" />
+                </div>
+                <Link
+                  href="/bureau"
+                  className="inline-flex w-full items-center justify-center rounded-2xl border border-zinc-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
+                >
+                  Return to Bureau
+                </Link>
+              </>
             )}
-            <div className="mt-4 flex items-center gap-3">
-              <hr className="flex-1 border-zinc-800" />
-              <span className="font-mono text-[10px] text-zinc-600">OR</span>
-              <hr className="flex-1 border-zinc-800" />
-            </div>
-            <Link
-              href="/login"
-              className="inline-flex w-full items-center justify-center rounded-2xl border border-zinc-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800"
-            >
-              Sign in to Bureau
-            </Link>
-            <p className="mt-3 text-center text-xs text-zinc-600">
-              Already purchased? Sign in and enter your activation code.
-            </p>
           </Card>
         </div>
 
