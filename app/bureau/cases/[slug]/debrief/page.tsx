@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { Card, Pill, StampBadge } from "@/components/ui";
+import { caseSerial } from "@/lib/case-serial";
 
 type PageProps = {
   params: Promise<{
@@ -35,8 +36,6 @@ export default async function CaseDebriefPage({ params }: PageProps) {
   }
 
   const { caseFile } = solvedCase;
-
-  const caseSerial = "BL-" + slug.toUpperCase().replace(/-/g, "").slice(0, 8);
 
   return (
     <main className="relative min-h-screen bg-[#050507] text-zinc-100">
@@ -81,7 +80,7 @@ export default async function CaseDebriefPage({ params }: PageProps) {
 
           <div className="p-6">
             <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-zinc-500">
-              {caseSerial}
+              {caseSerial(caseFile)}
             </div>
             <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
               {caseFile.title} — Debrief

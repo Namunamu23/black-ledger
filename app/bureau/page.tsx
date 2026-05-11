@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import SignOutButton from "@/components/auth/SignOutButton";
 import CaseActivationForm from "@/components/bureau/CaseActivationForm";
 import StatusBadge from "@/components/bureau/StatusBadge";
+import { caseSerial } from "@/lib/case-serial";
 import {
   Card,
   Pill,
@@ -209,7 +210,7 @@ export default async function BureauPage() {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
-              {activeCases.map((entry, index) => (
+              {activeCases.map((entry) => (
                 <Card key={entry.id} variant="dossier" padding="none">
                   <div className="flex items-center justify-between border-b border-red-950/50 px-5 py-3">
                     <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-600">
@@ -219,7 +220,7 @@ export default async function BureauPage() {
                   </div>
                   <div className="p-5">
                     <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.3em] text-zinc-500">
-                      BL-CASE-{String(index + 1).padStart(3, "0")}
+                      {caseSerial(entry.caseFile)}
                     </div>
                     <h3 className="mt-2 text-xl font-semibold text-white">
                       {entry.caseFile.title}
