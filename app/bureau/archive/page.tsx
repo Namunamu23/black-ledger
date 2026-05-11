@@ -5,7 +5,6 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import Reveal from "@/components/ui/Reveal";
 import StatusBadge from "@/components/bureau/StatusBadge";
 import ArchiveStatCard from "@/components/bureau/ArchiveStatCard";
-import { THEORY_RESULT_LABEL } from "@/lib/labels";
 
 export default async function BureauArchivePage() {
   const session = await getOptionalSession();
@@ -134,12 +133,10 @@ export default async function BureauArchivePage() {
             ) : (
               <div className="mt-6 space-y-4">
                 {submissions.map((submission, index) => {
-                  const badgeColor =
-                    submission.resultLabel === "CORRECT"
-                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                      : submission.resultLabel === "PARTIAL"
-                      ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                      : "border-red-500/30 bg-red-500/10 text-red-400";
+                  const isClosed = submission.resultLabel === "CORRECT";
+                  const badgeColor = isClosed
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                    : "border-amber-500/30 bg-amber-500/10 text-amber-300";
 
                   return (
                     <Reveal key={submission.id} delay={index * 0.04}>
@@ -155,22 +152,17 @@ export default async function BureauArchivePage() {
                           </div>
 
                           <span className={`rounded-full border px-3 py-1 text-xs ${badgeColor}`}>
-                            {THEORY_RESULT_LABEL[submission.resultLabel]}
+                            {isClosed ? "Closure Standard Met" : "Revision Required"}
                           </span>
                         </div>
 
                         <div className="mt-4 text-sm text-zinc-400">
-                          Score
-                        </div>
-                        <div className="mt-1 text-sm text-zinc-300">
-                          {submission.score}/3
-                        </div>
-
-                        <div className="mt-4 text-sm text-zinc-400">
-                          Feedback
+                          Bureau Verdict
                         </div>
                         <div className="mt-1 text-sm leading-7 text-zinc-300">
-                          {submission.feedback}
+                          {isClosed
+                            ? submission.feedback
+                            : "The file is not ready for closure. The Bureau could not verify a complete chain of suspect, motive, and supporting evidence."}
                         </div>
 
                         <div className="mt-4 text-sm text-zinc-400">
