@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { pickPostLoginPath } from "@/lib/post-login-path";
+import { BUREAU_MESSAGES } from "@/data/bureau-messages";
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
@@ -33,7 +34,7 @@ export default function LoginForm() {
 
     if (!result || result.error) {
       setStatus("error");
-      setMessage("Invalid email or password.");
+      setMessage(BUREAU_MESSAGES.auth.submitError);
       return;
     }
 
@@ -67,7 +68,9 @@ export default function LoginForm() {
         disabled={status === "loading"}
         className="rounded-2xl bg-amber-400 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {status === "loading" ? "Logging in..." : "Log In"}
+        {status === "loading"
+          ? BUREAU_MESSAGES.auth.submitCtaLoading
+          : BUREAU_MESSAGES.auth.submitCta}
       </button>
 
       {message ? <p className="text-sm text-red-400">{message}</p> : null}

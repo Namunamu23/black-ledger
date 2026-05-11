@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BUREAU_MESSAGES } from "@/data/bureau-messages";
 
 type RecordContent = {
   type: "record";
@@ -100,13 +101,13 @@ export default function UnlockForm({ initialCode }: Props) {
         className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-6"
       >
         <label className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-          Access Code
+          {BUREAU_MESSAGES.unlock.inputLabel}
         </label>
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
           <input
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="Enter or scan code"
+            placeholder={BUREAU_MESSAGES.unlock.inputPlaceholder}
             autoFocus
             className="w-full rounded-2xl border border-zinc-700 bg-zinc-950 px-4 py-3 font-mono text-white outline-none placeholder:text-zinc-500"
           />
@@ -115,7 +116,9 @@ export default function UnlockForm({ initialCode }: Props) {
             disabled={status === "submitting" || code.trim().length === 0}
             className="rounded-2xl bg-amber-400 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {status === "submitting" ? "Unlocking..." : "Unlock"}
+            {status === "submitting"
+              ? BUREAU_MESSAGES.unlock.submitCtaLoading
+              : BUREAU_MESSAGES.unlock.submitCta}
           </button>
         </div>
 
@@ -136,11 +139,11 @@ function UnlockedPanel({ payload }: { payload: SuccessPayload }) {
     <div className="rounded-[2rem] border border-emerald-500/30 bg-zinc-900 p-8">
       {payload.alreadyRedeemed ? (
         <p className="mb-6 text-xs uppercase tracking-[0.25em] text-amber-300">
-          You&apos;ve already unlocked this evidence.
+          {BUREAU_MESSAGES.unlock.alreadyRedeemedBanner}
         </p>
       ) : (
         <p className="mb-6 text-xs uppercase tracking-[0.25em] text-emerald-400">
-          Evidence unlocked
+          {BUREAU_MESSAGES.unlock.successBanner}
         </p>
       )}
       <UnlockedContent content={payload.content} />

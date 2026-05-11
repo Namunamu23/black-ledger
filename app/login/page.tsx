@@ -3,6 +3,7 @@ import Link from "next/link";
 import PageHero from "@/components/ui/PageHero";
 import LoginForm from "@/components/auth/LoginForm";
 import { redirectIfAuthenticated } from "@/lib/auth-helpers";
+import { BUREAU_MESSAGES } from "@/data/bureau-messages";
 
 type SearchParams = Promise<{ callbackUrl?: string | string[] }>;
 
@@ -37,13 +38,13 @@ export default async function LoginPage({
 
           <div className="rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
             <div className="text-xs uppercase tracking-[0.3em] text-zinc-500">
-              Secure access
+              {BUREAU_MESSAGES.auth.signInEyebrow}
             </div>
             <h2 className="mt-4 text-3xl font-semibold text-white">
-              Sign in
+              {BUREAU_MESSAGES.auth.signInHeading}
             </h2>
             <p className="mt-4 text-sm leading-7 text-zinc-300">
-              This login now uses real credentials and a protected bureau session.
+              {BUREAU_MESSAGES.auth.signInBody}
             </p>
 
             {/* Suspense boundary required because LoginForm reads

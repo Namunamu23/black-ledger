@@ -3,6 +3,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import Reveal from "@/components/ui/Reveal";
 import UnlockForm from "./_components/UnlockForm";
 import { getOptionalSession } from "@/lib/auth-helpers";
+import { BUREAU_MESSAGES } from "@/data/bureau-messages";
 
 type PageProps = {
   searchParams: Promise<{ code?: string }>;
@@ -28,7 +29,7 @@ export default async function UnlockPage({ searchParams }: PageProps) {
             <Reveal>
               <SectionHeader
                 eyebrow="Bureau"
-                title="Sign in to unlock evidence"
+                title={BUREAU_MESSAGES.unlock.pendingHeading}
                 text="You need a Bureau account to redeem an access code. After signing in we'll bring you back to this page with your code pre-filled."
               />
             </Reveal>
@@ -37,14 +38,14 @@ export default async function UnlockPage({ searchParams }: PageProps) {
               <div className="mt-10 rounded-[2rem] border border-zinc-800 bg-zinc-900 p-8">
                 <p className="text-sm leading-7 text-zinc-300">
                   {code
-                    ? `We saved your code (${code}) and will reapply it once you're signed in.`
-                    : "Sign in and return to this page to enter your code."}
+                    ? BUREAU_MESSAGES.unlock.pendingBodyWithCode(code)
+                    : BUREAU_MESSAGES.unlock.pendingBodyWithoutCode}
                 </p>
                 <Link
                   href={loginHref}
                   className="mt-6 inline-flex items-center rounded-2xl bg-amber-400 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300"
                 >
-                  Sign in
+                  {BUREAU_MESSAGES.unlock.pendingCta}
                 </Link>
               </div>
             </Reveal>
@@ -60,9 +61,9 @@ export default async function UnlockPage({ searchParams }: PageProps) {
         <div className="mx-auto max-w-3xl px-6">
           <Reveal>
             <SectionHeader
-              eyebrow="Bureau"
-              title="Unlock evidence"
-              text="Scan or type the code printed on a physical artifact to reveal its hidden case file."
+              eyebrow={BUREAU_MESSAGES.unlock.activeEyebrow}
+              title={BUREAU_MESSAGES.unlock.activeHeading}
+              text={BUREAU_MESSAGES.unlock.activeBody}
             />
           </Reveal>
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { BUREAU_MESSAGES } from "@/data/bureau-messages";
 
 type TheorySubmissionFormProps = {
   slug: string;
@@ -78,7 +79,7 @@ export default function TheorySubmissionForm({
     <form onSubmit={handleSubmit} className="grid gap-4">
       <input
         type="text"
-        placeholder="Primary suspect"
+        placeholder={BUREAU_MESSAGES.theorySubmission.suspectPlaceholder}
         value={form.suspectName}
         onChange={(e) =>
           setForm((prev) => ({ ...prev, suspectName: e.target.value }))
@@ -88,7 +89,7 @@ export default function TheorySubmissionForm({
       />
 
       <textarea
-        placeholder="What do you believe the motive was?"
+        placeholder={BUREAU_MESSAGES.theorySubmission.motivePlaceholder}
         value={form.motive}
         onChange={(e) =>
           setForm((prev) => ({ ...prev, motive: e.target.value }))
@@ -98,7 +99,7 @@ export default function TheorySubmissionForm({
       />
 
       <textarea
-        placeholder="Summarize the strongest evidence supporting your theory."
+        placeholder={BUREAU_MESSAGES.theorySubmission.evidencePlaceholder}
         value={form.evidenceSummary}
         onChange={(e) =>
           setForm((prev) => ({ ...prev, evidenceSummary: e.target.value }))
@@ -108,7 +109,7 @@ export default function TheorySubmissionForm({
       />
 
       <p className="text-xs leading-5 text-zinc-500">
-        Submit only when your suspect, motive, and evidence form one complete chain. This review does not confirm individual pieces of a theory — only whether the whole case meets the Bureau&apos;s closure standard.
+        {BUREAU_MESSAGES.theorySubmission.helperText}
       </p>
 
       <button
@@ -116,7 +117,9 @@ export default function TheorySubmissionForm({
         disabled={status === "loading"}
         className="rounded-2xl bg-amber-400 px-5 py-3 font-semibold text-zinc-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {status === "loading" ? "Submitting..." : "Submit Theory"}
+        {status === "loading"
+          ? BUREAU_MESSAGES.theorySubmission.submitCtaLoading
+          : BUREAU_MESSAGES.theorySubmission.submitCta}
       </button>
 
       {message ? (
@@ -133,9 +136,9 @@ export default function TheorySubmissionForm({
         <div className={`rounded-2xl border p-4 text-sm leading-7 ${resultColor}`}>
           <div className="text-xs uppercase tracking-[0.2em]">
             {verdict === "CASE_CLOSED"
-              ? "Closure Standard Met"
+              ? BUREAU_MESSAGES.theorySubmission.closureStandardMet
               : verdict === "REVISION_REQUIRED"
-              ? "Revision Required"
+              ? BUREAU_MESSAGES.theorySubmission.revisionRequired
               : ""}
           </div>
           <div className="mt-2">{feedback}</div>
