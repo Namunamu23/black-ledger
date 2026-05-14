@@ -1,9 +1,13 @@
-## Black Ledger — Project State (updated 2026-04-28, end of day)
+## Black Ledger — Project State (updated 2026-05-13, post-Batch-17-prep)
 
 ### Current status
-Registration + god-mode audit + 3 surgical fix batches + JWT session invalidation + dependency hardening + legal compliance pages + Stripe Checkout consent enforcement COMPLETE — 130+ commits on origin/main, all pushed and deployed. 161 Vitest tests passing across 21 files. Build clean (no edge-runtime warnings, only the harmless `middleware → proxy` deprecation notice from Next 16). PostgreSQL on Neon, migrations linear (5 applied, latest is `20260427210000_add_user_token_version`). Stripe Checkout live with TOS+Privacy consent checkbox enforced. Live at https://theblackledger.app, error rate 0%.
+HEAD past `453582a` on origin/main. **203 Vitest tests passing across 25 test files.** `tsc --noEmit` clean. `next build` clean on **Next.js 16.2.5** (patched up from 16.2.3 to close GHSA-8h8q-6873-q5fj HIGH DoS + GHSA-ffhc-5mcf-pf4q CSP-nonce XSS). `npm update` cleared the transitive HIGH advisories (fast-uri, fast-xml-builder). **5 moderate `npm audit` advisories remain** — postcss (via Next 16, build-time CSS only) and @hono/node-server (via @prisma/dev, dev-tooling only) — both documented as accepted risk per Week 12 analysis. **Do not run `npm audit fix --force`** — it would downgrade Prisma 7→6 and Next 16→9, bricking the app. PostgreSQL on Neon, **8 migrations applied linearly** (latest `20260507070657_drop_access_code_one_time_per_user`). Stripe Checkout live in sandbox with TOS+Privacy consent checkbox enforced. Live at https://theblackledger.app, error rate 0%. Operator: Demetre Gatchava (დემეტრე ღაჭავა), individual based in Georgia, Tbilisi.
 
-**Today's full arc (2026-04-27 → 2026-04-28):** Two parallel god-mode audits run + verification report (7/7 highest-value findings confirmed real before any fix work). Batch 1 (5 fixes — script guards + CSV escape + Stripe pin + server-stamped revokedAt). Batch 2 (5 fixes — success page email leak + webhook CSRF allowlist + P2002 catch + 2 rate limits + generic 409 message). Batch 3 (3 commits + 2 follow-ups — schema migration for `User.tokenVersion`, full JWT invalidation flow with 7-day maxAge, edge-safe split-config refactor for middleware, post-deploy Navbar guard fix). End-of-day: `npm audit fix` resolved 3 transitive vulnerabilities. Privacy Policy + Terms of Service authored and live at `/privacy` and `/terms`. Stripe sandbox dashboard configured with public details + product description. Stripe Checkout now enforces TOS/Privacy consent checkbox before payment via `consent_collection.terms_of_service: 'required'` — verified end-to-end on a real sandbox test purchase. Operator: Demetre Gatchava (დემეტრე ღაჭავა), individual based in Georgia.
+**Strategic state as of 2026-05-10 full-scope review (`audits/2026-05-10-fullscope-godmode-review.md`):** 14 batches closed across 4 audit rounds — 2026-04-27 god-mode pair → Batches 1–3, 2026-05-01 god-mode pair → Batches 4–7, 2026-05-06 god-mode (52 findings) → Batches 8/9/9B/10/11, 2026-05-07 UX polish (29 findings) → Batch 12, 2026-05-10 full-scope review → Batch 16. **Every P0/P1 closed**, including the latent `/bureau/archive` Batch-13-closure regression caught by the 2026-05-10 review. Remaining work is operational launch-blockers (Resend DKIM/SPF/DMARC, Stripe Live activation, lawyer review of Privacy/Terms) plus governance baseline (Sentry, CI runbook, `pg_dump` cadence) plus the deferred P2 backlog.
+
+**Original arc (2026-04-27 → 2026-04-28):** Two parallel god-mode audits run + verification report (7/7 highest-value findings confirmed real before any fix work). Batch 1 (script guards + CSV escape + Stripe pin + server-stamped revokedAt). Batch 2 (success page email leak + webhook CSRF allowlist + P2002 catch + rate limits + generic 409). Batch 3 (`User.tokenVersion` migration, full JWT invalidation flow, edge-safe split-config). `npm audit fix` resolved 3 transitive vulnerabilities. Privacy Policy + Terms authored live. Stripe Checkout enforces TOS/Privacy consent via `consent_collection.terms_of_service: 'required'`.
+
+**Recent arc (2026-04-29 → 2026-05-10):** Batch 8 — 11 surgical fixes from the 2026-05-06 god-mode audit (cron `timingSafeEqual`, `x-real-ip`-first rate-limit, user-delete activation-code revoke, idempotencyKey stale-tab fix, atomic revoke `updateMany`, Sharp pixel limit, Reply-To support@, Order.email `.toLowerCase()` everywhere, CheckpointAttempt moved inside stage-advance transaction, hidden_evidence in admin CreateAccessCodeForm, deferred-product backlog logging). Batch 9 — schema migration adding `OrderStatus.PARTIALLY_REFUNDED` + `UserCase.revokedAt`, branched refund handler (partials preserve entitlement, fulls soft-revoke), revoked-UserCase read-only banner, per-recipient activation-email throttle (3/hour same normalized email), AccessCode.oneTimePerUser runtime cleanup, Terms §7 rewrite to manual refund flow. Batch 9B — destructive `DROP COLUMN AccessCode.oneTimePerUser` migration. Batch 10 — `redirectIfAuthenticated` helper on all four auth pages. Batch 11 — case-insensitive `deleteAccountSchema.confirmation`. Batch 12 — 8 UX-polish fixes (hidden_evidence in UnlockForm latent-P0, theory-submit `router.refresh()`, search-result placeholder fix, /login hardcoded slug → /cases catalog, redeem+create AccessCode schemas `.toUpperCase()`, admin Remove confirmation dialog, forgot-password page hero copy, FAQ Q4 generalization). Batch 13 — **sealed holistic theory feedback** (critical brute-force fix: closure-standard rule, `publicVerdict` response shape, sealed verdict on route + form + workspace, raised theory min-lengths for motive/evidence). Batch 16 — sealed `/bureau/archive` theory history (Batch-13 closure regression caught by 2026-05-10 review), refund-aware UX (`revokedAt` filter on `/bureau` dashboard + debrief page), `caseSerial(id)` helper unifying serial format, owned-case CTA + dynamic serial on `CasePublicView`, root `app/error.tsx` boundary with bureau-themed fallback (F-30), **Bureau Message Registry** at `data/bureau-messages.ts` applied across login/unlock/theory submission/per-case database header, quick-polish bundle (engines.node, Link migration, scripts/unarchive-case.ts argv parsing, RevokeButton field cleanup).
 
 ### Week 1 — Completed commits (closed 2026-04-20)
 All P0 bugs from the original audit closed. 11 commits.
@@ -279,40 +283,45 @@ Approximately 6 commits + Stripe Dashboard configuration (sandbox mode). Targete
 - **Optional but recommended: register an Individual Entrepreneur (IE) entity in Georgia** (`სამეწარმეო საქმიანობა`) for the 1% small business tax status and basic liability separation. Update operator name on Privacy/Terms pages from "Demetre Gatchava (individual)" to the registered IE name when complete.
 - **Clean up sandbox PENDING orders** — three test PENDING Order rows accumulated in Neon during smoke testing and consent verification (none paid, all abandoned). Harmless; can be cleaned via SQL `DELETE FROM "Order" WHERE status = 'PENDING' AND "createdAt" > '2026-04-27'` or just left as forever-PENDING until the cleanup cron is built (backlog item).
 
-**P1 (queued for future fix batches):**
-- **BuyButton double-charge race / no Stripe `idempotencyKey`.** Two concurrent `/api/checkout` POSTs both pass the COMPLETE-only guard, both create Stripe sessions, both can be paid → double charge. Queued for Batch 4.
-- **`hidden_evidence` AccessCode validator gap.** Validator enum excludes `"hidden_evidence"` even though redeem route + workspace renderer both branch on it. Admin can't create such codes via API today. Queued for Batch 4 (small).
-- **Stripe `payment_intent.payment_failed` orphan handling.** Handler can't find the Order (no `stripePaymentIntent` set yet on PENDING). Subscribe to `checkout.session.async_payment_failed` instead. Queued for Batch 4.
-- **`Order.userId` link missing + no refund webhook handler.** Refund-after-solve undetected. Schema migration + new `charge.refunded` handler. Larger work; Batch 5.
-- **Activation-code email goes to attacker-supplied address.** Architectural fix (require account creation pre-checkout, or deliver code via token-link). Needs product input.
-- **`AccessCodeRedemption` unique-key vs `oneTimePerUser` flag.** Schema enforces `@@unique([accessCodeId, userId])` unconditionally → `oneTimePerUser=false` is functionally a no-op. Product decision needed: drop the column or drop the unique constraint.
-- **No retry / sweeper for failed activation-code emails.** Cron infrastructure required. Order schema already has `emailSentAt` / `emailLastError` for tracking.
-- **No account-deletion flow (GDPR/CCPA).** New `DELETE /api/me` endpoint; cascades already wired at schema level.
+**P1 (queued — none open at HEAD as of 2026-05-13).** All prior P1s closed across Batches 4–16. The 2026-05-10 full-scope review confirmed zero open P0/P1.
 
-**P2/P3 backlog (low priority, ordered):**
-- `runtime = "nodejs"` not pinned on every API route (only on `/api/webhooks/stripe`).
-- CSP allows `'unsafe-inline'` and `'unsafe-eval'` in `script-src` — move to nonce-based.
-- No Sentry / structured logging — `console.error` to Vercel logs only.
-- No Vercel Cron for stuck PENDING orders, orphan R2 objects, unsent emails.
-- Forgot-password email-send timing leaks user existence.
-- Login lookup not constant-time (returns `null` immediately for missing email).
-- Order missing index on `(caseFileId, email, status)` — duplicate-purchase guard does seq scan as table grows.
-- Pre-existing odd indentation in `app/api/admin/cases/route.ts` `data: {}` block.
-- `RevokeButton` still sends now-ignored `revokedAt` (cosmetic only — server stamps).
-- `unarchive-case.ts` still hard-codes `CASE_ID = 3` (no CLI arg).
-- `AccessCodeList` shows "record #5" style target label — enrich GET endpoint.
-- No PATCH endpoint for retiring `AccessCodes` (setting `retiredAt`).
-- Validator length inconsistency between aggregate `adminCaseSchema` and per-section schemas.
-- `CaseAudit` not written for: workflow PATCH, batch-generate, revoke, AccessCode create.
-- Archive button on `PublishCaseButton` has no confirmation dialog.
-- No `GlobalPerson` admin UI — create/edit via seed scripts only.
-- `/bureau/unlock` "We saved your code" copy is misleading.
-- `tsconfig` `target: ES2017` is dated.
-- `lucide-react ^1.8.0` version pin is unusual — verify package.
-- No `engines.node` field in `package.json`.
-- Stripe webhook does not verify `event.account` / `session.livemode` matches expectation.
-- New rate-limit branches added in Batch 2 (`/api/checkout/status`, `/api/admin/uploads/blurhash`) are functional but untested.
-- Fix 3's P2002 catch in `app/api/admin/cases/route.ts` is functional but untested (no race-condition simulation).
+**Closed since prior CLAUDE.md (2026-04-28):**
+- BuyButton double-charge race — closed Batch 5 (`idempotencyKey` + PENDING-reuse + 60s bucket → no-bucket).
+- `hidden_evidence` AccessCode validator gap — closed Batch 4 (validator) + Batch 8 (admin UI) + Batch 12 (UnlockForm rendering).
+- `payment_intent.payment_failed` orphan handling — closed Batch 4 (subscribed to `checkout.session.async_payment_failed`).
+- `Order.userId` link / refund webhook — closed Batch 5 (`charge.refunded` handler) + Batch 9 (partial vs full branching). `Order.userId` itself deferred — User reachable via `Order.activationCode.claimedByUserId`.
+- `AccessCode.oneTimePerUser` vs unique-key conflict — closed Batches 9 + 9B (column dropped).
+- Account-deletion flow — closed Batch 6 (`DELETE /api/me` with password + literal "delete my account" re-auth, case-insensitive after Batch 11).
+- Activation-code email spam-relay (F-13) — interim closure via Batch 9 per-recipient throttle (3/hour). Architectural fix (account-before-checkout) deliberately deferred.
+- Email enumeration / login timing — closed Batch 7 (constant-time bcrypt compare).
+- Cron for stuck PENDING orders — closed Batch 5 (`/api/cron/cleanup-pending-orders` + `vercel.json` `0 4 * * *` + `CRON_SECRET` + `timingSafeEqual` hardening in Batch 8).
+- `runtime = "nodejs"` not pinned everywhere — closed Batch 7 (sweep of 29 routes).
+- Sealed theory feedback — closed Batch 13 (closure-standard rule) + Batch 16 (`/bureau/archive` regression seal).
+- Refund-aware UX (revoked-UserCase still shown in dashboard) — closed Batch 16 (revokedAt filter).
+- Engines.node + Link migration + unarchive-case.ts argv — closed Batch 16 quick-polish bundle.
+
+**P2/P3 backlog (open at HEAD, ordered):**
+- **F-22 forgot-password email-send timing leak** — sending a Resend mail on hit vs returning immediately on miss leaks user existence. Defer: closing without breaking the existing Resend-assertion test needs a small test rewrite first. Tracked in `audits/2026-05-06-godmode-audit.md`.
+- **F-32 / F-33 CSP nonce migration** — replace `'unsafe-inline'` / `'unsafe-eval'` in `script-src` with nonces. Larger effort (Next 16 + Framer compatibility check).
+- **F-34 `app/layout.tsx` per-render `auth()`** — root layout calls `auth()` on every page render, which incurs a Prisma query on every nav for the Navbar avatar. Refactor to lift the call into a single user-info server component or cache strategically. Performance, not correctness.
+- **F-12 Sentry / structured logging** — currently `console.error` → Vercel logs only (1-hour retention on Hobby tier). Sentry add-on or self-host requires `npm install` + DSN.
+- **`Order.userId` link** — schema improvement. Refund-after-solve detection currently works via `Order.activationCode.claimedByUserId`. Schema migration would simplify reporting and history.
+- **Admin-deletion path needs `CaseAudit` re-parenting** — currently blocked by RESTRICT FK on `CaseAudit.userId`. Three options: (a) re-parent audits to a sentinel admin user before delete, (b) relax to SetNull (loses audit history), (c) keep refusing self-deletion and add an operator escalation flow. Product call.
+- **ActivationCode revoke-on-user-delete** — Batch 8 closed the re-claim loop, but the product question of "should deleting your account revoke your unclaimed codes" is a soft policy choice.
+- **Post-deletion confirmation email** — `DELETE /api/me` succeeds silently. Adding a Resend confirmation closes the receipts gap.
+- **Customer-facing 7-day refund flow** — Terms §7 (Batch 9 rewrite) specifies the manual support@ flow. Self-serve `/api/refund-request` deferred per the decision rule below.
+- **`CaseAudit` not written for** workflow PATCH, batch-generate, revoke, AccessCode create — forensic gap. Add audit writes at each site.
+- **No PATCH endpoint for retiring AccessCodes** (setting `retiredAt`) — currently manual.
+- **No `GlobalPerson` admin UI** — create/edit via seed scripts only.
+- **Validator length inconsistency** between aggregate `adminCaseSchema` and per-section schemas.
+- **No retry / sweeper for failed activation-code emails** — `Order.emailSentAt` / `emailLastError` tracking is present (Wave 3), retry cron is not.
+- **`tsconfig` `target: ES2017` is dated.**
+- **`lucide-react ^1.8.0` version pin is unusual** — verify the package is the intended one (Batch 16 quick-polish migrated to next/link but didn't audit this).
+- **Stripe webhook does not verify `event.account`** (cross-tenant safety). `event.livemode` is verified (Batch 4).
+- **Rate-limit branches added in Batch 2** (`/api/checkout/status`, `/api/admin/uploads/blurhash`) are functional but untested.
+- **P2002 catch in `app/api/admin/cases/route.ts`** is functional but untested (no race-condition simulation in tests/).
+- **Operator handoff readiness** — single-key dependencies (Stripe, Resend, Neon, R2). No documented runbook, no `pg_dump` cadence, no DR plan.
+- **CI / branch protection** — GitHub `main` not protected, no required CI pipeline, no Dependabot. Operational, not code.
 
 **Deferred product / architecture decisions (revisit triggers):**
 
@@ -398,3 +407,118 @@ Investigator self-deletion via password + literal "delete my account" re-auth, r
 - 88163a5  docs(audit): batch 7 report + observations
 
 13 admin mutation routes now rate-limited at 60/60s per (ip, route). 29 API routes now pinned to nodejs runtime explicitly. Login flow now bcrypt-compares against a lazy-cached fake hash on the user-not-found path so wall-clock timing is uniform. Dead `https://fonts.gstatic.com` entry removed from CSP `font-src` (next/font/google self-hosts at build time). Test count: 168 unchanged. No migration. No new deps. No env changes. Deferred to later batches: forgot-password timing leak (would break existing Resend-assertion test); Sentry/structured logging (needs npm install); `/bureau/database` pagination + `app/layout.tsx` perf refactor (UX-touching, separate from hardening).
+
+### Week 17 — Bureau identity search terminal + Batch 8 fixes (closed 2026-05-06)
+3 + 11 commits on origin/main. UX feature ship + the largest fix batch yet from the 2026-05-06 god-mode audit (52 findings F-01 → F-52).
+
+**Feature ship (Week 17 opener):**
+- a743bc0  feat(database): bureau identity search terminal — server action + client component + thin page shell
+- e964593  refactor(seed): make seed-global-people idempotent and prod-safe via opt-in flag
+- 47322ff  docs(audit): database terminal UX fix prompt
+- f93908e  docs: project state checkpoint after batch 7
+- 76a30ac  docs: extend week 16 entry with batch 7 details
+
+**Batch 8 — 11 surgical fixes (closed 2026-05-06):**
+- 7a2ecb5  docs(audit): batch 8 fix prompt + 2026-05-06 godmode audit dossier
+- a4ce3f8  fix(security): cron route hardening — `timingSafeEqual` + User-Agent check (closes F-01 cron timing oracle)
+- 17d57bc  fix(security): rate-limit IP source reads `x-real-ip` first to defeat X-Forwarded-For spoofing (closes F-06)
+- c6294fc  fix(security): revoke claimed activation codes on user-delete to close re-claim loop (closes F-03)
+- f01cf19  fix(checkout): drop 15-min bucket from Stripe idempotencyKey to prevent stale-tab double-charge (closes F-07)
+- b2dbd34  fix(admin): atomic `updateMany` on activation-code revoke (close read-then-write race)
+- 66be06e  fix(security): R2 upload pipeline hardening — Sharp pixel limit (Content-Length cap deferred)
+- bbe17b5  fix(email): add Reply-To: support@... to activation-code email (closes F-20)
+- 2af557f  fix(checkout): explicit `toLowerCase` on Order.email at every write site (closes F-29 email normalization)
+- 344748d  fix(checkpoint): move CheckpointAttempt write inside the stage-advance transaction
+- f857fb9  feat(admin): include hidden_evidence in CreateAccessCodeForm and access-codes page
+- 62e4a72  docs(backlog): record deferred Batch 9 product items + revisit triggers in CLAUDE.md
+- cbbadba  docs(audit): batch 8 report + observations
+
+Test count: 161 → 168. **No migrations.** No new deps. Three verified P1s (F-01, F-03, F-06) closed plus 7 P2/P3 defense-in-depth items. F-13 throttle, F-14 oneTimePerUser cleanup, F-02 partial-refund handler, F-05 Terms §7 rewrite deferred to Batch 9 because they need schema or product/prose work.
+
+### Week 18 — Batch 9 + Batch 9B (closed 2026-05-07)
+
+**Batch 9 — 6 surgical fixes + schema migration (closed 2026-05-07):**
+- 4d3123d  feat(schema): add `OrderStatus.PARTIALLY_REFUNDED` + `UserCase.revokedAt`
+- ac8681c  fix(webhook): partial refunds preserve entitlement; full refunds soft-revoke UserCase (closes F-02 P1)
+- 2d21673  feat(bureau): banner + read-only mode for revoked UserCase
+- 5aace4d  fix(webhook): per-recipient activation-email throttle (3/hour same normalized email) (closes F-13 P2)
+- f978a10  chore(access-codes): stop writing AccessCode.oneTimePerUser; column drop deferred to Batch 9B
+- f5cd2dd  docs(legal): rewrite Terms §7 to manual refund-via-support flow (closes F-05 P1)
+- 1f2b514  docs(audit): batch 9 report + observations
+
+Migration applied: `20260507052527_add_partially_refunded_and_user_case_revoked_at` (additive only — new enum value + new nullable column). Test count: 168 → 177. **First schema-touching batch since Batch 5.** Refund decision rule formalized: cash-amount delta determines partial vs full, not refund reason or rating; activation-code revoked only on full refund; partial refunds keep the player in the case (now they have to live with their guesses being on record).
+
+**Batch 9B — destructive schema cleanup (closed 2026-05-07):**
+- 9d81c6b  feat(schema): drop AccessCode.oneTimePerUser column
+- e4740f6  docs(audit): batch 9b report + observations
+
+Migration applied: `20260507070657_drop_access_code_one_time_per_user` (hand-written; `prisma migrate dev` refused interactively because of the destructive warning). Schema field removed; `AccessCodeRedemption(@@unique [accessCodeId, userId])` already enforced one-time-per-user behavior unconditionally. Test count: 177 → 184. Migration applied to prod Neon via `migrate deploy` after operator approval.
+
+### Week 19 — Batches 10, 11, 12 (closed 2026-05-08)
+
+**Batch 10 — auth-page redirect (closed 2026-05-08):**
+- e258ff3  feat(auth): redirect signed-in users away from auth pages
+- beade07  docs(audit): batch 10 report + observations
+
+`redirectIfAuthenticated()` added to `lib/auth-helpers.ts` (fifth flavor alongside `requireSession` / `requireAdmin` / `getOptionalSession` / `requireSessionJson`). Applied to `/login`, `/register`, `/forgot-password`, `/reset-password`. Same `auth()` call powers the redirect → same JWT-tokenVersion check from Batch 3. Test count: 184 → 188.
+
+**Batch 11 — case-insensitive deletion phrase (closed 2026-05-08):**
+- 58b2240  feat(account): case-insensitive deletion-confirmation phrase
+- 9e259b3  docs(audit): batch 11 report + observations
+
+`deleteAccountSchema.confirmation` relaxed from `z.literal("delete my account")` to a `.trim().toLowerCase().pipe(z.literal(...))` pipeline. Speed-bump intent preserved; password re-auth remains the actual security gate. Test count: 188 → 194.
+
+**Batch 12 — 8 UX-polish fixes from 2026-05-07 dogfooder's audit (closed 2026-05-08):**
+- 8827b75  feat(unlock): handle hidden_evidence content type in UnlockForm (UX-01, latent-P0)
+- a1847f9  feat(bureau): refresh workspace state after CORRECT theory submission (UX-06)
+- f1cb3d7  fix(bureau): replace literal "N" placeholder in search results (UX-12)
+- 5d4013f  fix(login): replace hardcoded case slug link with /cases catalog (UX-14)
+- dc73fe4  fix(validators): normalize `redeemAccessCodeSchema` and `createAccessCodeSchema` to uppercase (UX-15)
+- 9454848  feat(admin): confirm before removing People/Records/Hints/Checkpoints (UX-22)
+- 1403d91  docs(legal): correct forgot-password page hero copy (UX-25)
+- 8ee6579  docs: generalize FAQ Q4 from Case 001-specific to global (UX-26)
+- ba5c66b  docs(audit): batch 12 report + observations
+- caae2e6  docs(audit): archive Batch 9, 9B, 10, 11 fix prompts + UX polish audit prompt
+
+The UX-01 hidden_evidence missing-branch was rated P0 by severity but was latent — operator screenshots confirmed prod had zero hidden_evidence access codes at the time, so no real user encountered it. Test count: 194 → 197.
+
+### Week 20 — Batches 13 + 16 (closed 2026-05-10)
+
+**Batch 13 — sealed holistic theory feedback (closed 2026-05-10):**
+- 4e3b205  refactor(case-evaluation): seal holistic feedback (no per-component diagnostic)
+- a26f2f0  feat(theory): `publicVerdict` response shape — sealed verdict on route + form + workspace
+- e749fb0  chore(validators): raise theory motive/evidence minimum lengths to discourage junk probes
+- 6ffae70  docs(content): closure-standard rule + author-discipline guidance in CLAUDE.md
+- 5a11ee4  docs(audit): batch 13 report + observations
+
+**Critical brute-force fix.** Operator (Demetre) discovered the leak in dogfooding: the old `buildFeedback()` returned per-component diagnostic prose ("You were correct on suspect, but still need to improve motive, evidence."), letting a player at stage 3 enumerate the murderer in N submissions where N = number of suspects by iterating the suspect field with junk motive/evidence text. Sealed-feedback closes the leak. `publicVerdict` is now the only player-facing field — binary verdict at the public layer, full per-component reasoning reserved for the post-SOLVED debrief. Internal storage of `suspectCorrect` / `motiveCorrect` / `evidenceCorrect` on `TheorySubmission` continues for analytics and admin views only. Test count: 197 → 198 (one fixture lengthened).
+
+**Batch 16 — 8 surgical fixes from 2026-05-10 full-scope god-mode review (closed 2026-05-10):**
+- 98fb771  fix(security): seal /bureau/archive theory history (close Batch 13 closure regression)
+- 6c51687  fix(refund): filter `revokedAt` on /bureau dashboard + debrief page (UX-09 + UX-10)
+- 3959cbb  feat(serial): unify case serial format with single `caseSerial(id)` helper (UX-08/16/17)
+- 3e68d85  fix(public): owned-case CTA + dynamic serial on `CasePublicView` (UX-03 + UX-04 + UX-05)
+- 75dc9bd  feat(reliability): root error.tsx boundary with bureau-themed fallback (F-30)
+- c7ee163  feat(voice): **Bureau Message Registry** + apply to login/unlock/theory submission
+- b3ee7d4  feat(voice): apply registry to per-case database header
+- 4bd3bed  chore: quick-polish bundle (engines.node, Link migration, argv parsing, RevokeButton field cleanup)
+- 8b1855c  docs(audit): batch 16 report + observations
+- 453582a  docs(audit): archive batch 16 prompt + 2026-05-10 review + design ideation
+
+**The /bureau/archive seal closes a Batch-13 closure regression.** The 2026-05-10 full-scope review caught that `/bureau/archive` was still rendering per-component diagnostic prose from prior submissions even though the live theory route had been sealed. Sealing here completes the closure. The Bureau Message Registry (`data/bureau-messages.ts`) is a new content layer for unifying voice across the bureau-themed UI surface — all variable copy lives in one typed registry, callers `import { messages } from "@/data/bureau-messages"` and pull strings by key. Test count: 198 unchanged.
+
+**Batches 14 and 15 were renumbered.** The audit-recommended Batch 14 (refund visibility + serial unification) and Batch 15 (copy fixes + owned-case CTA) were superseded by Batch 13 (priority bump for the sealed-feedback fix) and then folded into Batch 16 as the natural grouping. The numbers 14 and 15 do not appear in the batch ledger.
+
+### Production-state quick reference (verified at HEAD `453582a`, 2026-05-13)
+
+- **Schema:** 22 models, 9 enums, 8 migrations linear, no drift.
+- **API routes:** 32 total. Rate-limited: register 3/60s, forgot-password 3/60s, reset-password 5/60s, activate 5/60s, redeem 5/60s, checkout 5/60s, support 10/60s, waitlist 10/60s, theory 20/60s, checkpoint 30/60s, checkout/status 30/60s, uploads/sign 30/60s, uploads/blurhash 30/60s, every admin mutation route 60/60s, legacy activation-codes 10/60s.
+- **Tests:** 198 across 24 files.
+- **Runtime:** Node 20+ (`engines.node`). All Prisma-using API routes pinned `runtime = "nodejs"`. `auth.config.ts` Prisma-free for edge middleware; `auth.ts` full DB-checking session callback for routes/pages.
+- **Stripe:** API version pinned `"2026-04-22.dahlia"`. `ProcessedStripeEvent` table provides hard cross-delivery idempotency. Handlers: `checkout.session.completed`, `checkout.session.async_payment_failed`, `charge.refunded` (branched partial vs full). `event.livemode` validated. Webhook CSRF bypass via `WEBHOOK_PATHS = new Set(["/api/webhooks/stripe"])`.
+- **Cron:** Vercel Cron `0 4 * * *` → `/api/cron/cleanup-pending-orders` with `timingSafeEqual` + UA check. CRON_SECRET set in Vercel.
+- **Auth:** JWT, 7-day maxAge, `tokenVersion` invalidation on password reset + user delete. `redirectIfAuthenticated` on all auth pages.
+- **CSP:** enforced (not report-only). `script-src` retains `unsafe-inline`/`unsafe-eval` for Next/Framer (nonce migration in backlog as F-32/33).
+- **Lib files:** 15 — `assert-safe-env`, `auth-helpers`, `case-evaluation`, `case-quality`, `case-serial` (new in Batch 16), `enums`, `labels`, `post-login-path`, `prisma`, `rate-limit`, `resend`, `stripe`, `text-utils`, `user-case-state`, `validators`.
+- **Data files:** `data/site.ts`, `data/bureau-messages.ts` (new in Batch 16).
+- **Bureau-archive sealing:** `/bureau/archive` no longer renders per-component diagnostic prose from old TheorySubmission rows (closes a Batch-13 closure regression caught by the 2026-05-10 review).
