@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import TheorySubmissionForm from "@/components/bureau/TheorySubmissionForm";
 import CheckpointForm from "@/components/bureau/CheckpointForm";
 import { CASE_STATUS_LABEL } from "@/lib/labels";
+import { caseSerial } from "@/lib/case-serial";
 import RevealedEvidence, {
   type ResolvedEvidence,
 } from "./_components/RevealedEvidence";
@@ -25,14 +26,25 @@ const BTN_OUTLINE_MD =
 
 type UnlocksTarget = { type: string; id: number };
 
+/**
+ * Resolve an AccessCodeRedemption's `unlocksTarget` to its concrete content row.
+ *
+ * Defense-in-depth (Batch 17): every lookup is gated on `caseFileId`. The
+ * caller passes the owning UserCase's caseFileId; a mis-targeted AccessCode
+ * row cannot reveal content from another case even if the write-side
+ * invariant in `app/api/admin/cases/[caseId]/access-codes/route.ts` is
+ * bypassed by a future seed-script bug or hand-edited row. Mirrors the
+ * fix applied to `resolveContent` in the redeem API route.
+ */
 async function resolveEvidence(
-  unlocksTarget: unknown
+  unlocksTarget: unknown,
+  caseFileId: number
 ): Promise<ResolvedEvidence | null> {
   const target = unlocksTarget as UnlocksTarget;
 
   if (target?.type === "record") {
-    const record = await prisma.caseRecord.findUnique({
-      where: { id: target.id },
+    const record = await prisma.caseRecord.findFirst({
+      where: { id: target.id, caseFileId },
     });
     if (!record) return null;
     return {
@@ -42,8 +54,8 @@ async function resolveEvidence(
   }
 
   if (target?.type === "person") {
-    const person = await prisma.casePerson.findUnique({
-      where: { id: target.id },
+    const person = await prisma.casePerson.findFirst({
+      where: { id: target.id, caseFileId },
     });
     if (!person) return null;
     return {
@@ -53,8 +65,8 @@ async function resolveEvidence(
   }
 
   if (target?.type === "hint") {
-    const hint = await prisma.caseHint.findUnique({
-      where: { id: target.id },
+    const hint = await prisma.caseHint.findFirst({
+      where: { id: target.id, caseFileId },
     });
     if (!hint) return null;
     return {
@@ -64,8 +76,8 @@ async function resolveEvidence(
   }
 
   if (target?.type === "hidden_evidence") {
-    const hiddenEvidence = await prisma.hiddenEvidence.findUnique({
-      where: { id: target.id },
+    const hiddenEvidence = await prisma.hiddenEvidence.findFirst({
+      where: { id: target.id, caseFileId },
     });
     if (!hiddenEvidence) return null;
     return {
@@ -153,7 +165,11 @@ export default async function BureauCasePage({ params }: PageProps) {
   // render placeholders for missing evidence. Use allSettled so a single
   // failed lookup doesn't fail the whole page.
   const settled = await Promise.allSettled(
-    redemptions.map((r) => resolveEvidence(r.accessCode.unlocksTarget))
+    redemptions.map((r) =>
+      // Pass the owning UserCase's caseFileId so resolveEvidence's
+      // defense-in-depth filter (Batch 17) gates cross-case content.
+      resolveEvidence(r.accessCode.unlocksTarget, ownedCase.caseFileId)
+    )
   );
   const revealedEvidence: ResolvedEvidence[] = settled
     .filter(
@@ -196,7 +212,12 @@ export default async function BureauCasePage({ params }: PageProps) {
   };
   const statusTone = statusToneMap[status] ?? "neutral";
 
-  const caseSerial = "BL-" + slug.toUpperCase().replace(/-/g, "").slice(0, 8);
+  // UX-08 closure (Batch 17): use the canonical id-based helper so the
+  // serial here matches the dashboard, debrief, public catalog, and admin
+  // tabs. The prior slug-based derivation drifted whenever a case was
+  // renamed via CaseSlugHistory — a player's serial would silently change
+  // mid-case. Renamed local to `serial` to avoid shadowing the import.
+  const serial = caseSerial(caseFile);
 
   return (
     <main className="relative min-h-screen bg-[#050507] text-zinc-100">
@@ -248,7 +269,7 @@ export default async function BureauCasePage({ params }: PageProps) {
 
           <div className="p-6">
             <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-zinc-500">
-              {caseSerial}
+              {serial}
             </div>
             <h1 className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
               {caseFile.title}
