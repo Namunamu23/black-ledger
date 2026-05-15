@@ -65,6 +65,7 @@ export async function PATCH(
 
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
+  const userId = Number(guard.user.id);
 
   const { caseId } = await params;
   const parsedCaseId = Number(caseId);
@@ -112,12 +113,30 @@ export async function PATCH(
       ? new Date()
       : caseFile.publishedAt;
 
-  const updated = await prisma.caseFile.update({
-    where: { id: caseFile.id },
-    data: {
-      workflowStatus: targetStatus,
-      publishedAt,
-    },
+  // Wrap the mutation in a transaction with a CaseAudit write (Batch 17).
+  // Workflow transitions — especially PUBLISHED → ARCHIVED — are among
+  // the most destructive admin actions available; a forensic trail is
+  // mandatory for incident response. Matches the per-section PATCH
+  // pattern (see app/api/admin/cases/[caseId]/overview/route.ts).
+  const updated = await prisma.$transaction(async (tx) => {
+    const next = await tx.caseFile.update({
+      where: { id: caseFile.id },
+      data: {
+        workflowStatus: targetStatus,
+        publishedAt,
+      },
+    });
+
+    await tx.caseAudit.create({
+      data: {
+        caseFileId: parsedCaseId,
+        userId,
+        action: "UPDATE_WORKFLOW",
+        diff: { from: currentStatus, to: targetStatus },
+      },
+    });
+
+    return next;
   });
 
   return NextResponse.json(updated, { status: 200 });

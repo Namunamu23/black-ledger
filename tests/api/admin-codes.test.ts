@@ -14,6 +14,12 @@ const mocks = vi.hoisted(() => {
   const activationCodeCreateMany = vi.fn();
   const activationCodeUpdate = vi.fn();
   const activationCodeUpdateMany = vi.fn();
+  // Batch 17: the codes batch-generate POST and the codeId revoke PATCH
+  // now write a CaseAudit row inside a $transaction. Both mocks must exist
+  // so the route's `tx.caseAudit.create(...)` and `prisma.$transaction(...)`
+  // calls resolve at runtime.
+  const caseAuditCreate = vi.fn();
+  const transactionFn = vi.fn();
   const authFn = vi.fn();
   return {
     caseFileFindUnique,
@@ -22,6 +28,8 @@ const mocks = vi.hoisted(() => {
     activationCodeCreateMany,
     activationCodeUpdate,
     activationCodeUpdateMany,
+    caseAuditCreate,
+    transactionFn,
     authFn,
   };
 });
@@ -36,6 +44,8 @@ vi.mock("@/lib/prisma", () => ({
       update: mocks.activationCodeUpdate,
       updateMany: mocks.activationCodeUpdateMany,
     },
+    caseAudit: { create: mocks.caseAuditCreate },
+    $transaction: mocks.transactionFn,
   },
 }));
 
@@ -77,6 +87,20 @@ beforeEach(() => {
 
   mocks.authFn.mockResolvedValue({
     user: { id: "1", role: "ADMIN" },
+  });
+
+  // Batch 17: forward the route's $transaction callback to a tx-shaped
+  // object that exposes the same mocks. Mirrors the pattern in
+  // tests/api/admin-section-patches.test.ts.
+  mocks.transactionFn.mockImplementation(async (callback: any) => {
+    return await callback({
+      activationCode: {
+        createMany: mocks.activationCodeCreateMany,
+        update: mocks.activationCodeUpdate,
+        updateMany: mocks.activationCodeUpdateMany,
+      },
+      caseAudit: { create: mocks.caseAuditCreate },
+    });
   });
 
   resetRateLimit();

@@ -23,6 +23,7 @@ export async function PATCH(
 
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
+  const userId = Number(guard.user.id);
 
   const { caseId, codeId } = await params;
   const parsedCaseId = Number(caseId);
@@ -48,13 +49,32 @@ export async function PATCH(
   // doesn't match, OR it's already revoked. Distinguish those cases via a
   // follow-up findUnique only on miss, to give the admin a clear 404-vs-409
   // (and avoid leaking the existence of codes belonging to other cases).
-  const result = await prisma.activationCode.updateMany({
-    where: {
-      id: parsedCodeId,
-      caseFileId: parsedCaseId,
-      revokedAt: null,
-    },
-    data: { revokedAt: new Date() },
+  //
+  // Wrap the updateMany + CaseAudit write in a transaction (Batch 17). The
+  // audit is written ONLY when the revoke actually fired (count > 0) so
+  // 404/409 misses do not pollute the forensic trail.
+  const result = await prisma.$transaction(async (tx) => {
+    const updateResult = await tx.activationCode.updateMany({
+      where: {
+        id: parsedCodeId,
+        caseFileId: parsedCaseId,
+        revokedAt: null,
+      },
+      data: { revokedAt: new Date() },
+    });
+
+    if (updateResult.count > 0) {
+      await tx.caseAudit.create({
+        data: {
+          caseFileId: parsedCaseId,
+          userId,
+          action: "REVOKE_ACTIVATION_CODE",
+          diff: { codeId: parsedCodeId },
+        },
+      });
+    }
+
+    return updateResult;
   });
 
   if (result.count === 0) {

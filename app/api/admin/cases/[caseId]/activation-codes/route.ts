@@ -34,6 +34,7 @@ export async function POST(
 
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
+  const userId = Number(guard.user.id);
 
   const { caseId } = await params;
   const parsedCaseId = Number(caseId);
@@ -67,17 +68,37 @@ export async function POST(
       code = generateCode(caseFile.slug);
     }
 
-    await prisma.activationCode.create({
-      data: {
-        code,
-        caseFileId: caseFile.id,
-      },
+    // Wrap the create + audit in a transaction (Batch 17). This is the
+    // legacy single-code generation path; the modern batch route at
+    // ../codes/route.ts uses action="GENERATE_ACTIVATION_CODES". The two
+    // distinct actions let the operator distinguish surface in the
+    // forensic trail. The generated `code` value is NOT in the diff —
+    // it's a redeemable secret that lives in the activation_code table
+    // until claim and shouldn't be duplicated into an audit log.
+    const created = await prisma.$transaction(async (tx) => {
+      const activationCode = await tx.activationCode.create({
+        data: {
+          code,
+          caseFileId: caseFile.id,
+        },
+      });
+
+      await tx.caseAudit.create({
+        data: {
+          caseFileId: caseFile.id,
+          userId,
+          action: "GENERATE_ACTIVATION_CODE_LEGACY",
+          diff: { activationCodeId: activationCode.id },
+        },
+      });
+
+      return activationCode;
     });
 
     return NextResponse.json(
       {
-        message: `Activation code created: ${code}`,
-        code,
+        message: `Activation code created: ${created.code}`,
+        code: created.code,
       },
       { status: 201 }
     );

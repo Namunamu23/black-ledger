@@ -11,8 +11,19 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 const mocks = vi.hoisted(() => {
   const caseFileFindUnique = vi.fn();
   const caseFileUpdate = vi.fn();
+  // Batch 17: the workflow PATCH now wraps the update in a $transaction
+  // with a CaseAudit write. Both mocks must exist for the route's runtime
+  // calls to resolve.
+  const caseAuditCreate = vi.fn();
+  const transactionFn = vi.fn();
   const authFn = vi.fn();
-  return { caseFileFindUnique, caseFileUpdate, authFn };
+  return {
+    caseFileFindUnique,
+    caseFileUpdate,
+    caseAuditCreate,
+    transactionFn,
+    authFn,
+  };
 });
 
 vi.mock("@/lib/prisma", () => ({
@@ -21,6 +32,8 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: mocks.caseFileFindUnique,
       update: mocks.caseFileUpdate,
     },
+    caseAudit: { create: mocks.caseAuditCreate },
+    $transaction: mocks.transactionFn,
   },
 }));
 
@@ -56,6 +69,16 @@ describe("PATCH /api/admin/cases/[caseId]/workflow", () => {
 
     mocks.authFn.mockResolvedValue({
       user: { id: "1", role: "ADMIN" },
+    });
+
+    // Batch 17: forward the route's $transaction callback through to the
+    // tx-shaped object that exposes the same mocks. Mirrors the pattern
+    // in tests/api/admin-section-patches.test.ts.
+    mocks.transactionFn.mockImplementation(async (callback: any) => {
+      return await callback({
+        caseFile: { update: mocks.caseFileUpdate },
+        caseAudit: { create: mocks.caseAuditCreate },
+      });
     });
   });
 
