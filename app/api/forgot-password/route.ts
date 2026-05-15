@@ -57,10 +57,22 @@ export async function POST(request: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const resetUrl = `${appUrl}/reset-password?token=${token}`;
 
+    // Defensive HTML escape on the URL — `resetUrl` is built from
+    // `NEXT_PUBLIC_APP_URL` (server-controlled) + a 32-byte hex token (no
+    // escape-sensitive chars), so no XSS is possible today. The escape is a
+    // belt-and-suspenders defense against a future change that introduces
+    // user-controlled content into the same template. Matches the pattern
+    // used by the activation-email send in `app/api/webhooks/stripe/route.ts`.
+    const safeResetUrl = escapeHtml(resetUrl);
+
     try {
       await getResend().emails.send({
         from: getResendFrom(),
         to: email,
+        // Reply-To matches the activation-email (F-20 closure) and the
+        // support-reply path. Without this, a user replying to the no-reply
+        // from-address gets bounced or silently dropped by Resend.
+        replyTo: "support@theblackledger.app",
         subject: "Reset your Black Ledger password",
         text: [
           "You requested a password reset for your Black Ledger account.",
@@ -74,10 +86,10 @@ export async function POST(request: Request) {
           <div style="font-family: ui-sans-serif, system-ui, sans-serif; color:#0f172a; line-height:1.6;">
             <p>You requested a password reset for your <strong>Black Ledger</strong> account.</p>
             <p>
-              <a href="${resetUrl}" style="display:inline-block; background:#d97706; color:#fff; padding:10px 20px; border-radius:8px; text-decoration:none; font-weight:600;">Reset Password</a>
+              <a href="${safeResetUrl}" style="display:inline-block; background:#d97706; color:#fff; padding:10px 20px; border-radius:8px; text-decoration:none; font-weight:600;">Reset Password</a>
             </p>
             <p style="color:#475569; font-size:13px;">Or copy this link:<br/>
-              <code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:12px;">${resetUrl}</code>
+              <code style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:12px;">${safeResetUrl}</code>
             </p>
             <p style="color:#94a3b8; font-size:12px;">This link expires in 1 hour. If you did not request this, you can safely ignore this email — your password has not changed.</p>
           </div>
@@ -97,4 +109,17 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+// Inline-mirrors the helpers in app/api/webhooks/stripe/route.ts and
+// app/api/admin/support/[id]/reply/route.ts. A small duplication beats
+// introducing a cross-route dependency for five lines of code; if a third
+// call site appears, lift into lib/text-utils.ts.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
