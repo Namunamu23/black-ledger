@@ -479,11 +479,18 @@ describe("POST /api/webhooks/stripe", () => {
     expect(mocks.resendSend.mock.calls[0][0].to).toBe("buyer@example.com");
   });
 
-  it("returns 500 and logs STRIPE-ORPHAN when session metadata is insufficient (BUG-03)", async () => {
+  it("returns 200 (acked-orphan) and logs STRIPE-ORPHAN when session metadata is insufficient (BUG-03 + Batch 17)", async () => {
     // Pre-condition: orphan session AND metadata is empty / corrupted.
-    // After BUG-03, this throws so Stripe retries instead of silently
-    // dropping the event. The handler logs an alertable [STRIPE-ORPHAN]
-    // line for manual investigation.
+    //
+    // Pre-BUG-03: dropped silently.
+    // BUG-03 fix: threw → outer catch returned 500 so Stripe retried — but
+    //   Stripe then retried for ~3 days on a permanently-unrecoverable event,
+    //   spamming logs with dozens of identical [STRIPE-ORPHAN] lines.
+    // Batch 17 fix: still throw + log the alertable [STRIPE-ORPHAN] line,
+    //   but the outer catch now detects the STRIPE_ORPHAN: prefix and
+    //   returns 200 to Stripe so retries stop. Operator still sees the
+    //   original log line for manual investigation, plus a
+    //   [STRIPE-ORPHAN-FINAL] ack-line emitted by the outer catch.
     mocks.stripeConstructEvent.mockReturnValue({
       id: "evt_test_no_meta",
       type: "checkout.session.completed",
@@ -503,9 +510,15 @@ describe("POST /api/webhooks/stripe", () => {
       const response = await webhookPOST(
         makeWebhookRequest('{"type":"checkout.session.completed"}')
       );
-      expect(response.status).toBe(500);
-      // First call is the structured [STRIPE-ORPHAN] alert; the outer
-      // POST catch then logs a second "Stripe webhook handler error" line.
+      // Batch 17: return 200 to stop the Stripe retry storm.
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as { received: boolean; orphan?: boolean };
+      expect(body.received).toBe(true);
+      expect(body.orphan).toBe(true);
+
+      // First call is the structured [STRIPE-ORPHAN] alert from
+      // handleCheckoutCompleted; second is the [STRIPE-ORPHAN-FINAL] ack
+      // emitted by the outer catch before returning 200.
       const orphanCall = errorSpy.mock.calls.find((args) =>
         String(args[0]).includes("[STRIPE-ORPHAN]")
       );
@@ -513,6 +526,11 @@ describe("POST /api/webhooks/stripe", () => {
       const orphanMsg = String(orphanCall?.[0]);
       expect(orphanMsg).toContain("cs_test_no_meta");
       expect(orphanMsg.toLowerCase()).toContain("metadata");
+
+      const ackCall = errorSpy.mock.calls.find((args) =>
+        String(args[0]).includes("[STRIPE-ORPHAN-FINAL]")
+      );
+      expect(ackCall).toBeDefined();
     } finally {
       errorSpy.mockRestore();
     }

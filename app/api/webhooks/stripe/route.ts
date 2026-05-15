@@ -129,6 +129,32 @@ export async function POST(request: Request) {
       // the email. Idempotent return — do not re-mint a code or re-send the email.
       return NextResponse.json({ received: true }, { status: 200 });
     }
+    // Stop the Stripe retry storm on unrecoverable orphans (Batch 17).
+    //
+    // Pre-Batch-17, an orphan session — one with no matching local Order AND
+    // no metadata sufficient to recover — threw `STRIPE_ORPHAN:<id>` and the
+    // outer catch returned 500. Stripe interprets 500 as a transient failure
+    // and retries the same event for ~3 days with exponential backoff,
+    // generating dozens of identical `[STRIPE-ORPHAN]` log lines per orphan.
+    // The orphan is not recoverable by us regardless of how many times
+    // Stripe re-delivers — the metadata is genuinely missing on the session
+    // object — so the retries are pure noise. Returning 200 marks the event
+    // delivered from Stripe's perspective and stops the retries. The
+    // operator still sees the original `[STRIPE-ORPHAN]` log line emitted
+    // by `handleCheckoutCompleted` before the throw, plus they can search
+    // Stripe Dashboard → Events for the session to investigate manually.
+    if (
+      error instanceof Error &&
+      (error.message.startsWith("STRIPE_ORPHAN:") ||
+        error.message.startsWith("STRIPE_ORPHAN_NO_CASE:"))
+    ) {
+      console.error(
+        `[STRIPE-ORPHAN-FINAL] Acking orphan ${event.type} to stop Stripe retries. ` +
+          `Manual investigation required — see prior [STRIPE-ORPHAN] log for session details. ` +
+          `error=${error.message}`
+      );
+      return NextResponse.json({ received: true, orphan: true }, { status: 200 });
+    }
     console.error(`Stripe webhook handler error (${event.type}):`, error);
     return NextResponse.json(
       { message: "Handler failure." },
@@ -302,7 +328,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       },
     });
     console.warn(
-      `[EMAIL-THROTTLE] Skipped activation email for ${buyerEmail}; ` +
+      `[EMAIL-THROTTLE] Skipped activation email for ${maskEmail(buyerEmail)}; ` +
         `${recentSendsToBuyer} sends in last 1h. Order #${updatedOrder.id} has the activation code; ` +
         `customer must contact support to receive it.`
     );
@@ -514,4 +540,22 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+/**
+ * Partial-mask an email address for log-safe output.
+ *
+ * "alice@example.com" → "al***@example.com"
+ * "x@example.com"     → "x***@example.com"
+ *
+ * Vercel function logs retain stdout/stderr for hours-to-days depending on
+ * plan tier; logging full buyer addresses puts PII into that retention
+ * window unnecessarily. The mask preserves enough signal for an operator
+ * to recognise their own test traffic without disclosing the full address.
+ */
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "***";
+  const head = local.slice(0, Math.min(2, local.length));
+  return `${head}***@${domain}`;
 }
