@@ -10,9 +10,17 @@ export default async function BureauArchivePage() {
   const session = await getOptionalSession();
   const userId = Number(session?.user?.id);
 
+  // Mirror the Batch 16 dashboard + debrief filter (`revokedAt: null`):
+  // refunded UserCase rows must not appear in the archive's "Active reviews"
+  // or "Debrief-ready cases" surfaces, otherwise a refunded customer sees
+  // their old case looking active and the Debrief CTA renders against a
+  // revoked entitlement. Theory-submission history (below) is preserved
+  // intentionally — submissions are an audit trail of what was guessed;
+  // hiding them on refund would also hide them from the player's own
+  // recollection of their attempts.
   const ownedCases = Number.isInteger(userId)
     ? await prisma.userCase.findMany({
-        where: { userId },
+        where: { userId, revokedAt: null },
         include: { caseFile: true },
         orderBy: { activatedAt: "desc" },
       })
