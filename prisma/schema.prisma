@@ -158,6 +158,8 @@ model ActivationCode {
   caseFile      CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
   claimedByUser User?    @relation("ClaimedCodes", fields: [claimedByUserId], references: [id])
   order         Order?
+
+  @@index([caseFileId])
 }
 
 model UserCase {
@@ -203,6 +205,8 @@ model CasePerson {
 
   caseFile     CaseFile      @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
   globalPerson GlobalPerson? @relation(fields: [globalPersonId], references: [id])
+
+  @@index([caseFileId])
 }
 
 model CaseRecord {
@@ -217,6 +221,8 @@ model CaseRecord {
   createdAt   DateTime @default(now())
 
   caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  @@index([caseFileId])
 }
 
 model CaseHint {
@@ -230,6 +236,8 @@ model CaseHint {
   createdAt   DateTime @default(now())
 
   caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  @@index([caseFileId])
 }
 
 model CaseCheckpoint {
@@ -257,6 +265,9 @@ model CheckpointAttempt {
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([caseFileId])
 }
 
 model TheorySubmission {
@@ -276,6 +287,9 @@ model TheorySubmission {
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   caseFile CaseFile @relation(fields: [caseFileId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([caseFileId])
 }
 
 model WaitlistEntry {
@@ -466,6 +480,8 @@ model HiddenEvidence {
   body        String
   revealOrder Int
   createdAt   DateTime           @default(now())
+
+  @@index([caseFileId])
 }
 
 model Order {
