@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   userCaseFindFirst: vi.fn(),
   redemptionFindFirst: vi.fn(),
   redemptionCreate: vi.fn(),
-  caseRecordFindUnique: vi.fn(),
+  caseRecordFindFirst: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -31,7 +31,10 @@ vi.mock("@/lib/prisma", () => ({
       findFirst: mocks.redemptionFindFirst,
       create: mocks.redemptionCreate,
     },
-    caseRecord: { findUnique: mocks.caseRecordFindUnique },
+    // Batch 17: resolveContent in the route was changed from `findUnique`
+    // to `findFirst` so the lookup can include the defense-in-depth
+    // `caseFileId` filter. The mock follows the route signature.
+    caseRecord: { findFirst: mocks.caseRecordFindFirst },
   },
 }));
 
@@ -99,7 +102,7 @@ describe("POST /api/access-codes/redeem — ownership check is unconditional", (
 
     // Critical: no redemption row created, no content resolved.
     expect(mocks.redemptionCreate).not.toHaveBeenCalled();
-    expect(mocks.caseRecordFindUnique).not.toHaveBeenCalled();
+    expect(mocks.caseRecordFindFirst).not.toHaveBeenCalled();
   });
 
   it("rejects non-owners with 403 when the code IS stage-gated (existing behavior preserved)", async () => {
@@ -112,7 +115,7 @@ describe("POST /api/access-codes/redeem — ownership check is unconditional", (
 
     expect(response.status).toBe(403);
     expect(mocks.redemptionCreate).not.toHaveBeenCalled();
-    expect(mocks.caseRecordFindUnique).not.toHaveBeenCalled();
+    expect(mocks.caseRecordFindFirst).not.toHaveBeenCalled();
   });
 
   it("rejects owners whose currentStage is below requiresStage with 403", async () => {
@@ -139,7 +142,7 @@ describe("POST /api/access-codes/redeem — ownership check is unconditional", (
       currentStage: 1,
     });
     mocks.redemptionCreate.mockResolvedValue({ id: 1 });
-    mocks.caseRecordFindUnique.mockResolvedValue({
+    mocks.caseRecordFindFirst.mockResolvedValue({
       id: 42,
       title: "Badge Access Log",
       body: "Access record body content.",
@@ -184,7 +187,7 @@ describe("POST /api/access-codes/redeem — code normalization (Batch 12 UX-15)"
     mocks.accessCodeFindUnique.mockResolvedValue(NULL_STAGE_CODE);
     mocks.userCaseFindFirst.mockResolvedValue({ id: 555, currentStage: 1 });
     mocks.redemptionCreate.mockResolvedValue({ id: 2 });
-    mocks.caseRecordFindUnique.mockResolvedValue({
+    mocks.caseRecordFindFirst.mockResolvedValue({
       id: 42,
       title: "Badge Access Log",
       body: "Access record body content.",

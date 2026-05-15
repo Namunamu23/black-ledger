@@ -8,33 +8,46 @@ export const runtime = "nodejs";
 
 type UnlocksTarget = { type: string; id: number };
 
-async function resolveContent(unlocksTarget: unknown) {
+/**
+ * Resolve an AccessCode's `unlocksTarget` to its concrete content row.
+ *
+ * Defense-in-depth (Batch 17): every lookup is gated on `caseFileId` so a
+ * corrupted or mis-targeted AccessCode cannot reveal content from a
+ * different case. The admin POST at
+ * `app/api/admin/cases/[caseId]/access-codes/route.ts` already validates
+ * `unlocksTarget` against the parent case at write time; this read-side
+ * check is the second line of defense against a future seed-script bug,
+ * a migration that breaks the write-side invariant, or a hand-edited row.
+ * Failure modes: returns the typed shape with the row field set to `null`,
+ * which the caller treats as "missing evidence" and skips in render.
+ */
+async function resolveContent(unlocksTarget: unknown, caseFileId: number) {
   const target = unlocksTarget as UnlocksTarget;
 
   if (target?.type === "record") {
-    const record = await prisma.caseRecord.findUnique({
-      where: { id: target.id },
+    const record = await prisma.caseRecord.findFirst({
+      where: { id: target.id, caseFileId },
     });
     return { type: "record", record };
   }
 
   if (target?.type === "person") {
-    const person = await prisma.casePerson.findUnique({
-      where: { id: target.id },
+    const person = await prisma.casePerson.findFirst({
+      where: { id: target.id, caseFileId },
     });
     return { type: "person", person };
   }
 
   if (target?.type === "hint") {
-    const hint = await prisma.caseHint.findUnique({
-      where: { id: target.id },
+    const hint = await prisma.caseHint.findFirst({
+      where: { id: target.id, caseFileId },
     });
     return { type: "hint", hint };
   }
 
   if (target?.type === "hidden_evidence") {
-    const hiddenEvidence = await prisma.hiddenEvidence.findUnique({
-      where: { id: target.id },
+    const hiddenEvidence = await prisma.hiddenEvidence.findFirst({
+      where: { id: target.id, caseFileId },
     });
     return { type: "hidden_evidence", hiddenEvidence };
   }
@@ -133,7 +146,7 @@ export async function POST(request: Request) {
     // sole source of truth for one-redemption-per-user.
     const maybe = error as { code?: string };
     if (maybe.code === "P2002") {
-      const content = await resolveContent(accessCode.unlocksTarget);
+      const content = await resolveContent(accessCode.unlocksTarget, accessCode.caseFileId);
       return NextResponse.json(
         {
           alreadyRedeemed: true,
@@ -146,7 +159,7 @@ export async function POST(request: Request) {
     throw error;
   }
 
-  const content = await resolveContent(accessCode.unlocksTarget);
+  const content = await resolveContent(accessCode.unlocksTarget, accessCode.caseFileId);
 
   return NextResponse.json(
     {
