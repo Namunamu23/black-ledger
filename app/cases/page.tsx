@@ -1,15 +1,31 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Card, Pill } from "@/components/ui";
+import { caseSerial } from "@/lib/case-serial";
 
 const BTN_OUTLINE_SM =
   "inline-flex items-center rounded-2xl border border-zinc-700 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-zinc-800";
 
 export default async function CasesPage() {
+  // Explicit select — public catalog page must not over-fetch solution fields
+  // (`solutionSuspect`, `solutionMotive`, `solutionEvidence`) or debrief prose
+  // from Postgres. The page is RSC and the row never crosses the client
+  // boundary today, so no leak; the select is a structural defense against a
+  // future refactor that passes the row to a client component (which would
+  // silently leak the entire case answer to every browser hitting /cases).
   const cases = await prisma.caseFile.findMany({
     where: {
       isActive: true,
       workflowStatus: "PUBLISHED",
+    },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      summary: true,
+      players: true,
+      duration: true,
+      difficulty: true,
     },
     orderBy: { createdAt: "asc" },
   });
@@ -73,8 +89,13 @@ export default async function CasesPage() {
           </Card>
         ) : (
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {cases.map((caseFile, index) => {
-              const serial = "BL-" + String(index + 1).padStart(3, "0");
+            {cases.map((caseFile) => {
+              // Use the canonical id-based helper. The prior index-based
+              // derivation drifted off the workspace/dashboard/debrief
+              // serials whenever a case was archived (the visible list
+              // renumbered, but the workspace serial stayed pinned to id).
+              // UX-08 / UX-16 / UX-17 closure.
+              const serial = caseSerial(caseFile);
               return (
                 <Card key={caseFile.id} variant="dossier" padding="none">
                   <div className="flex items-center justify-between border-b border-red-950/50 px-4 py-2">
