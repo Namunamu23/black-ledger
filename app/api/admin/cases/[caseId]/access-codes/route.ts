@@ -7,9 +7,25 @@ import { createAccessCodeSchema } from "@/lib/validators";
 export const runtime = "nodejs";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
+  // Rate-limit the admin GET — listing AccessCodes exposes which evidence
+  // rows each code unlocks, plus redemption counts. A compromised admin
+  // session iterating caseId values could map the entire game state.
+  // 30/60s per (ip, route) is well above legitimate admin navigation.
+  // (Batch 17.)
+  const limit = await rateLimit(request, { limit: 30, windowMs: 60_000 });
+  if (!limit.success) {
+    return NextResponse.json(
+      { message: "Too many requests." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) },
+      }
+    );
+  }
+
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
 
@@ -45,6 +61,7 @@ export async function POST(
 
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
+  const userId = Number(guard.user.id);
 
   const { caseId } = await params;
   const parsedCaseId = Number(caseId);
@@ -108,14 +125,37 @@ export async function POST(
   }
 
   try {
-    const created = await prisma.accessCode.create({
-      data: {
-        code: parsed.data.code,
-        kind: parsed.data.kind,
-        caseFileId: parsedCaseId,
-        unlocksTarget: parsed.data.unlocksTarget,
-        requiresStage: parsed.data.requiresStage ?? null,
-      },
+    // Wrap the create + audit in a transaction (Batch 17). AccessCodes
+    // unlock hidden evidence and hints — the forensic trail of who minted
+    // which code (and what target it points at) is part of game-integrity
+    // monitoring. The code itself is intentionally NOT logged in the diff
+    // (it's a redeemable secret that survives in the codes table).
+    const created = await prisma.$transaction(async (tx) => {
+      const accessCode = await tx.accessCode.create({
+        data: {
+          code: parsed.data.code,
+          kind: parsed.data.kind,
+          caseFileId: parsedCaseId,
+          unlocksTarget: parsed.data.unlocksTarget,
+          requiresStage: parsed.data.requiresStage ?? null,
+        },
+      });
+
+      await tx.caseAudit.create({
+        data: {
+          caseFileId: parsedCaseId,
+          userId,
+          action: "CREATE_ACCESS_CODE",
+          diff: {
+            accessCodeId: accessCode.id,
+            kind: parsed.data.kind,
+            unlocksTarget: parsed.data.unlocksTarget,
+            requiresStage: parsed.data.requiresStage ?? null,
+          },
+        },
+      });
+
+      return accessCode;
     });
     return NextResponse.json(created, { status: 201 });
   } catch (error) {

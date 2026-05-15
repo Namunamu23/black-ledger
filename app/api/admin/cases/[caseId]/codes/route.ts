@@ -30,6 +30,22 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
+  // Rate-limit the admin GET — includes the CSV-export branch, which
+  // emits customer email addresses. A compromised admin session iterating
+  // caseId values could otherwise mass-pull every customer list. 30/60s
+  // per (ip, route) is well above legitimate admin navigation and
+  // single-button-press CSV-export workflows. (Batch 17.)
+  const limit = await rateLimit(request, { limit: 30, windowMs: 60_000 });
+  if (!limit.success) {
+    return NextResponse.json(
+      { message: "Too many requests." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) },
+      }
+    );
+  }
+
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
 
@@ -100,6 +116,7 @@ export async function POST(
 
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
+  const userId = Number(guard.user.id);
 
   const { caseId } = await params;
   const parsedCaseId = Number(caseId);
@@ -143,12 +160,29 @@ export async function POST(
     codes = codes.map((c) => (taken.has(c) ? buildCode(prefix) : c));
   }
 
-  await prisma.activationCode.createMany({
-    data: codes.map((code) => ({
-      code,
-      kitSerial,
-      caseFileId: parsedCaseId,
-    })),
+  // Wrap the createMany in a transaction with a CaseAudit write (Batch 17).
+  // We deliberately do NOT log every generated code into the audit row —
+  // that would put redeemable secrets in a forensic table that survives
+  // claim. The audit captures the count + kit-serial prefix so the
+  // operator can reconstruct WHICH batch this was without the codes
+  // themselves leaking through the audit log.
+  await prisma.$transaction(async (tx) => {
+    await tx.activationCode.createMany({
+      data: codes.map((code) => ({
+        code,
+        kitSerial,
+        caseFileId: parsedCaseId,
+      })),
+    });
+
+    await tx.caseAudit.create({
+      data: {
+        caseFileId: parsedCaseId,
+        userId,
+        action: "GENERATE_ACTIVATION_CODES",
+        diff: { count: codes.length, kitSerial },
+      },
+    });
   });
 
   return NextResponse.json({ codes }, { status: 201 });

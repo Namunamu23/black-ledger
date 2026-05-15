@@ -10,6 +10,22 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ caseId: string }> }
 ) {
+  // Rate-limit the admin GET (Batch 17). Even behind the admin gate, an
+  // attacker-admin session can mass-pull full case content (including the
+  // solution + debrief) by iterating caseId. 30/60s per (ip, route) gives
+  // legitimate admin tab navigation plenty of headroom while capping
+  // scripted exfiltration.
+  const limit = await rateLimit(request, { limit: 30, windowMs: 60_000 });
+  if (!limit.success) {
+    return NextResponse.json(
+      { message: "Too many requests." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryAfterSeconds) },
+      }
+    );
+  }
+
   const guard = await requireAdmin();
   if (guard instanceof NextResponse) return guard;
 
