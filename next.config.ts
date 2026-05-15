@@ -26,7 +26,13 @@ const r2Origin = process.env.R2_PUBLIC_URL
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  // Dead `https://fonts.googleapis.com` entry removed in Batch 17 — mirrors
+  // the Batch 7 font-src cleanup (commit b10dd68). The codebase uses
+  // next/font/google, which self-hosts fonts at build time and never
+  // contacts the Google Fonts CDN at runtime. `'unsafe-inline'` remains
+  // because Tailwind v4 emits inline <style> blocks at first paint; that's
+  // tracked separately as part of the F-32/F-33 CSP-nonce migration.
+  "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   `img-src 'self' data: blob: ${r2Origin}`,
   "connect-src 'self'",
